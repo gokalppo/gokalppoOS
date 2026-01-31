@@ -3,6 +3,7 @@ import { useOS } from './context/OSContext';
 import Desktop from './components/Desktop';
 import Window from './components/Window'; // Eksik olan buydu!
 import BootScreen from './components/BootScreen';
+import AssetLoader from './components/AssetLoader';
 import './App.css';
 import shutdownSound from './assets/windows98shutdown.mp3';
 
@@ -83,6 +84,7 @@ function App() {
 
   return (
     <div className="app-root" style={{ width: '100vw', height: '100vh', overflow: 'hidden' }}>
+      <AssetLoader />
       {isBooting ? (
         <BootScreen onComplete={handleBootComplete} />
       ) : (

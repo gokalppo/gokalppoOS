@@ -1,0 +1,179 @@
+.minesweeper-container {
+    background-color: var(--win-gray);
+    padding: 6px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    user-select: none;
+}
+
+/* OUTSET Border for main layout (Top Panel + Grid) */
+.minesweeper-panel {
+    border-top: 2px solid #808080;
+    /* Dark Shadow Top */
+    border-left: 2px solid #808080;
+    border-right: 2px solid white;
+    /* Light Highlight Bottom */
+    border-bottom: 2px solid white;
+    width: 100%;
+    margin-bottom: 6px;
+    padding: 4px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: var(--win-gray);
+    box-sizing: border-box;
+}
+
+/* INSET Border for inner elements (Counters) */
+.minesweeper-inset {
+    border-top: 1px solid #808080;
+    border-left: 1px solid #808080;
+    border-right: 1px solid white;
+    border-bottom: 1px solid white;
+}
+
+/* Digital Counter Box */
+.minesweeper-counter {
+    background-color: black;
+    color: red;
+    font-family: 'Courier New', monospace;
+    /* Fallback until specific digit font available */
+    font-size: 20px;
+    font-weight: bold;
+    padding: 2px 4px;
+    border-top: 1px solid #808080;
+    border-left: 1px solid #808080;
+    border-right: 1px solid white;
+    border-bottom: 1px solid white;
+    min-width: 40px;
+    text-align: right;
+    letter-spacing: 2px;
+}
+
+/* Smiley Button */
+.minesweeper-smiley {
+    width: 26px;
+    height: 26px;
+    background-color: var(--win-gray);
+    border-top: 2px solid white;
+    border-left: 2px solid white;
+    border-right: 2px solid #808080;
+    border-bottom: 2px solid #808080;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    font-size: 18px;
+}
+
+.minesweeper-smiley:active {
+    border-top: 1px solid #808080;
+    border-left: 1px solid #808080;
+    border-right: 0;
+    border-bottom: 0;
+}
+
+/* Grid Border (INSET usually for the field) */
+.minesweeper-grid-border {
+    border-top: 3px solid #808080;
+    border-left: 3px solid #808080;
+    border-right: 3px solid white;
+    border-bottom: 3px solid white;
+    display: inline-block;
+}
+
+.minesweeper-grid {
+    display: grid;
+    grid-template-columns: repeat(9, 20px);
+    /* 16px cell + borders? Standard is 16x16 usually. Let's do 20px visual */
+    grid-gap: 0;
+}
+
+/* Cell Styles */
+.ms-cell {
+    width: 20px;
+    height: 20px;
+    background-color: var(--win-gray);
+
+    /* Standard Unclicked: OUTSET */
+    border-top: 2px solid white;
+    border-left: 2px solid white;
+    border-right: 2px solid #808080;
+    border-bottom: 2px solid #808080;
+
+    box-sizing: border-box;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: default;
+}
+
+.ms-cell:active {
+    /* Pressed effect for unrevealed cells */
+    border: none;
+    border-top: 1px solid #808080;
+    border-left: 1px solid #808080;
+}
+
+.ms-cell.revealed {
+    border: 1px solid #808080;
+    /* Subtle border for grid lines */
+    border-top: none;
+    border-left: none;
+    /* Actually standard win98 just has a flat inset look or dotted */
+    border: 1px solid #7B7B7B;
+    /* Thin gray line */
+    border: 0;
+    outline: 1px dotted #808080;
+    outline-offset: -1px;
+    /* Simulate the grid line */
+}
+
+/* Colors for Numbers */
+.val-1 {
+    color: blue;
+}
+
+.val-2 {
+    color: green;
+}
+
+.val-3 {
+    color: red;
+}
+
+.val-4 {
+    color: navy;
+}
+
+.val-5 {
+    color: maroon;
+}
+
+.val-6 {
+    color: teal;
+}
+
+.val-7 {
+    color: black;
+}
+
+.val-8 {
+    color: gray;
+}
+
+.ms-cell.mine {
+    background-color: var(--win-gray);
+    /* Maybe red background if it was the one clicked */
+}
+
+.ms-cell.mine.exploded {
+    background-color: red;
+}
+
+.ms-cell.flagged {
+    color: red;
+}

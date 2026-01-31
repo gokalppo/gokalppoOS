@@ -1,0 +1,88 @@
+.start-menu {
+    position: absolute;
+    bottom: 28px;
+    left: 2px;
+    width: 200px;
+    background-color: var(--win-gray);
+
+    /* Classic layered border */
+    border-top: 2px solid var(--win-border-light);
+    border-left: 2px solid var(--win-border-light);
+    border-right: 2px solid var(--win-border-black);
+    border-bottom: 2px solid var(--win-border-black);
+    box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.5);
+
+    display: flex;
+    z-index: 1000;
+    font-family: 'gokalppoOS', sans-serif;
+}
+
+.start-side-bar {
+    width: 25px;
+    background: linear-gradient(to bottom, #000080, #1084d0);
+    display: flex;
+    align-items: flex-end;
+    padding-bottom: 5px;
+    overflow: hidden;
+}
+
+.os-version {
+    writing-mode: vertical-lr;
+    transform: rotate(180deg);
+    white-space: nowrap;
+    color: var(--win-white);
+    font-weight: bold;
+    font-size: 12px;
+    /* Updated to 12px */
+    letter-spacing: 2px;
+
+    /* Centering logic for flux container if needed, but margin approach was used */
+    margin: 0 auto;
+    margin-bottom: 20px;
+    align-self: flex-end;
+    /* Pushes text to bottom in vertical mode since flex-direction row/column? Sidebar is flex-end align-items. */
+}
+
+.start-content {
+    flex: 1;
+    padding: 2px;
+    display: flex;
+    flex-direction: column;
+}
+
+.start-item {
+    display: flex;
+    align-items: center;
+    padding: 6px 10px;
+    cursor: pointer;
+    color: var(--win-text);
+    font-size: 12px;
+}
+
+.start-item:hover {
+    background-color: var(--win-blue);
+    color: var(--win-white);
+}
+
+.icon {
+    margin-right: 10px;
+    width: 20px;
+    text-align: center;
+    font-size: 18px;
+}
+
+.label {
+    flex: 1;
+}
+
+.arrow {
+    font-size: 8px;
+    margin-left: 5px;
+}
+
+.divider {
+    height: 2px;
+    background-color: var(--win-border-dark);
+    border-bottom: 1px solid var(--win-border-light);
+    margin: 4px 2px;
+}

@@ -1,0 +1,442 @@
+.messenger-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    width: 100%;
+    background-color: #c0c0c0;
+    font-family: 'gokalppoOS', sans-serif;
+    box-sizing: border-box;
+    overflow: hidden;
+}
+
+/* LOGIN SCREEN */
+.messenger-login {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    min-height: fit-content;
+    padding: 10px;
+    padding-bottom: 25px;
+    /* Extra space for bottom text */
+    gap: 6px;
+    /* Reduced gap */
+    overflow-y: auto;
+    /* Fallback scroll */
+}
+
+.login-logo {
+    font-size: 32px;
+    /* Smaller font */
+    margin-bottom: 5px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: bold;
+    color: #404040;
+}
+
+.login-form {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    /* Tighter spacing */
+    width: 65%;
+    /* Slightly narrower for better proportion */
+}
+
+.login-input {
+    padding: 4px;
+    font-family: 'Verdana', sans-serif;
+    /* Safe font for password dots */
+    font-size: 13px;
+    border: 2px solid #808080;
+    border-color: #808080 #ffffff #ffffff #808080;
+}
+
+.login-checkbox-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+}
+
+.login-btn {
+    margin-top: 10px;
+    padding: 6px;
+    font-weight: bold;
+    border: 2px solid #fff;
+    border-color: #ffffff #808080 #808080 #ffffff;
+    background: #c0c0c0;
+    box-shadow: 1px 1px 0 black;
+    cursor: pointer;
+}
+
+.login-btn:active {
+    border-color: #808080 #ffffff #ffffff #808080;
+    box-shadow: none;
+    transform: translate(1px, 1px);
+}
+
+/* CHAT INTERFACE */
+.chat-interface {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+    padding: 2px;
+    gap: 2px;
+}
+
+/* NUDGE ANIMATION */
+@keyframes shake {
+    0% {
+        transform: translate3d(0, 0, 0);
+    }
+
+    10% {
+        transform: translate3d(-5px, -5px, 0);
+    }
+
+    20% {
+        transform: translate3d(5px, 5px, 0);
+    }
+
+    30% {
+        transform: translate3d(-5px, 5px, 0);
+    }
+
+    40% {
+        transform: translate3d(5px, -5px, 0);
+    }
+
+    50% {
+        transform: translate3d(-5px, -5px, 0);
+    }
+
+    60% {
+        transform: translate3d(5px, 5px, 0);
+    }
+
+    70% {
+        transform: translate3d(-5px, 5px, 0);
+    }
+
+    80% {
+        transform: translate3d(5px, -5px, 0);
+    }
+
+    90% {
+        transform: translate3d(0, 0, 0);
+    }
+
+    100% {
+        transform: translate3d(0, 0, 0);
+    }
+}
+
+.shake-animation {
+    animation: shake 0.5s cubic-bezier(.36, .07, .19, .97) both;
+}
+
+/* ROOMS / TABS */
+.messenger-tabs {
+    display: flex;
+    gap: 2px;
+    padding: 2px 4px 0 4px;
+    border-bottom: 2px solid #808080;
+}
+
+.tab-btn {
+    padding: 4px 12px;
+    border: 2px solid #fff;
+    border-bottom: none;
+    border-top-left-radius: 3px;
+    border-top-right-radius: 3px;
+    background: #c0c0c0;
+    cursor: pointer;
+    font-size: 12px;
+}
+
+.tab-btn.active {
+    background: #d4d0c8;
+    font-weight: bold;
+    position: relative;
+    top: 2px;
+    border-color: #ffffff #808080 #c0c0c0 #ffffff;
+}
+
+/* LEFT SIDEBAR */
+.msn-sidebar {
+    width: 30%;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    height: 100%;
+    /* Ensure it takes full height */
+    overflow: hidden;
+    /* Prevent sidebar itself from scrolling, only inner parts */
+}
+
+.user-card {
+    border: 2px solid;
+    border-color: #ffffff #808080 #808080 #ffffff;
+    padding: 4px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    background: #e0e0e0;
+    flex-shrink: 0;
+    /* Keep user card fixed size */
+}
+
+.user-status-select {
+    font-family: 'gokalppoOS', sans-serif;
+    font-size: 11px;
+    padding: 2px;
+}
+
+.music-status {
+    font-size: 10px;
+    color: navy;
+    font-style: italic;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+/* CONTACT LIST */
+.msn-contact-list {
+    flex: 1;
+    /* Take remaining space */
+    background: white;
+    border: 2px solid;
+    border-color: #808080 #ffffff #ffffff #808080;
+    /* inset */
+    overflow-y: auto;
+    /* Scroll if content overflows */
+    min-height: 0;
+    /* Important for flex child scrolling */
+}
+
+.msn-contact {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px;
+    cursor: pointer;
+    font-size: 13px;
+}
+
+.msn-contact:hover {
+    background: #000080;
+    color: white;
+}
+
+.msn-contact.active {
+    background: #000080;
+    color: white;
+}
+
+.status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    border: 1px solid rgba(0, 0, 0, 0.5);
+    flex-shrink: 0;
+}
+
+.status-dot.online {
+    background: #00ff00;
+}
+
+.status-dot.busy {
+    background: #ff0000;
+}
+
+.status-dot.away {
+    background: #ffff00;
+}
+
+.status-dot.offline {
+    background: #808080;
+}
+
+/* MAIN CHAT AREA */
+.msn-chat-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.chat-header {
+    background: navy;
+    color: white;
+    padding: 2px 4px;
+    font-weight: bold;
+    display: flex;
+    justify-content: space-between;
+}
+
+.chat-actions {
+    display: flex;
+    gap: 4px;
+}
+
+.chat-history {
+    flex: 1;
+    background: white;
+    border: 2px solid;
+    border-color: #808080 #ffffff #ffffff #808080;
+    /* inset */
+    padding: 8px;
+    overflow-y: auto;
+    font-size: 14px;
+}
+
+.msg-line {
+    margin-bottom: 6px;
+    word-wrap: break-word;
+}
+
+.msg-meta {
+    font-weight: bold;
+    font-size: 12px;
+    margin-bottom: 2px;
+}
+
+.msg-text {
+    padding-left: 8px;
+}
+
+/* FEATURES */
+.msg-tick-read {
+    color: #008000;
+    font-size: 10px;
+    margin-left: 4px;
+}
+
+.typing-indicator {
+    font-style: italic;
+    color: #808080;
+    font-size: 12px;
+    height: 16px;
+}
+
+.nudge-alert {
+    color: red;
+    font-weight: bold;
+    text-align: center;
+    margin: 4px 0;
+    font-style: italic;
+}
+
+.e2ee-text {
+    font-family: 'Courier New', monospace;
+    color: #008000;
+}
+
+/* INPUT AREA */
+.msn-input-row {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    height: 80px;
+}
+
+.msn-toolbar {
+    display: flex;
+    gap: 4px;
+    background: #d4d0c8;
+    padding: 2px;
+    border: 1px solid white;
+}
+
+.tool-btn {
+    background: none;
+    border: 1px solid transparent;
+    cursor: pointer;
+    font-size: 14px;
+    padding: 2px 4px;
+}
+
+.tool-btn:hover {
+    border: 1px outset white;
+}
+
+.tool-btn:active {
+    border: 1px inset white;
+}
+
+.ban-btn {
+    color: red;
+    font-weight: bold;
+}
+
+.msn-textarea {
+    flex: 1;
+    resize: none;
+    border: 2px solid;
+    border-color: #808080 #ffffff #ffffff #808080;
+    font-family: 'gokalppoOS', sans-serif;
+    font-size: 14px;
+    padding: 4px;
+    outline: none;
+}
+
+.msn-send-row {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.msn-send-btn {
+    padding: 2px 16px;
+    font-weight: bold;
+}
+
+/* EMOJI PICKER */
+.emoji-picker-popup {
+    position: absolute;
+    bottom: 30px;
+    /* Above toolbar */
+    left: 80px;
+    background: #d4d0c8;
+    border: 2px solid;
+    border-color: #ffffff #808080 #808080 #ffffff;
+    /* Outset */
+    padding: 4px;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 4px;
+    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.5);
+    z-index: 100;
+}
+
+.emoji-item {
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 14px;
+    border: 1px solid transparent;
+}
+
+.emoji-item:hover {
+    border: 1px solid #808080;
+    background: white;
+}
+
+.unread-badge {
+    color: red;
+    font-weight: bold;
+    font-size: 10px;
+    margin-left: auto;
+    /* Push to right if container is flex */
+    padding-left: 4px;
+}

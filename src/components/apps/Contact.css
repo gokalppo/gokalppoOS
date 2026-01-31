@@ -1,0 +1,116 @@
+.contact-container {
+    height: 100%;
+    width: 100%;
+    background-color: #c0c0c0;
+    /* Windows Gray */
+    display: flex;
+    flex-direction: column;
+    padding: 10px;
+    box-sizing: border-box;
+    font-family: 'gokalppoOS', sans-serif;
+    justify-content: flex-start;
+    gap: 5px;
+}
+
+.contact-section {
+    width: 100%;
+}
+
+.top-section {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 20px 10px 0 10px;
+    border: none;
+    margin-bottom: 5px;
+}
+
+.contact-label {
+    font-size: 14px;
+    color: black;
+    font-weight: bold;
+}
+
+.email-row-integrated {
+    display: flex;
+    align-items: center;
+    background: white;
+    border: 2px inset white;
+    padding: 10px;
+    height: 48px;
+}
+
+.email-input-integrated {
+    flex: 1;
+    font-family: 'Courier New', monospace;
+    font-size: 16px;
+    border: none;
+    background: transparent;
+    color: black;
+    outline: none;
+    padding: 2px 10px;
+    font-weight: bold;
+}
+
+.copy-btn-integrated {
+    width: 80px;
+    height: 32px;
+    padding: 2px 8px;
+    font-size: 14px;
+    font-family: 'gokalppoOS', sans-serif;
+    border: 2px outset white;
+    background: #c0c0c0;
+    cursor: pointer;
+    margin-left: 2px;
+}
+
+.copy-btn-integrated:active {
+    border-style: inset;
+}
+
+.email-hint {
+    font-size: 10px;
+    color: #444;
+    text-align: right;
+    font-style: italic;
+}
+
+.bottom-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 10px;
+    border: 2px groove white;
+    margin-top: 0;
+    flex: 1;
+}
+
+.social-icons {
+    display: flex;
+    gap: 40px;
+    justify-content: center;
+    align-items: center;
+}
+
+.social-link {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 60px;
+    height: 60px;
+    border: 2px outset white;
+    background: #c0c0c0;
+    transition: transform 0.1s, box-shadow 0.1s;
+    cursor: pointer;
+}
+
+.social-link:hover {
+    transform: translateY(-2px);
+    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.3);
+}
+
+.social-link:active {
+    transform: translateY(1px);
+    border-style: inset;
+    box-shadow: none;
+}

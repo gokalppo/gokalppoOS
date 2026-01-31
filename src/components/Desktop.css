@@ -1,0 +1,87 @@
+.desktop {
+    width: 100vw;
+    height: 100vh;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    position: relative;
+    overflow: hidden;
+}
+
+.desktop-icons-container {
+    /* Allow clicks to pass through the container to the background (though background does nothing), 
+     but ensure children (icons) capture events */
+    width: 100%;
+    height: calc(100% - 30px);
+    position: relative;
+    /* pointer-events: none; Remove this if we want desktop selection later, but for now helpful to ensure no weird blocking */
+    z-index: 0;
+    /* Changed from potentially interfering value */
+}
+
+.selection-box {
+    position: absolute;
+    border: 1px dotted white;
+    /* Classic Windows selection style */
+    background-color: transparent;
+    /* Windows 98 selection was often just outlines, but later versions had alpha. User asked for "yarı saydam" (semi-transparent) */
+    /* Let's double check standard win98 behavior. It was usually just a dotted line. 
+       User specifically asked for "yarı saydam, kesikli çizgili" (semi-transparent, dashed).
+       XP selected box was transparent blue. 98 was just dotted.
+       I'll combine them: Dotted border + very subtle background.
+    */
+    border: 1px dashed white;
+    background-color: rgba(255, 255, 255, 0.1);
+    z-index: 99999;
+    pointer-events: none;
+    /* Let clicks pass through */
+}
+
+.desktop-icon-draggable {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 80px;
+    cursor: pointer;
+    color: white;
+    text-shadow: 1px 1px 1px black;
+    position: absolute;
+    pointer-events: auto;
+    /* Ensure icons are interactive */
+}
+
+/* Vertical layout rules removed - handled by JS state */
+
+.desktop-icon-draggable.selected .icon-text {
+    background-color: var(--win-blue);
+    color: white;
+    border: 1px dotted var(--win-white);
+}
+
+.desktop-icon-draggable.selected .icon-img {
+    filter: drop-shadow(0px 0px 4px var(--win-blue));
+    /* Glow effect requested */
+}
+
+/* Original Active state fallback */
+.desktop-icon-draggable:active .icon-text {
+    background-color: var(--win-blue);
+    color: white;
+}
+
+.icon-img {
+    font-size: 32px;
+    margin-bottom: 4px;
+    pointer-events: none;
+    /* Prevent image drag behavior */
+}
+
+.icon-text {
+    font-size: 11px;
+    text-align: center;
+    padding: 2px;
+    color: white;
+    text-shadow: 1px 1px 1px black;
+    font-family: 'gokalppoOS', sans-serif;
+    line-height: 1.2;
+}

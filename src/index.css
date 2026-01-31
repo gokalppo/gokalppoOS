@@ -1,0 +1,49 @@
+@font-face {
+  font-family: 'gokalppoOS';
+  src: url('./assets/fonts/081be1114762b654-s.p.woff2') format('woff2');
+  font-weight: normal;
+  font-style: normal;
+}
+
+:root {
+  --os-bg: #008080;
+  --win-gray: #c0c0c0;
+  --win-blue: #000080;
+  --win-text: #000000;
+  --win-white: #ffffff;
+  --win-border-light: #ffffff;
+  --win-border-dark: #808080;
+  --win-border-black: #000000;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: 'RetroOS', sans-serif;
+  overflow: hidden;
+  background-color: var(--os-bg);
+  -webkit-font-smoothing: none;
+  font-smoothing: none;
+
+  /* Disable Text Selection Globally */
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+/* Allow selection in specific interactive elements */
+input,
+textarea,
+[contenteditable="true"],
+.selectable-text {
+  -webkit-user-select: text;
+  -moz-user-select: text;
+  -ms-user-select: text;
+  user-select: text;
+  cursor: text;
+}
+
+* {
+  box-sizing: border-box;
+}

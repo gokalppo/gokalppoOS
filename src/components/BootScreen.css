@@ -1,0 +1,80 @@
+.boot-screen {
+    background-color: black;
+    color: #cecece;
+    /* Classic BIOS gray/white */
+    font-family: 'Courier New', monospace;
+    /* Fallback to standard monospace */
+    width: 100vw;
+    height: 100vh;
+    padding: 20px;
+    box-sizing: border-box;
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 9999999;
+    /* Higher than everything */
+    overflow: hidden;
+    font-size: 16px;
+    line-height: 1.5;
+    text-shadow: 0 0 2px #cecece;
+    /* CRT glow effect */
+}
+
+.boot-logo {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    border: 2px solid #cecece;
+    padding: 5px;
+    font-size: 12px;
+    font-weight: bold;
+    display: none;
+    /* Hide for now unless we want to draw the actual ascii logo */
+}
+
+.boot-content {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    height: 100%;
+}
+
+.boot-line {
+    white-space: pre-wrap;
+}
+
+.boot-prompt {
+    margin-top: 20px;
+    color: white;
+    font-weight: bold;
+}
+
+.cursor {
+    display: inline-block;
+    width: 10px;
+    height: 18px;
+    background-color: white;
+    margin-left: 5px;
+    animation: blink 0.8s infinite;
+    vertical-align: text-bottom;
+}
+
+.boot-footer {
+    position: absolute;
+    bottom: 10px;
+    left: 20px;
+    font-size: 14px;
+    color: #cecece;
+}
+
+@keyframes blink {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0;
+    }
+}

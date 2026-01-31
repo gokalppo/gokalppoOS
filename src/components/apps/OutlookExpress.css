@@ -1,0 +1,225 @@
+/* Outlook Express Replica CSS */
+.outlook-express {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    background-color: #c0c0c0;
+    font-family: 'Arial', sans-serif;
+    /* OE font */
+    font-size: 11px;
+}
+
+/* Toolbar */
+.oe-toolbar {
+    display: flex;
+    align-items: center;
+    padding: 2px;
+    border-bottom: 1px solid #808080;
+    background-color: #c0c0c0;
+}
+
+.oe-tool-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid transparent;
+    background: transparent;
+    padding: 2px 5px;
+    margin: 0 1px;
+    font-size: 10px;
+    cursor: pointer;
+}
+
+.oe-tool-btn:hover {
+    border-top: 1px solid #fff;
+    border-left: 1px solid #fff;
+    border-right: 1px solid #808080;
+    border-bottom: 1px solid #808080;
+}
+
+.oe-tool-btn:active {
+    border-top: 1px solid #808080;
+    border-left: 1px solid #808080;
+    border-right: 1px solid #fff;
+    border-bottom: 1px solid #fff;
+}
+
+.oe-tool-btn:disabled {
+    filter: grayscale(100%);
+    opacity: 0.6;
+    cursor: default;
+}
+
+.oe-icon {
+    font-size: 16px;
+    margin-bottom: 2px;
+}
+
+.oe-vline {
+    width: 1px;
+    height: 20px;
+    /* Reduced to fit toolbar better */
+    background-color: #808080;
+    border-right: 1px solid #fff;
+    margin: 0 4px;
+}
+
+/* Headers */
+.oe-headers {
+    padding: 4px 8px;
+    border-bottom: 1px solid #808080;
+}
+
+.oe-row {
+    display: flex;
+    align-items: center;
+    margin-bottom: 4px;
+}
+
+.oe-label-btn {
+    width: 60px;
+    text-align: left;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    font-size: 11px;
+    padding: 2px 4px;
+    /* Simulate button look lightly if hovered, mostly plain text in OE for labels usually */
+    /* OE usually has buttons for "To:", "Cc:", so let's style them slightly button-ish */
+    border: 1px solid #c0c0c0;
+}
+
+.oe-label-btn:hover {
+    border-top: 1px solid #fff;
+    border-left: 1px solid #fff;
+    border-right: 1px solid #808080;
+    border-bottom: 1px solid #808080;
+}
+
+.oe-input-container {
+    flex: 1;
+    border: 1px solid #808080;
+    border-bottom: 1px solid #fff;
+    /* Sunken field effect 3D */
+    border-right: 1px solid #fff;
+    border-top: 1px solid #404040;
+    border-left: 1px solid #404040;
+    background: white;
+}
+
+.oe-input {
+    width: 100%;
+    border: none;
+    outline: none;
+    font-family: inherit;
+    font-size: 11px;
+    padding: 2px 4px;
+    height: 18px;
+}
+
+/* Body */
+.oe-body {
+    flex: 1;
+    padding: 0;
+    display: flex;
+}
+
+.oe-textarea {
+    width: 100%;
+    height: 100%;
+    border: none;
+    resize: none;
+    padding: 8px;
+    font-family: 'Courier New', monospace;
+    /* Email monospace feel */
+    font-size: 12px;
+    outline: none;
+}
+
+/* --- MODALS --- */
+.oe-modal-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.1);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 2000;
+}
+
+.oe-modal {
+    width: 350px;
+    background: #c0c0c0;
+    border: 2px solid #fff;
+    border-right-color: #404040;
+    border-bottom-color: #404040;
+    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.5);
+    display: flex;
+    flex-direction: column;
+}
+
+.oe-modal-header {
+    background: navy;
+    color: white;
+    font-weight: bold;
+    padding: 2px 4px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.oe-modal-close {
+    background: #c0c0c0;
+    color: black;
+    border: 1px solid #fff;
+    border-right-color: #404040;
+    border-bottom-color: #404040;
+    font-size: 10px;
+    width: 16px;
+    height: 14px;
+    line-height: 12px;
+    cursor: pointer;
+}
+
+.oe-modal-body {
+    padding: 15px;
+    color: black;
+}
+
+.oe-progress-track {
+    width: 100%;
+    height: 15px;
+    background: white;
+    border: 1px solid #808080;
+    border-right-color: #fff;
+    border-bottom-color: #fff;
+    position: relative;
+}
+
+.oe-progress-bar {
+    height: 100%;
+    background: navy;
+    width: 0%;
+    transition: width 0.2s linear;
+}
+
+.oe-standard-btn {
+    min-width: 75px;
+    padding: 4px 8px;
+    border: 1px solid #fff;
+    border-right-color: #404040;
+    border-bottom-color: #404040;
+    background: #c0c0c0;
+    cursor: pointer;
+}
+
+.oe-standard-btn:active {
+    border: 1px solid #404040;
+    border-right-color: #fff;
+    border-bottom-color: #fff;
+}

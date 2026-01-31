@@ -6,6 +6,7 @@ import BootScreen from './components/BootScreen';
 import AssetLoader from './components/AssetLoader';
 import './App.css';
 import shutdownSound from './assets/windows98shutdown.mp3';
+import windowsLogo from './assets/images/windows.png';
 
 function App() {
   const [isBooting, setIsBooting] = useState(true); // Boot state
@@ -117,7 +118,7 @@ function App() {
               color: 'white',
               fontFamily: 'gokalppoOS'
             }}>
-              <img src="/src/assets/images/windows.png" alt="Logo" style={{ width: '100px', marginBottom: '20px' }} />
+              <img src={windowsLogo} alt="Logo" style={{ width: '100px', marginBottom: '20px' }} />
               <h2 style={{ fontSize: '24px' }}>Windows is shutting down...</h2>
             </div>
           )}

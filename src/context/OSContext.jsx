@@ -112,7 +112,6 @@ export const OSProvider = ({ children }) => {
                 minimizeWindow,
                 restoreWindow,
                 focusWindow,
-                focusWindow,
                 toggleWindow,
                 volume,
                 setGlobalVolume

@@ -3,7 +3,6 @@ import { useEffect } from 'react';
 // IMAGES
 import wallpaper from '../assets/images/image.png';
 import startBtn from '../assets/images/windows.png';
-import winIcon from '../assets/images/4.png';
 import documentsIcon from '../assets/images/documents.png';
 import findIcon from '../assets/images/find.png';
 import helpIcon from '../assets/images/help.png';
@@ -20,7 +19,6 @@ import nudgeSound from '../assets/nudge.mp3';
 const preloadImages = [
     wallpaper,
     startBtn,
-    winIcon,
     documentsIcon,
     findIcon,
     helpIcon,

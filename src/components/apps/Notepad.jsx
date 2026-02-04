@@ -1,9 +1,24 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import './Notepad.css';
 
 const Notepad = () => {
     const [text, setText] = useState('');
     const [showFileMenu, setShowFileMenu] = useState(false);
+    const fileMenuRef = useRef(null);
+
+    // Close menu when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (fileMenuRef.current && !fileMenuRef.current.contains(event.target)) {
+                setShowFileMenu(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, []);
 
     const handleSave = () => {
         const blob = new Blob([text], { type: 'text/plain' });
@@ -22,6 +37,7 @@ const Notepad = () => {
         <div className="notepad-container">
             <div className="notepad-menubar">
                 <div
+                    ref={fileMenuRef}
                     className="notepad-menu-item"
                     onClick={() => setShowFileMenu(!showFileMenu)}
                 >

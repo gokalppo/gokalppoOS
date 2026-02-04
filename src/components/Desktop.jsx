@@ -9,6 +9,7 @@ import Terminal from './apps/Terminal';
 import PlaceholderApp from './apps/PlaceholderApp';
 import Gallery from './apps/Gallery';
 import Contact from './apps/Contact';
+import MyResume from './apps/MyResume';
 // ... (keep other imports)
 // ...
 
@@ -108,7 +109,7 @@ const Desktop = ({
             x: 10,
             y: 190
         },
-        { id: 'resume', title: 'My Resume', icon: <img src={resumeIcon} alt="My Resume" style={{ width: '32px', height: '32px' }} />, content: <PlaceholderApp text="CV yakında eklenecek" />, x: 10, y: 280 },
+        { id: 'resume', title: 'My Resume', icon: <img src={resumeIcon} alt="My Resume" style={{ width: '32px', height: '32px' }} />, content: <MyResume />, x: 10, y: 280 },
         {
             id: 'terminal',
             title: 'Terminal',

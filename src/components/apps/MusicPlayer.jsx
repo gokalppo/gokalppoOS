@@ -6,6 +6,9 @@ import demoTrack2 from '../../assets/ikiyabanci.mp3';
 import demoTrack3 from '../../assets/Metallica - Master of Puppets.mp3';
 import demoTrack4 from '../../assets/Corona - The Rhythm of the Night.mp3';
 import demoTrack5 from '../../assets/Alice Deejay - Better Off Alone.mp3';
+import demoTrack6 from '../../assets/Another One Bites the Dust.mp3';
+import demoTrack7 from '../../assets/Cakkıdı.mp3';
+import demoTrack8 from '../../assets/BombaBomba.com.mp3';
 
 const MusicPlayer = () => {
     const { volume: globalVolume } = useOS(); // Use Audio Driver
@@ -16,6 +19,9 @@ const MusicPlayer = () => {
         { title: '3. Master of Puppets', src: demoTrack3 },
         { title: '4. The Rhythm of the Night', src: demoTrack4 },
         { title: '5. Better Off Alone', src: demoTrack5 },
+        { title: '6. Another One Bites the Dust', src: demoTrack6 },
+        { title: '7. Cakkıdı', src: demoTrack7 },
+        { title: '8. BombaBomba.com', src: demoTrack8 },
     ]);
 
     const [isPlaying, setIsPlaying] = useState(false);

@@ -171,13 +171,20 @@ const Desktop = ({
             setTimeout(() => setToast(null), 3000);
         };
 
+        // Close Handler (apps that only have OSContext, not onCloseWindow, ask via this event)
+        const handleCloseRequest = (e) => {
+            onCloseWindow(e.detail.id);
+        };
+
         window.addEventListener('nudge', handleNudge);
         window.addEventListener('messenger-notification', handleToast);
+        window.addEventListener('os-close-window', handleCloseRequest);
         return () => {
             window.removeEventListener('nudge', handleNudge);
             window.removeEventListener('messenger-notification', handleToast);
+            window.removeEventListener('os-close-window', handleCloseRequest);
         };
-    }, []);
+    }, [onCloseWindow]);
 
     // SELECTION BOX LOGIC
     const handleDesktopMouseDown = (e) => {

@@ -22,26 +22,6 @@ const OutlookExpress = () => {
     const [isSuccess, setIsSuccess] = useState(false);
     const [statusMessage, setStatusMessage] = useState('Message sent successfully.');
 
-    // Removed initial effect that overwrites 'from' from token, 
-    // or we can keep it as an initial value but allow editing.
-    // Let's keep it as pre-fill.
-    useEffect(() => {
-        try {
-            const token = localStorage.getItem('msn_token');
-            if (token && token.includes('.')) {
-                const payloadPart = token.split('.')[1];
-                if (payloadPart) {
-                    const payload = JSON.parse(atob(payloadPart));
-                    if (payload && payload.email) {
-                        setFrom(payload.email);
-                    }
-                }
-            }
-        } catch (e) {
-            console.error("OE: Failed to read user info", e);
-        }
-    }, []);
-
     // Play "Chord" sound on open
     useEffect(() => {
         try {

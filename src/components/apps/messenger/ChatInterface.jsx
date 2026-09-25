@@ -593,7 +593,7 @@ const ChatInterface = ({ user, onLogout }) => {
         } catch (e) { }
     };
 
-    const scrollToBottom = () => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    const scrollToBottom = () => { messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }); };
     useEffect(scrollToBottom, [messages, currentRoom, activeContactId]);
 
     const activeContact = contacts.find(c => c.uid === activeContactId);

@@ -182,7 +182,7 @@ const LoginScreen = ({ onLogin }) => {
                             checked={remember}
                             onChange={(e) => setRemember(e.target.checked)}
                         />
-                        <label>Remember my password</label>
+                        <label>Remember my email</label>
                     </div>
                 )}
 

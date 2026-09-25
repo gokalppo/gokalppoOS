@@ -427,12 +427,11 @@ const ChatInterface = ({ user, onLogout }) => {
     };
 
     const handleAcceptRequest = async (req) => {
-        try {
-            await remove(ref(db, `friendRequests/${user.uid}/${req.fromUid}`));
-        } catch (e) { console.error(e); }
-
         if (contacts.find(c => c.uid === req.fromUid)) {
             showNotification(`${req.fromName} is already your friend.`, "info");
+            try {
+                await remove(ref(db, `friendRequests/${user.uid}/${req.fromUid}`));
+            } catch (e) { console.error(e); }
             return;
         }
 
@@ -456,8 +455,12 @@ const ChatInterface = ({ user, onLogout }) => {
         };
 
         try {
+            // Write the friend entries WHILE the pending request still exists —
+            // the rules require it as proof of consent for the friendUid-side write.
+            // Only remove the request once both entries are safely in.
             await set(myFriendRef, newFriendData);
             await set(theirFriendRef, meAsFriendData);
+            await remove(ref(db, `friendRequests/${user.uid}/${req.fromUid}`));
 
             showNotification(`Accepted ${req.fromName}!`, "success");
         } catch (e) {

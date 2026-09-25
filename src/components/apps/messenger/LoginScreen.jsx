@@ -95,13 +95,14 @@ const LoginScreen = ({ onLogin }) => {
             });
 
             // FIX: Save to Realtime Database as well for searching
+            // Email is PII and lives in userPrivate/, not the publicly-readable users/ node.
             await set(ref(db, 'users/' + user.uid), {
                 uid: user.uid,
-                email: email,
                 username: username, // Important for search
                 status: 'online',
                 avatar: 'default'
             });
+            await set(ref(db, 'userPrivate/' + user.uid), { email: email });
 
             setSuccessMessage("Account created!");
             setTimeout(() => {

@@ -33,12 +33,13 @@ const ChatInterface = ({ user, onLogout }) => {
                 const safeName = user.username || user.email.split('@')[0]; // Fallback
                 update(myRef, {
                     uid: user.uid,
-                    email: user.email,
                     username: safeName,
                     status: 'online'
                 }).catch(err => console.error("Backfill failed", err));
             }
         });
+        // Email is PII and doesn't belong in the publicly-readable users/ node.
+        update(ref(db, `userPrivate/${user.uid}`), { email: user.email }).catch(() => { });
     }, [user]);
 
     const [input, setInput] = useState('');
@@ -180,7 +181,6 @@ const ChatInterface = ({ user, onLogout }) => {
         const newReq = {
             fromUid: user.uid,
             fromName: user.username,
-            fromEmail: user.email,
             status: 'pending'
         };
 
@@ -380,7 +380,7 @@ const ChatInterface = ({ user, onLogout }) => {
     // Check Duplicate & Send Request
     const sendFriendRequest = async (targetUser) => {
         setContextMenu(null);
-        if (!targetUser.senderUid || targetUser.sender === user.email) return;
+        if (!targetUser.senderUid || targetUser.senderUid === user.uid) return;
 
         if (targetUser.senderUid === user.uid) {
             showNotification("You cannot add yourself!", "error");
@@ -416,7 +416,6 @@ const ChatInterface = ({ user, onLogout }) => {
             const newReq = {
                 fromUid: user.uid,
                 fromName: user.username,
-                fromEmail: user.email,
                 status: 'pending'
             };
 
@@ -605,7 +604,6 @@ const ChatInterface = ({ user, onLogout }) => {
         const cleanText = input.replace(/(bad|evil|cursed)/gi, '***');
 
         const newMessage = {
-            sender: user.email,
             senderName: user.username,
             senderUid: user.uid,
             text: cleanText,
@@ -700,7 +698,6 @@ const ChatInterface = ({ user, onLogout }) => {
 
         const nudgeMsg = {
             type: 'nudge',
-            sender: user.email,
             senderName: user.username,
             senderUid: user.uid,
             timestamp: Date.now()
@@ -766,11 +763,39 @@ const ChatInterface = ({ user, onLogout }) => {
     const loadAllUsers = async () => {
         if (user.role !== 'admin') return;
         try {
-            const snap = await get(ref(db, 'users'));
-            if (snap.exists()) {
-                setAllUsers(Object.values(snap.val()));
+            const [usersSnap, privateSnap] = await Promise.all([
+                get(ref(db, 'users')),
+                get(ref(db, 'userPrivate'))
+            ]);
+            if (usersSnap.exists()) {
+                const privateData = privateSnap.val() || {};
+                const merged = Object.entries(usersSnap.val()).map(([uid, data]) => ({
+                    ...data,
+                    uid,
+                    email: privateData[uid]?.email
+                }));
+                setAllUsers(merged);
             }
         } catch (e) { console.error(e); }
+    };
+
+    // ONE-TIME MIGRATION: move any legacy users/{uid}/email into userPrivate/{uid}/email
+    const handleMigrateEmails = async () => {
+        if (user.role !== 'admin') return;
+        try {
+            const snap = await get(ref(db, 'users'));
+            const users = snap.val() || {};
+            let migrated = 0;
+            for (const [uid, data] of Object.entries(users)) {
+                if (data.email) {
+                    await update(ref(db, `userPrivate/${uid}`), { email: data.email });
+                    await update(ref(db, `users/${uid}`), { email: null });
+                    migrated++;
+                }
+            }
+            showNotification(`Migrated ${migrated} user(s)' email to userPrivate.`, "success");
+            loadAllUsers();
+        } catch (e) { showNotification("Migration error: " + e.message, "error"); }
     };
 
     useEffect(() => {
@@ -1056,16 +1081,16 @@ const ChatInterface = ({ user, onLogout }) => {
                         <div key={i} className="msg-entry">
                             {msg.type === 'nudge' ? (
                                 <div className="nudge-alert">
-                                    {msg.sender === user.email ? 'You sent a nudge!' : `${msg.senderName || 'User'} sent a nudge!`}
+                                    {msg.senderUid === user.uid ? 'You sent a nudge!' : `${msg.senderName || 'User'} sent a nudge!`}
                                 </div>
                             ) : (
-                                <div className={`msg-line ${msg.sender === user.email ? 'me' : 'them'}`} onClick={() => { /* No Action */ }}>
-                                    <div className="msg-meta" style={{ color: msg.sender === user.email ? 'purple' : 'navy' }}>
+                                <div className={`msg-line ${msg.senderUid === user.uid ? 'me' : 'them'}`} onClick={() => { /* No Action */ }}>
+                                    <div className="msg-meta" style={{ color: msg.senderUid === user.uid ? 'purple' : 'navy' }}>
                                         <span
                                             style={{ cursor: 'pointer', textDecoration: 'underline' }}
                                             onClick={(e) => { e.stopPropagation(); handleUserContextMenu(e, msg); }}
                                         >
-                                            {msg.sender === user.email ? 'You' : (msg.senderName || 'User')}
+                                            {msg.senderUid === user.uid ? 'You' : (msg.senderName || 'User')}
                                         </span>
 
                                         {contacts.some(c => c.uid === msg.senderUid) && (
@@ -1094,7 +1119,7 @@ const ChatInterface = ({ user, onLogout }) => {
                                                 )}
                                             </>
                                         )}
-                                        {!msg.isDeleted && msg.sender === user.email && msg.read && <span className="msg-tick-read">✓</span>}
+                                        {!msg.isDeleted && msg.senderUid === user.uid && msg.read && <span className="msg-tick-read">✓</span>}
                                     </span>
                                 </div>
                             )}
@@ -1200,6 +1225,13 @@ const ChatInterface = ({ user, onLogout }) => {
                             <span>Admin Tools</span>
                             <button onClick={() => setShowAdminPanel(false)} style={{ background: '#c0c0c0', border: '1px outset white', cursor: 'pointer' }}>X</button>
                         </div>
+                        <button
+                            onClick={handleMigrateEmails}
+                            title="One-time: move any legacy email fields out of the public users/ node"
+                            style={{ marginTop: '5px', fontSize: '10px', padding: '3px', cursor: 'pointer' }}
+                        >
+                            🔒 Migrate legacy emails to userPrivate
+                        </button>
                         <div style={{ flex: 1, overflowY: 'auto', background: 'white', border: '2px inset white', marginTop: '5px', padding: '5px' }}>
                             <table style={{ width: '100%', fontSize: '11px', borderCollapse: 'collapse' }}>
                                 <thead>

@@ -1,0 +1,146 @@
+.paint-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    width: 100%;
+    background: #c0c0c0;
+    font-family: 'MS Sans Serif', sans-serif;
+    font-size: 11px;
+    color: black;
+    user-select: none;
+}
+
+.paint-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    padding: 3px;
+    background: #c0c0c0;
+    border-bottom: 1px solid #808080;
+    flex-wrap: wrap;
+}
+
+.paint-tool-btn,
+.paint-action-btn,
+.paint-size-btn {
+    background: #c0c0c0;
+    border: 1px solid;
+    border-color: #fff #808080 #808080 #fff;
+    cursor: pointer;
+    font-size: 13px;
+    padding: 3px 5px;
+    min-width: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.paint-action-btn {
+    font-size: 11px;
+    min-width: unset;
+    gap: 3px;
+}
+
+.paint-tool-btn:active,
+.paint-action-btn:active,
+.paint-size-btn:active,
+.paint-tool-btn.active,
+.paint-size-btn.active {
+    border-color: #808080 #fff #fff #808080;
+    background: #d4d0c8;
+}
+
+.paint-size-dot {
+    background: black;
+    border-radius: 50%;
+    display: block;
+}
+
+.paint-toolbar-divider {
+    width: 1px;
+    align-self: stretch;
+    background: #808080;
+    border-right: 1px solid #fff;
+    margin: 0 3px;
+}
+
+.paint-body {
+    flex: 1;
+    display: flex;
+    overflow: hidden;
+    background: #808080;
+}
+
+.paint-palette {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 4px;
+    background: #c0c0c0;
+    border-right: 1px solid #808080;
+}
+
+.paint-current-color {
+    width: 28px;
+    height: 28px;
+    border: 2px solid;
+    border-color: #808080 #fff #fff #808080;
+    flex-shrink: 0;
+}
+
+.paint-palette-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 2px;
+    width: 36px;
+}
+
+.paint-swatch {
+    width: 16px;
+    height: 16px;
+    border: 1px solid #808080;
+    cursor: pointer;
+    padding: 0;
+}
+
+.paint-swatch.active {
+    border: 2px solid #000;
+}
+
+.paint-custom-color {
+    width: 32px;
+    height: 20px;
+    border: 1px solid #808080;
+    padding: 0;
+    cursor: pointer;
+    background: none;
+}
+
+.paint-canvas-wrapper {
+    position: relative;
+    margin: auto;
+    box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.paint-canvas {
+    display: block;
+    background: #fff;
+}
+
+.paint-preview-canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    cursor: crosshair;
+}
+
+.paint-statusbar {
+    display: flex;
+    justify-content: space-between;
+    padding: 2px 6px;
+    border-top: 1px solid #fff;
+    background: #c0c0c0;
+    font-size: 10px;
+    flex-shrink: 0;
+}

@@ -10,6 +10,7 @@ import PlaceholderApp from './apps/PlaceholderApp';
 import Gallery from './apps/Gallery';
 import Contact from './apps/Contact';
 import MyResume from './apps/MyResume';
+import Paint from './apps/Paint';
 // ... (keep other imports)
 // ...
 
@@ -26,6 +27,7 @@ import terminalIcon from '../assets/images/terminal.png';
 import cdDriverIcon from '../assets/images/cd_driver.png';
 import resumeIcon from '../assets/images/resume.png';
 import messengerIcon from '../assets/images/msn.png';
+import paintIcon from '../assets/images/paint.svg';
 
 import Messenger from './apps/messenger/MessengerContainer';
 import VisitorCounter from './VisitorCounter';
@@ -138,6 +140,15 @@ const Desktop = ({
             y: 10
         },
         { id: 'musicplayer', title: 'Music Player', icon: <img src={cdDriverIcon} alt="Music Player" style={{ width: '32px', height: '32px' }} />, content: <MusicPlayer />, x: 100, y: 100 },
+        {
+            id: 'paint',
+            title: 'Paint',
+            icon: <img src={paintIcon} alt="Paint" style={{ width: '32px', height: '32px' }} />,
+            content: <Paint />,
+            x: 100,
+            y: 190,
+            options: { width: '620px', height: '460px', minWidth: '500px', minHeight: '400px', bodyStyle: { padding: 0 } }
+        },
         {
             id: 'messenger',
             title: 'Messenger',

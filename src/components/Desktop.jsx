@@ -27,7 +27,7 @@ import terminalIcon from '../assets/images/terminal.png';
 import cdDriverIcon from '../assets/images/cd_driver.png';
 import resumeIcon from '../assets/images/resume.png';
 import messengerIcon from '../assets/images/msn.png';
-import paintIcon from '../assets/images/paint.svg';
+import paintIcon from '../assets/images/paint.png';
 
 import Messenger from './apps/messenger/MessengerContainer';
 import VisitorCounter from './VisitorCounter';

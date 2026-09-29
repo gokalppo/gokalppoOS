@@ -28,6 +28,7 @@ import resumeIcon from '../assets/images/resume.png';
 import messengerIcon from '../assets/images/msn.png';
 
 import Messenger from './apps/messenger/MessengerContainer';
+import VisitorCounter from './VisitorCounter';
 
 const DesktopIcon = ({ id, title, icon, position, isSelected, onDoubleClick, onDrag, onStop, onClick }) => {
     const nodeRef = useRef(null);
@@ -319,6 +320,8 @@ const Desktop = ({
             {selection && (
                 <div className="selection-box" style={getSelectionBoxStyle()}></div>
             )}
+
+            <VisitorCounter />
 
             <div className="desktop-icons-container">
                 {icons.map(app => (

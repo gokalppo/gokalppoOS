@@ -1,0 +1,28 @@
+.screensaver-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: #000;
+    z-index: 999999;
+    cursor: none;
+}
+
+.screensaver-canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+.screensaver-label {
+    position: absolute;
+    bottom: 24px;
+    right: 32px;
+    color: rgba(159, 255, 176, 0.6);
+    font-family: 'MS Sans Serif', sans-serif;
+    font-size: 14px;
+    letter-spacing: 3px;
+    text-shadow: 0 0 6px rgba(159, 255, 176, 0.5);
+    pointer-events: none;
+}

@@ -18,21 +18,135 @@ const TOOLS = [
 ];
 
 const SIZES = [1, 3, 6];
-
 const MAX_HISTORY = 20;
+const SHAPE_TOOLS = ['line', 'rect', 'rectFilled', 'ellipse', 'ellipseFilled'];
+
+// --- Pure drawing helpers (take everything they need as params, no closures
+// over React state, so they behave the same whether called from a fresh
+// event or a stale one). ---
+
+const hexToRgba = (hex) => [
+    parseInt(hex.slice(1, 3), 16),
+    parseInt(hex.slice(3, 5), 16),
+    parseInt(hex.slice(5, 7), 16),
+    255
+];
+
+const floodFill = (canvas, startX, startY, fillColorHex) => {
+    const ctx = canvas.getContext('2d');
+    const { width, height } = canvas;
+    if (startX < 0 || startX >= width || startY < 0 || startY >= height) return;
+
+    const imageData = ctx.getImageData(0, 0, width, height);
+    const data = imageData.data;
+    const idx = (x, y) => (y * width + x) * 4;
+    const startIdx = idx(startX, startY);
+    const target = [data[startIdx], data[startIdx + 1], data[startIdx + 2], data[startIdx + 3]];
+    const fill = hexToRgba(fillColorHex);
+
+    if (target[0] === fill[0] && target[1] === fill[1] && target[2] === fill[2] && target[3] === fill[3]) {
+        return;
+    }
+
+    const matches = (i) =>
+        data[i] === target[0] && data[i + 1] === target[1] && data[i + 2] === target[2] && data[i + 3] === target[3];
+
+    const stack = [[startX, startY]];
+    while (stack.length) {
+        const [x, y] = stack.pop();
+        if (x < 0 || x >= width || y < 0 || y >= height) continue;
+        const i = idx(x, y);
+        if (!matches(i)) continue;
+
+        data[i] = fill[0];
+        data[i + 1] = fill[1];
+        data[i + 2] = fill[2];
+        data[i + 3] = fill[3];
+
+        stack.push([x + 1, y]);
+        stack.push([x - 1, y]);
+        stack.push([x, y + 1]);
+        stack.push([x, y - 1]);
+    }
+
+    ctx.putImageData(imageData, 0, 0);
+};
+
+const paintShape = (ctx, tool, from, to) => {
+    if (tool === 'line') {
+        ctx.beginPath();
+        ctx.moveTo(from.x, from.y);
+        ctx.lineTo(to.x, to.y);
+        ctx.stroke();
+    } else if (tool === 'rect' || tool === 'rectFilled') {
+        const x = Math.min(from.x, to.x);
+        const y = Math.min(from.y, to.y);
+        const w = Math.abs(to.x - from.x);
+        const h = Math.abs(to.y - from.y);
+        if (tool === 'rectFilled') ctx.fillRect(x, y, w, h);
+        else ctx.strokeRect(x, y, w, h);
+    } else if (tool === 'ellipse' || tool === 'ellipseFilled') {
+        const cx = (from.x + to.x) / 2;
+        const cy = (from.y + to.y) / 2;
+        const rx = Math.abs(to.x - from.x) / 2;
+        const ry = Math.abs(to.y - from.y) / 2;
+        ctx.beginPath();
+        ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
+        if (tool === 'ellipseFilled') ctx.fill();
+        else ctx.stroke();
+    }
+};
+
+const drawShapePreview = (previewCanvas, tool, from, to, color, brushSize) => {
+    const ctx = previewCanvas.getContext('2d');
+    ctx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
+    ctx.strokeStyle = color;
+    ctx.fillStyle = color;
+    ctx.lineWidth = brushSize;
+    ctx.lineCap = 'round';
+    paintShape(ctx, tool, from, to);
+};
+
+const commitShape = (canvas, previewCanvas, tool, from, to, color, brushSize) => {
+    const ctx = canvas.getContext('2d');
+    ctx.strokeStyle = color;
+    ctx.fillStyle = color;
+    ctx.lineWidth = brushSize;
+    ctx.lineCap = 'round';
+    paintShape(ctx, tool, from, to);
+
+    previewCanvas.getContext('2d').clearRect(0, 0, previewCanvas.width, previewCanvas.height);
+};
 
 const Paint = () => {
     const canvasRef = useRef(null);
     const previewRef = useRef(null);
-    const containerRef = useRef(null);
+    const coordsElRef = useRef(null);
 
     const [tool, setTool] = useState('pencil');
     const [color, setColor] = useState('#000000');
     const [brushSize, setBrushSize] = useState(3);
-    const [isDrawing, setIsDrawing] = useState(false);
-    const [coords, setCoords] = useState({ x: 0, y: 0 });
-    const startPoint = useRef({ x: 0, y: 0 });
+
+    // Mirrors of the UI state, read by the imperative mouse handlers below
+    // (set up once on mount) so they always see the latest values without
+    // needing to be re-bound on every tool/color/size change.
+    const toolRef = useRef(tool);
+    const colorRef = useRef(color);
+    const brushSizeRef = useRef(brushSize);
+    useEffect(() => { toolRef.current = tool; }, [tool]);
+    useEffect(() => { colorRef.current = color; }, [color]);
+    useEffect(() => { brushSizeRef.current = brushSize; }, [brushSize]);
+
+    const isDrawingRef = useRef(false);
+    const startPointRef = useRef({ x: 0, y: 0 });
     const history = useRef([]);
+
+    const pushHistory = useCallback(() => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        history.current.push(canvas.toDataURL());
+        if (history.current.length > MAX_HISTORY) history.current.shift();
+    }, []);
 
     // Initialize canvas: white background
     useEffect(() => {
@@ -41,18 +155,92 @@ const Paint = () => {
         ctx.fillStyle = '#ffffff';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         pushHistory();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [pushHistory]);
+
+    const getPos = useCallback((clientX, clientY) => {
+        const canvas = canvasRef.current;
+        const rect = canvas.getBoundingClientRect();
+        return {
+            x: Math.round(((clientX - rect.left) / rect.width) * canvas.width),
+            y: Math.round(((clientY - rect.top) / rect.height) * canvas.height)
+        };
     }, []);
 
-    const pushHistory = useCallback(() => {
-        const canvas = canvasRef.current;
-        if (!canvas) return;
-        const snapshot = canvas.toDataURL();
-        history.current.push(snapshot);
-        if (history.current.length > MAX_HISTORY) {
-            history.current.shift();
-        }
-    }, []);
+    // Mouse handling lives entirely outside React state: mousemove/mouseup
+    // are bound on `window` (not just the canvas) so a stroke or shape drag
+    // that briefly leaves the small canvas area doesn't get silently
+    // dropped, and coordinates are written straight to the DOM instead of
+    // going through setState so drawing never triggers a re-render.
+    useEffect(() => {
+        const preview = previewRef.current;
+
+        const handleDown = (e) => {
+            const pos = getPos(e.clientX, e.clientY);
+            startPointRef.current = pos;
+            isDrawingRef.current = true;
+
+            const currentTool = toolRef.current;
+            if (currentTool === 'fill') {
+                floodFill(canvasRef.current, pos.x, pos.y, colorRef.current);
+                pushHistory();
+                isDrawingRef.current = false;
+                return;
+            }
+
+            if (currentTool === 'pencil' || currentTool === 'eraser') {
+                const ctx = canvasRef.current.getContext('2d');
+                ctx.strokeStyle = currentTool === 'eraser' ? '#ffffff' : colorRef.current;
+                ctx.lineWidth = currentTool === 'eraser' ? brushSizeRef.current * 3 : brushSizeRef.current;
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+                ctx.beginPath();
+                ctx.moveTo(pos.x, pos.y);
+                ctx.lineTo(pos.x, pos.y);
+                ctx.stroke();
+            }
+        };
+
+        const handleMove = (e) => {
+            const pos = getPos(e.clientX, e.clientY);
+            if (coordsElRef.current) {
+                coordsElRef.current.textContent = `${pos.x}, ${pos.y}`;
+            }
+            if (!isDrawingRef.current) return;
+
+            const currentTool = toolRef.current;
+            if (currentTool === 'pencil' || currentTool === 'eraser') {
+                const ctx = canvasRef.current.getContext('2d');
+                ctx.lineTo(pos.x, pos.y);
+                ctx.stroke();
+            } else if (SHAPE_TOOLS.includes(currentTool)) {
+                drawShapePreview(previewRef.current, currentTool, startPointRef.current, pos, colorRef.current, brushSizeRef.current);
+            }
+        };
+
+        const handleUp = (e) => {
+            if (!isDrawingRef.current) return;
+            isDrawingRef.current = false;
+
+            const currentTool = toolRef.current;
+            if (SHAPE_TOOLS.includes(currentTool)) {
+                const pos = getPos(e.clientX, e.clientY);
+                commitShape(canvasRef.current, previewRef.current, currentTool, startPointRef.current, pos, colorRef.current, brushSizeRef.current);
+            }
+            if (currentTool !== 'fill') {
+                pushHistory();
+            }
+        };
+
+        preview.addEventListener('mousedown', handleDown);
+        window.addEventListener('mousemove', handleMove);
+        window.addEventListener('mouseup', handleUp);
+
+        return () => {
+            preview.removeEventListener('mousedown', handleDown);
+            window.removeEventListener('mousemove', handleMove);
+            window.removeEventListener('mouseup', handleUp);
+        };
+    }, [getPos, pushHistory]);
 
     const handleUndo = () => {
         if (history.current.length <= 1) return;
@@ -87,186 +275,8 @@ const Paint = () => {
         document.body.removeChild(a);
     };
 
-    const getPos = (e) => {
-        const canvas = canvasRef.current;
-        const rect = canvas.getBoundingClientRect();
-        return {
-            x: Math.round(((e.clientX - rect.left) / rect.width) * canvas.width),
-            y: Math.round(((e.clientY - rect.top) / rect.height) * canvas.height)
-        };
-    };
-
-    // Flood fill (iterative, avoids stack overflow on big canvases)
-    const floodFill = (startX, startY, fillColorHex) => {
-        const canvas = canvasRef.current;
-        const ctx = canvas.getContext('2d');
-        const { width, height } = canvas;
-        const imageData = ctx.getImageData(0, 0, width, height);
-        const data = imageData.data;
-
-        const hexToRgba = (hex) => {
-            const r = parseInt(hex.slice(1, 3), 16);
-            const g = parseInt(hex.slice(3, 5), 16);
-            const b = parseInt(hex.slice(5, 7), 16);
-            return [r, g, b, 255];
-        };
-
-        const idx = (x, y) => (y * width + x) * 4;
-        const startIdx = idx(startX, startY);
-        const target = [data[startIdx], data[startIdx + 1], data[startIdx + 2], data[startIdx + 3]];
-        const fill = hexToRgba(fillColorHex);
-
-        if (target[0] === fill[0] && target[1] === fill[1] && target[2] === fill[2] && target[3] === fill[3]) {
-            return; // already that color
-        }
-
-        const matches = (i) =>
-            data[i] === target[0] && data[i + 1] === target[1] && data[i + 2] === target[2] && data[i + 3] === target[3];
-
-        const stack = [[startX, startY]];
-        while (stack.length) {
-            const [x, y] = stack.pop();
-            if (x < 0 || x >= width || y < 0 || y >= height) continue;
-            const i = idx(x, y);
-            if (!matches(i)) continue;
-
-            data[i] = fill[0];
-            data[i + 1] = fill[1];
-            data[i + 2] = fill[2];
-            data[i + 3] = fill[3];
-
-            stack.push([x + 1, y]);
-            stack.push([x - 1, y]);
-            stack.push([x, y + 1]);
-            stack.push([x, y - 1]);
-        }
-
-        ctx.putImageData(imageData, 0, 0);
-    };
-
-    const drawShapePreview = (from, to) => {
-        const preview = previewRef.current;
-        const ctx = preview.getContext('2d');
-        ctx.clearRect(0, 0, preview.width, preview.height);
-        ctx.strokeStyle = color;
-        ctx.fillStyle = color;
-        ctx.lineWidth = brushSize;
-        ctx.lineCap = 'round';
-
-        if (tool === 'line') {
-            ctx.beginPath();
-            ctx.moveTo(from.x, from.y);
-            ctx.lineTo(to.x, to.y);
-            ctx.stroke();
-        } else if (tool === 'rect' || tool === 'rectFilled') {
-            const x = Math.min(from.x, to.x);
-            const y = Math.min(from.y, to.y);
-            const w = Math.abs(to.x - from.x);
-            const h = Math.abs(to.y - from.y);
-            if (tool === 'rectFilled') ctx.fillRect(x, y, w, h);
-            else ctx.strokeRect(x, y, w, h);
-        } else if (tool === 'ellipse' || tool === 'ellipseFilled') {
-            const cx = (from.x + to.x) / 2;
-            const cy = (from.y + to.y) / 2;
-            const rx = Math.abs(to.x - from.x) / 2;
-            const ry = Math.abs(to.y - from.y) / 2;
-            ctx.beginPath();
-            ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
-            if (tool === 'ellipseFilled') ctx.fill();
-            else ctx.stroke();
-        }
-    };
-
-    const commitShape = (from, to) => {
-        const canvas = canvasRef.current;
-        const ctx = canvas.getContext('2d');
-        ctx.strokeStyle = color;
-        ctx.fillStyle = color;
-        ctx.lineWidth = brushSize;
-        ctx.lineCap = 'round';
-
-        if (tool === 'line') {
-            ctx.beginPath();
-            ctx.moveTo(from.x, from.y);
-            ctx.lineTo(to.x, to.y);
-            ctx.stroke();
-        } else if (tool === 'rect' || tool === 'rectFilled') {
-            const x = Math.min(from.x, to.x);
-            const y = Math.min(from.y, to.y);
-            const w = Math.abs(to.x - from.x);
-            const h = Math.abs(to.y - from.y);
-            if (tool === 'rectFilled') ctx.fillRect(x, y, w, h);
-            else ctx.strokeRect(x, y, w, h);
-        } else if (tool === 'ellipse' || tool === 'ellipseFilled') {
-            const cx = (from.x + to.x) / 2;
-            const cy = (from.y + to.y) / 2;
-            const rx = Math.abs(to.x - from.x) / 2;
-            const ry = Math.abs(to.y - from.y) / 2;
-            ctx.beginPath();
-            ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
-            if (tool === 'ellipseFilled') ctx.fill();
-            else ctx.stroke();
-        }
-
-        const preview = previewRef.current;
-        preview.getContext('2d').clearRect(0, 0, preview.width, preview.height);
-    };
-
-    const handleMouseDown = (e) => {
-        const pos = getPos(e);
-        startPoint.current = pos;
-        setIsDrawing(true);
-
-        if (tool === 'fill') {
-            floodFill(pos.x, pos.y, color);
-            pushHistory();
-            setIsDrawing(false);
-            return;
-        }
-
-        if (tool === 'pencil' || tool === 'eraser') {
-            const ctx = canvasRef.current.getContext('2d');
-            ctx.strokeStyle = tool === 'eraser' ? '#ffffff' : color;
-            ctx.lineWidth = tool === 'eraser' ? brushSize * 3 : brushSize;
-            ctx.lineCap = 'round';
-            ctx.lineJoin = 'round';
-            ctx.beginPath();
-            ctx.moveTo(pos.x, pos.y);
-            ctx.lineTo(pos.x, pos.y);
-            ctx.stroke();
-        }
-    };
-
-    const handleMouseMove = (e) => {
-        const pos = getPos(e);
-        setCoords(pos);
-        if (!isDrawing) return;
-
-        if (tool === 'pencil' || tool === 'eraser') {
-            const ctx = canvasRef.current.getContext('2d');
-            ctx.lineTo(pos.x, pos.y);
-            ctx.stroke();
-        } else if (['line', 'rect', 'rectFilled', 'ellipse', 'ellipseFilled'].includes(tool)) {
-            drawShapePreview(startPoint.current, pos);
-        }
-    };
-
-    const handleMouseUp = (e) => {
-        if (!isDrawing) return;
-        setIsDrawing(false);
-
-        if (['line', 'rect', 'rectFilled', 'ellipse', 'ellipseFilled'].includes(tool)) {
-            const pos = getPos(e);
-            commitShape(startPoint.current, pos);
-        }
-
-        if (tool !== 'fill') {
-            pushHistory();
-        }
-    };
-
     return (
-        <div className="paint-container" ref={containerRef}>
+        <div className="paint-container">
             <div className="paint-toolbar">
                 {TOOLS.map((t) => (
                     <button
@@ -325,17 +335,13 @@ const Paint = () => {
                         width={500}
                         height={350}
                         className="paint-canvas paint-preview-canvas"
-                        onMouseDown={handleMouseDown}
-                        onMouseMove={handleMouseMove}
-                        onMouseUp={handleMouseUp}
-                        onMouseLeave={() => isDrawing && setIsDrawing(false)}
                     />
                 </div>
             </div>
 
             <div className="paint-statusbar">
                 <span>Tool: {TOOLS.find((t) => t.id === tool)?.label}</span>
-                <span>{coords.x}, {coords.y}</span>
+                <span ref={coordsElRef}>0, 0</span>
             </div>
         </div>
     );

@@ -79,6 +79,8 @@
     padding: 4px;
     background: #c0c0c0;
     border-right: 1px solid #808080;
+    overflow-y: auto;
+    flex-shrink: 0;
 }
 
 .paint-current-color {
@@ -91,9 +93,9 @@
 
 .paint-palette-grid {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(4, 1fr);
     gap: 2px;
-    width: 36px;
+    width: 72px;
 }
 
 .paint-swatch {
@@ -126,6 +128,8 @@
 .paint-canvas {
     display: block;
     background: #fff;
+    border: 2px solid #000;
+    box-sizing: content-box;
 }
 
 .paint-preview-canvas {

@@ -147,7 +147,7 @@ const Desktop = ({
             content: <Paint />,
             x: 100,
             y: 190,
-            options: { width: '620px', height: '460px', minWidth: '500px', minHeight: '400px', bodyStyle: { padding: 0 } }
+            options: { width: '830px', height: '600px', minWidth: '750px', minHeight: '550px', bodyStyle: { padding: 0 } }
         },
         {
             id: 'messenger',

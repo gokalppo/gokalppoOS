@@ -329,11 +329,11 @@ const Paint = () => {
                 </div>
 
                 <div className="paint-canvas-wrapper">
-                    <canvas ref={canvasRef} width={500} height={350} className="paint-canvas" />
+                    <canvas ref={canvasRef} width={700} height={480} className="paint-canvas" />
                     <canvas
                         ref={previewRef}
-                        width={500}
-                        height={350}
+                        width={700}
+                        height={480}
                         className="paint-canvas paint-preview-canvas"
                     />
                 </div>

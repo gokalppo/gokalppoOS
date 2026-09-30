@@ -144,7 +144,12 @@ const Terminal = () => {
                     "  date     - Show current date/time",
                     "  ls       - List desktop apps",
                     "  matrix   - Enter the matrix",
-                    "  neofetch - System Information"
+                    "  neofetch - System Information",
+                    "  github   - Open my GitHub profile",
+                    "  linkedin - Open my LinkedIn profile",
+                    "  projects - List my projects",
+                    "  contact  - Show contact info",
+                    "  resume   - Open my resume"
                 ];
                 break;
             case 'about':
@@ -154,7 +159,56 @@ const Terminal = () => {
                     "-----------------------------",
                     "A passionate developer bringing",
                     "nostalgia back to the web.",
-                    "GitHub: @gokalppo (Simulated)"
+                    "Type 'github' or 'linkedin' to",
+                    "see the real thing."
+                ];
+                break;
+            case 'github':
+                window.open('https://github.com/gokalppo', '_blank', 'noopener,noreferrer');
+                output = ["Opening https://github.com/gokalppo ..."];
+                break;
+            case 'linkedin':
+                window.open('https://www.linkedin.com/in/gokalp-eker/', '_blank', 'noopener,noreferrer');
+                output = ["Opening https://www.linkedin.com/in/gokalp-eker/ ..."];
+                break;
+            case 'resume':
+            case 'cv':
+                window.open('/resume.pdf', '_blank', 'noopener,noreferrer');
+                output = ["Opening resume.pdf ..."];
+                break;
+            case 'contact':
+                output = [
+                    "-----------------------------",
+                    " CONTACT",
+                    "-----------------------------",
+                    "Email:     ekergokalp@gmail.com",
+                    "GitHub:    github.com/gokalppo",
+                    "LinkedIn:  linkedin.com/in/gokalp-eker",
+                    "Instagram: instagram.com/_gokalpeker"
+                ];
+                break;
+            case 'projects':
+                output = [
+                    "-----------------------------",
+                    " PROJECTS (see also: Gallery)",
+                    "-----------------------------",
+                    "1. IoT Smart Air Quality",
+                    "   ESP32, MQ-135, DHT22 — real-time air",
+                    "   quality + temp/humidity monitoring,",
+                    "   WebSocket streaming, retro LCD UI.",
+                    "",
+                    "2. Hardware TOTP Token",
+                    "   Physical 2FA device from scratch —",
+                    "   OLED display, secure key storage,",
+                    "   battery powered.",
+                    "",
+                    "3. Document Scanner",
+                    "   C++ / OpenCV — corner detection,",
+                    "   perspective correction, OCR.",
+                    "",
+                    "4. AI Image Detector",
+                    "   ResNet18 model detecting AI-generated",
+                    "   images at 99.97% accuracy, Gradio UI."
                 ];
                 break;
             case 'clear':

@@ -115,3 +115,17 @@
     background: #000080;
     color: white;
 }
+
+.app-loading-spinner {
+    width: 14px;
+    height: 14px;
+    border: 2px solid #c0c0c0;
+    border-top-color: #000080;
+    border-radius: 50%;
+    animation: app-loading-spin 0.7s linear infinite;
+    display: inline-block;
+}
+
+@keyframes app-loading-spin {
+    to { transform: rotate(360deg); }
+}

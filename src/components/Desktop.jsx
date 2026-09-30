@@ -1,17 +1,21 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, lazy, Suspense } from 'react';
 import Draggable from 'react-draggable';
 import Taskbar from './Taskbar';
 import Window from './Window';
-import Notepad from './apps/Notepad';
-import Minesweeper from './apps/Minesweeper';
-import MusicPlayer from './apps/MusicPlayer';
-import Terminal from './apps/Terminal';
 import PlaceholderApp from './apps/PlaceholderApp';
-import Gallery from './apps/Gallery';
 import Contact from './apps/Contact';
 import MyResume from './apps/MyResume';
-import Paint from './apps/Paint';
-import FileExplorer from './apps/FileExplorer';
+
+// Code-split the heavier/less-immediately-needed apps (and anything pulling
+// in Firebase) into their own chunks, fetched only when their window is
+// actually opened instead of bloating the initial bundle everyone pays for.
+const Notepad = lazy(() => import('./apps/Notepad'));
+const Minesweeper = lazy(() => import('./apps/Minesweeper'));
+const MusicPlayer = lazy(() => import('./apps/MusicPlayer'));
+const Terminal = lazy(() => import('./apps/Terminal'));
+const Gallery = lazy(() => import('./apps/Gallery'));
+const Paint = lazy(() => import('./apps/Paint'));
+const FileExplorer = lazy(() => import('./apps/FileExplorer'));
 // ... (keep other imports)
 // ...
 
@@ -30,8 +34,22 @@ import resumeIcon from '../assets/images/resume.png';
 import messengerIcon from '../assets/images/msn.png';
 import paintIcon from '../assets/images/paint.png';
 
-import Messenger from './apps/messenger/MessengerContainer';
-import VisitorCounter from './VisitorCounter';
+const Messenger = lazy(() => import('./apps/messenger/MessengerContainer'));
+// Pulls in Firebase (auth + database) just to show a hit counter — split
+// into its own chunk instead of forcing every visitor to download Firebase
+// before the desktop can even render.
+const VisitorCounter = lazy(() => import('./VisitorCounter'));
+
+const AppLoadingFallback = () => (
+    <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        height: '100%', width: '100%', fontFamily: 'gokalppoOS, sans-serif',
+        fontSize: '13px', color: '#404040', gap: '8px'
+    }}>
+        <span className="app-loading-spinner" />
+        Loading...
+    </div>
+);
 
 const ICON_POSITIONS_KEY = 'gokalppoOS_iconPositions';
 const RESET_ANIMATION_MS = 350;
@@ -199,6 +217,15 @@ const Desktop = ({
     const [isDraggingGroup, setIsDraggingGroup] = useState(false);
     const [desktopContextMenu, setDesktopContextMenu] = useState(null);
     const [isResetAnimating, setIsResetAnimating] = useState(false);
+
+    // Delay mounting the visitor counter slightly so the (Firebase-backed)
+    // chunk it pulls in downloads after the desktop has already rendered,
+    // instead of competing with it on first paint.
+    const [showVisitorCounter, setShowVisitorCounter] = useState(false);
+    useEffect(() => {
+        const timer = setTimeout(() => setShowVisitorCounter(true), 1500);
+        return () => clearTimeout(timer);
+    }, []);
 
     // Nudge & Notification State
     const [shakingWindowId, setShakingWindowId] = useState(null);
@@ -432,7 +459,11 @@ const Desktop = ({
                 </div>
             )}
 
-            <VisitorCounter />
+            {showVisitorCounter && (
+                <Suspense fallback={null}>
+                    <VisitorCounter />
+                </Suspense>
+            )}
 
             <div className="desktop-icons-container">
                 {icons.map(app => (
@@ -467,8 +498,10 @@ const Desktop = ({
                     className={shakingWindowId === win.id ? 'window-shake' : ''}
                     icon={win.icon}
                 >
-                    {/* SAFELY RENDER CONTENT */}
-                    {win.content ? win.content : <div style={{ padding: '20px' }}>Content Loading Error...</div>}
+                    {/* SAFELY RENDER CONTENT — lazy-loaded apps resolve inside this boundary */}
+                    <Suspense fallback={<AppLoadingFallback />}>
+                        {win.content ? win.content : <div style={{ padding: '20px' }}>Content Loading Error...</div>}
+                    </Suspense>
                 </Window>
             ))}
 

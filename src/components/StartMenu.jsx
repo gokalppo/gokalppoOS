@@ -1,17 +1,17 @@
+import { lazy } from 'react';
 import './StartMenu.css';
 import documentsIcon from '../assets/images/documents.png';
 import findIcon from '../assets/images/find.png';
 import helpIcon from '../assets/images/help.png';
 import keyIcon from '../assets/images/admin.png';
-import OutlookExpress from './apps/OutlookExpress';
 
+// Pulls in @emailjs/browser + Firebase — split into its own chunk so it's
+// only fetched if the user actually opens "New Message".
+const OutlookExpress = lazy(() => import('./apps/OutlookExpress'));
 
 const StartMenu = ({ isOpen, onClose, onLaunch, onShutdown }) => {
 
   if (!isOpen) return null;
-
-  /* DEBUG CHECK */
-  console.log("OutlookExpress Import Check:", OutlookExpress);
 
   const handleLaunch = (title, content, options = {}) => {
     // onLaunch is mapped to handleIconClick from App.jsx -> Desktop -> Taskbar -> StartMenu

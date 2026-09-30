@@ -1,4 +1,5 @@
 .fe-container {
+    position: relative;
     display: flex;
     flex-direction: column;
     height: 100%;
@@ -115,7 +116,7 @@
 }
 
 .fe-context-menu {
-    position: fixed;
+    position: absolute;
     background: #c0c0c0;
     border: 2px solid;
     border-color: #fff #404040 #404040 #fff;

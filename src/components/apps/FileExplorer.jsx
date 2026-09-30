@@ -17,6 +17,7 @@ const FileExplorer = ({ rootId, onOpenFile }) => {
     const [renamingId, setRenamingId] = useState(null);
     const [renameValue, setRenameValue] = useState('');
     const renameInputRef = useRef(null);
+    const containerRef = useRef(null);
 
     const currentFolder = getNode(currentFolderId);
     const children = getChildren(currentFolderId);
@@ -47,18 +48,26 @@ const FileExplorer = ({ rootId, onOpenFile }) => {
         }
     };
 
+    // react-draggable applies a CSS transform to the window this is rendered
+    // inside, which creates a new containing block for position:fixed
+    // descendants — so a fixed menu positioned with raw clientX/Y ends up
+    // offset by the window's own position instead of the viewport. Position
+    // the menu relative to this container instead (position:absolute + a
+    // coordinate computed from the container's own bounding rect).
     const handleBackgroundContextMenu = (e) => {
         e.preventDefault();
         if (isRecycleBin) return; // No "New" actions inside the Recycle Bin.
         setSelectedId(null);
-        setContextMenu({ x: e.clientX, y: e.clientY, targetId: null });
+        const rect = containerRef.current.getBoundingClientRect();
+        setContextMenu({ x: e.clientX - rect.left, y: e.clientY - rect.top, targetId: null });
     };
 
     const handleItemContextMenu = (e, node) => {
         e.preventDefault();
         e.stopPropagation();
         setSelectedId(node.id);
-        setContextMenu({ x: e.clientX, y: e.clientY, targetId: node.id });
+        const rect = containerRef.current.getBoundingClientRect();
+        setContextMenu({ x: e.clientX - rect.left, y: e.clientY - rect.top, targetId: node.id });
     };
 
     const startRename = (node) => {
@@ -113,7 +122,7 @@ const FileExplorer = ({ rootId, onOpenFile }) => {
     const iconFor = (node) => (node.type === 'folder' ? folderIcon : notepadIcon);
 
     return (
-        <div className="fe-container" onClick={closeMenu}>
+        <div className="fe-container" ref={containerRef} onClick={closeMenu}>
             <div className="fe-toolbar">
                 <button className="fe-up-btn" onClick={handleUp} disabled={!currentFolder?.parentId} title="Up">⬆</button>
                 <div className="fe-path">{path.map((n) => n.name).join(' \\ ')}</div>

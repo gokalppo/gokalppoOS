@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useOS } from './context/OSContext';
 import Desktop from './components/Desktop';
 import Window from './components/Window'; // Eksik olan buydu!
@@ -14,7 +14,15 @@ function App() {
   const [isShuttingDown, setIsShuttingDown] = useState(false); // Shutdown state
   const [openWindows, setOpenWindows] = useState([]);
   const [focusedWindowId, setFocusedWindowId] = useState(null);
-  const [zIndexCounter, setZIndexCounter] = useState(1000); // Yüksek değerle başlattık
+  // A plain ref (not state) so the "next" z-index is always synchronously
+  // correct even when two focus events fire back-to-back (e.g. a double
+  // click) before React re-renders — a state-closure value here caused
+  // windows to sometimes not come to front or open behind another window.
+  const zIndexCounterRef = useRef(1000);
+  const getNextZIndex = () => {
+    zIndexCounterRef.current += 1;
+    return zIndexCounterRef.current;
+  };
   const [isStartOpen, setIsStartOpen] = useState(false);
   const { volume } = useOS(); // Use Global Volume from Context
 
@@ -28,8 +36,7 @@ function App() {
 
   const handleWindowFocus = (id) => {
     setFocusedWindowId(id);
-    const newZ = zIndexCounter + 1;
-    setZIndexCounter(newZ);
+    const newZ = getNextZIndex();
     setOpenWindows((prev) =>
       prev.map((win) =>
         win.id === id ? { ...win, zIndex: newZ, isMinimized: false } : win
@@ -47,8 +54,7 @@ function App() {
       return;
     }
 
-    const newZ = zIndexCounter + 1;
-    setZIndexCounter(newZ);
+    const newZ = getNextZIndex();
     setFocusedWindowId(id);
 
     const newWindow = {

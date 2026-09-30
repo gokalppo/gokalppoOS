@@ -33,8 +33,9 @@ import Messenger from './apps/messenger/MessengerContainer';
 import VisitorCounter from './VisitorCounter';
 
 const ICON_POSITIONS_KEY = 'gokalppoOS_iconPositions';
+const RESET_ANIMATION_MS = 350;
 
-const DesktopIcon = ({ id, title, icon, position, isSelected, onDoubleClick, onDrag, onStop, onClick }) => {
+const DesktopIcon = ({ id, title, icon, position, isSelected, isAnimating, onDoubleClick, onDrag, onStop, onClick }) => {
     const nodeRef = useRef(null);
     const lastClickRef = useRef(0);
 
@@ -66,7 +67,7 @@ const DesktopIcon = ({ id, title, icon, position, isSelected, onDoubleClick, onD
         >
             <div
                 ref={nodeRef}
-                className={`desktop-icon-draggable ${isSelected ? 'selected' : ''}`}
+                className={`desktop-icon-draggable ${isSelected ? 'selected' : ''} ${isAnimating ? 'resetting' : ''}`}
                 onClick={handleClick}
                 // Stop propagation onMouseDown to prevent desktop selection start when clicking icon
                 onMouseDown={(e) => { e.stopPropagation(); onClick(e); }}
@@ -185,6 +186,7 @@ const Desktop = ({
     const [selection, setSelection] = useState(null);
     const [isDraggingGroup, setIsDraggingGroup] = useState(false);
     const [desktopContextMenu, setDesktopContextMenu] = useState(null);
+    const [isResetAnimating, setIsResetAnimating] = useState(false);
 
     // Nudge & Notification State
     const [shakingWindowId, setShakingWindowId] = useState(null);
@@ -363,15 +365,25 @@ const Desktop = ({
         });
     };
 
-    // RESET LOGIC: restore every icon to its default position.
+    // RESET LOGIC: restore every icon to its default position, animated.
     const handleResetIconPositions = () => {
-        setIcons(initialApps);
+        setIsResetAnimating(true);
         try {
             localStorage.removeItem(ICON_POSITIONS_KEY);
         } catch {
             // localStorage unavailable — nothing to clean up.
         }
         setDesktopContextMenu(null);
+
+        // Let the "resetting" (transition-enabled) class actually paint
+        // before the positions change — if both land in the same React
+        // commit, the browser has no "before" frame to transition from and
+        // just snaps instantly instead of animating.
+        setTimeout(() => setIcons(initialApps), 20);
+
+        // Drop the transition class once the CSS animation has finished, so
+        // normal dragging stays instant (no lag following the cursor).
+        setTimeout(() => setIsResetAnimating(false), RESET_ANIMATION_MS + 50);
     };
 
     const handleDesktopContextMenu = (e) => {
@@ -419,6 +431,7 @@ const Desktop = ({
                         icon={app.icon}
                         position={{ x: app.x, y: app.y }}
                         isSelected={selectedIconIds?.includes(app.id)}
+                        isAnimating={isResetAnimating}
                         onDoubleClick={() => onOpenWindow(app.title, app.content, { icon: app.icon, ...app.options })}
                         onDrag={handleIconDrag}
                         onStop={persistIconPositions}

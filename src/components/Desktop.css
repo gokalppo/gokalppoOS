@@ -52,6 +52,13 @@
 
 /* Vertical layout rules removed - handled by JS state */
 
+/* Applied only while "Arrange Icons" is animating icons back to their
+   default spots — kept off during normal dragging so the icon doesn't lag
+   behind the cursor. */
+.desktop-icon-draggable.resetting {
+    transition: transform 0.35s ease;
+}
+
 .desktop-icon-draggable.selected .icon-text {
     background-color: var(--win-blue);
     color: white;

@@ -173,8 +173,18 @@ const Desktop = ({
         }
     });
     const [selectedIconIds, setSelectedIconIds] = useState([]);
+    // Mirrors selectedIconIds synchronously. React's own state update can lag
+    // behind react-draggable's mousedown->onDrag sequence by a tick, so drag
+    // logic reads this ref instead of the state to avoid dragging whatever
+    // was selected a moment ago.
+    const selectedIconIdsRef = useRef([]);
+    const updateSelectedIconIds = (ids) => {
+        selectedIconIdsRef.current = ids;
+        setSelectedIconIds(ids);
+    };
     const [selection, setSelection] = useState(null);
     const [isDraggingGroup, setIsDraggingGroup] = useState(false);
+    const [desktopContextMenu, setDesktopContextMenu] = useState(null);
 
     // Nudge & Notification State
     const [shakingWindowId, setShakingWindowId] = useState(null);
@@ -211,9 +221,11 @@ const Desktop = ({
 
     // SELECTION BOX LOGIC
     const handleDesktopMouseDown = (e) => {
+        if (desktopContextMenu) setDesktopContextMenu(null);
+
         // Clear selection if clicking on desktop
         if (e.target.className === 'desktop' || e.target.className === 'desktop-icons-container') {
-            setSelectedIconIds([]);
+            updateSelectedIconIds([]);
             setSelection({
                 startX: e.clientX,
                 startY: e.clientY,
@@ -260,7 +272,7 @@ const Desktop = ({
             );
         }).map(icon => icon.id);
 
-        setSelectedIconIds(newSelectedIds);
+        updateSelectedIconIds(newSelectedIds);
     };
 
     const handleDesktopMouseUp = () => {
@@ -313,8 +325,8 @@ const Desktop = ({
 
         // However, if we are dragging, we don't want to deselect others if the clicked one was already selected.
         // We handle selection logic in onMouseDown of icon usually or onClick.
-        if (!selectedIconIds.includes(id)) {
-            setSelectedIconIds([id]);
+        if (!selectedIconIdsRef.current.includes(id)) {
+            updateSelectedIconIds([id]);
         }
     };
 
@@ -322,9 +334,15 @@ const Desktop = ({
     const handleIconDrag = (id, data) => {
         const { deltaX, deltaY } = data;
 
+        // Read the ref (always current) rather than the closed-over state,
+        // and make sure the icon actually being dragged always moves even if
+        // the selection update for it hasn't committed yet — this is what
+        // caused "wrong icon drags" and "snaps back" bugs.
+        const currentSelection = selectedIconIdsRef.current;
+        const activeIds = currentSelection.includes(id) ? currentSelection : [id];
+
         setIcons(prevIcons => prevIcons.map(icon => {
-            // Apply delta to ALL selected icons
-            if (selectedIconIds.includes(icon.id)) {
+            if (activeIds.includes(icon.id)) {
                 return { ...icon, x: icon.x + deltaX, y: icon.y + deltaY };
             }
             return icon;
@@ -345,16 +363,49 @@ const Desktop = ({
         });
     };
 
+    // RESET LOGIC: restore every icon to its default position.
+    const handleResetIconPositions = () => {
+        setIcons(initialApps);
+        try {
+            localStorage.removeItem(ICON_POSITIONS_KEY);
+        } catch {
+            // localStorage unavailable — nothing to clean up.
+        }
+        setDesktopContextMenu(null);
+    };
+
+    const handleDesktopContextMenu = (e) => {
+        // Only show this on empty desktop space, not on top of an icon/window.
+        if (e.target.className === 'desktop' || e.target.className === 'desktop-icons-container') {
+            e.preventDefault();
+            setDesktopContextMenu({ x: e.clientX, y: e.clientY });
+        }
+    };
+
     return (
         <div
             className="desktop"
             style={{ backgroundImage: `url(${wallpaper})` }}
             onMouseDown={handleDesktopMouseDown}
             onMouseMove={handleDesktopMouseMove}
+            onContextMenu={handleDesktopContextMenu}
             onMouseUp={handleDesktopMouseUp}
         >
             {selection && (
                 <div className="selection-box" style={getSelectionBoxStyle()}></div>
+            )}
+
+            {desktopContextMenu && (
+                <div
+                    className="desktop-context-menu"
+                    style={{ left: desktopContextMenu.x, top: desktopContextMenu.y }}
+                    onClick={(e) => e.stopPropagation()}
+                    onMouseDown={(e) => e.stopPropagation()}
+                >
+                    <div className="desktop-context-item" onClick={handleResetIconPositions}>
+                        Arrange Icons (Reset Positions)
+                    </div>
+                </div>
             )}
 
             <VisitorCounter />

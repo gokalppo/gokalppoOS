@@ -85,3 +85,26 @@
     font-family: 'gokalppoOS', sans-serif;
     line-height: 1.2;
 }
+.desktop-context-menu {
+    position: fixed;
+    background: #c0c0c0;
+    border: 2px solid;
+    border-color: #fff #404040 #404040 #fff;
+    padding: 2px;
+    z-index: 10001;
+    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.5);
+    min-width: 200px;
+}
+
+.desktop-context-item {
+    padding: 4px 8px;
+    font-size: 11px;
+    font-family: 'Pixel', sans-serif;
+    cursor: pointer;
+    color: black;
+}
+
+.desktop-context-item:hover {
+    background: #000080;
+    color: white;
+}

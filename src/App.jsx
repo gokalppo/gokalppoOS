@@ -6,6 +6,7 @@ import BootScreen from './components/BootScreen';
 import AssetLoader from './components/AssetLoader';
 import ScreenSaver from './components/ScreenSaver';
 import BSOD from './components/BSOD';
+import Clippy from './components/Clippy';
 import './App.css';
 import shutdownSound from './assets/windows98shutdown.mp3';
 import windowsLogo from './assets/images/windows.png';
@@ -111,6 +112,7 @@ function App() {
 
           <ScreenSaver />
           <BSOD />
+          <Clippy openWindows={openWindows} focusedWindowId={focusedWindowId} />
 
           {/* BACKGROUND SHUTDOWN SCREEN */}
           {isShuttingDown && (

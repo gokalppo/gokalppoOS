@@ -3,11 +3,14 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.jsx'
 import { OSProvider } from './context/OSContext';
+import { FileSystemProvider } from './context/FileSystemContext';
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <OSProvider>
-      <App />
+      <FileSystemProvider>
+        <App />
+      </FileSystemProvider>
     </OSProvider>
   </StrictMode>,
 )

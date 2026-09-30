@@ -1,0 +1,138 @@
+.fe-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    width: 100%;
+    background: white;
+    font-family: 'MS Sans Serif', sans-serif;
+    font-size: 11px;
+    color: black;
+    user-select: none;
+}
+
+.fe-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 6px;
+    background: #c0c0c0;
+    border-bottom: 1px solid #808080;
+    flex-shrink: 0;
+}
+
+.fe-up-btn {
+    background: #c0c0c0;
+    border: 1px solid;
+    border-color: #fff #808080 #808080 #fff;
+    cursor: pointer;
+    padding: 2px 6px;
+    font-size: 12px;
+}
+
+.fe-up-btn:disabled {
+    color: #808080;
+    cursor: default;
+}
+
+.fe-path {
+    flex: 1;
+    background: white;
+    border: 1px inset #808080;
+    padding: 2px 6px;
+    font-size: 11px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.fe-empty-btn {
+    background: #c0c0c0;
+    border: 1px solid;
+    border-color: #fff #808080 #808080 #fff;
+    cursor: pointer;
+    padding: 2px 8px;
+    font-size: 11px;
+    flex-shrink: 0;
+}
+
+.fe-body {
+    flex: 1;
+    overflow: auto;
+    padding: 8px;
+    display: flex;
+    flex-wrap: wrap;
+    align-content: flex-start;
+    gap: 4px;
+}
+
+.fe-empty-msg {
+    color: #808080;
+    font-style: italic;
+    padding: 20px;
+}
+
+.fe-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 80px;
+    padding: 6px 2px;
+    cursor: pointer;
+    border: 1px dashed transparent;
+    text-align: center;
+}
+
+.fe-item.selected {
+    background: #000080;
+    border: 1px dashed #fff;
+}
+
+.fe-item.selected .fe-item-name {
+    color: white;
+}
+
+.fe-item-icon {
+    width: 32px;
+    height: 32px;
+    margin-bottom: 4px;
+    pointer-events: none;
+}
+
+.fe-item-name {
+    font-size: 11px;
+    word-break: break-word;
+    line-height: 1.2;
+    pointer-events: none;
+}
+
+.fe-rename-input {
+    width: 100%;
+    font-size: 11px;
+    font-family: 'MS Sans Serif', sans-serif;
+    border: 1px solid #000080;
+    padding: 1px 2px;
+    text-align: center;
+}
+
+.fe-context-menu {
+    position: fixed;
+    background: #c0c0c0;
+    border: 2px solid;
+    border-color: #fff #404040 #404040 #fff;
+    padding: 2px;
+    z-index: 10001;
+    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.5);
+    min-width: 160px;
+}
+
+.fe-context-item {
+    padding: 4px 8px;
+    font-size: 11px;
+    cursor: pointer;
+    color: black;
+}
+
+.fe-context-item:hover {
+    background: #000080;
+    color: white;
+}

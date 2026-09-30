@@ -87,3 +87,100 @@
     box-sizing: border-box;
     /* Crucial for width: 100% + border */
 }
+.notepad-filename {
+    margin-left: auto;
+    padding: 2px 8px;
+    font-size: 11px;
+    color: #404040;
+    font-family: 'gokalppoOS', sans-serif;
+    align-self: center;
+}
+
+.notepad-modal-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9998;
+}
+
+.notepad-open-dialog {
+    width: 90%;
+    height: 80%;
+    max-width: 500px;
+    background: var(--win-gray);
+    border: 2px solid;
+    border-color: #fff #404040 #404040 #fff;
+    box-shadow: 3px 3px 8px rgba(0, 0, 0, 0.5);
+    display: flex;
+    flex-direction: column;
+}
+
+.notepad-saveas-dialog {
+    width: 320px;
+    background: var(--win-gray);
+    border: 2px solid;
+    border-color: #fff #404040 #404040 #fff;
+    box-shadow: 3px 3px 8px rgba(0, 0, 0, 0.5);
+}
+
+.notepad-dialog-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--win-blue);
+    color: white;
+    padding: 3px 6px;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.notepad-dialog-close {
+    background: #c0c0c0;
+    border: 1px outset white;
+    cursor: pointer;
+    font-size: 10px;
+    line-height: 1;
+}
+
+.notepad-dialog-body {
+    flex: 1;
+    overflow: hidden;
+    display: flex;
+}
+
+.notepad-saveas-body {
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 11px;
+    font-family: 'gokalppoOS', sans-serif;
+}
+
+.notepad-saveas-input {
+    padding: 3px 4px;
+    font-size: 12px;
+    border: 1px inset #808080;
+}
+
+.notepad-saveas-actions {
+    display: flex;
+    gap: 6px;
+    justify-content: flex-end;
+    margin-top: 8px;
+}
+
+.notepad-saveas-actions button {
+    background: #c0c0c0;
+    border: 1px solid;
+    border-color: #fff #404040 #404040 #fff;
+    padding: 3px 14px;
+    cursor: pointer;
+    font-size: 11px;
+}

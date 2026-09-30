@@ -11,6 +11,7 @@ import Gallery from './apps/Gallery';
 import Contact from './apps/Contact';
 import MyResume from './apps/MyResume';
 import Paint from './apps/Paint';
+import FileExplorer from './apps/FileExplorer';
 // ... (keep other imports)
 // ...
 
@@ -90,22 +91,33 @@ const Desktop = ({
     onShutdown // Receive here
 }) => {
     // Initial App Data
+    // Opens a .txt file from the file system in its own Notepad window.
+    const handleOpenFile = (node) => {
+        if (node.name.toLowerCase().endsWith('.txt')) {
+            onOpenWindow(node.name, <Notepad initialFileId={node.id} />, {
+                icon: <img src={notepadIcon} alt="Notepad" style={{ width: '32px', height: '32px' }} />
+            });
+        }
+    };
+
     const initialApps = [
         {
             id: 'computer',
             title: 'My Computer',
             icon: <img src={computerIcon} alt="My Computer" style={{ width: '32px', height: '32px' }} />,
-            content: <PlaceholderApp text="My Computer Content" />,
+            content: <FileExplorer rootId="root" onOpenFile={handleOpenFile} />,
             x: 10,
-            y: 10
+            y: 10,
+            options: { width: '480px', height: '380px', minWidth: '360px', minHeight: '280px', bodyStyle: { padding: 0 } }
         },
         {
             id: 'recycle',
             title: 'Recycle Bin',
             icon: <img src={binEmptyIcon} alt="Recycle Bin" style={{ width: '32px', height: '32px' }} />,
-            content: <PlaceholderApp text="Recycle Bin Empty" />,
+            content: <FileExplorer rootId="recycle" onOpenFile={handleOpenFile} />,
             x: 10,
-            y: 100
+            y: 100,
+            options: { width: '480px', height: '380px', minWidth: '360px', minHeight: '280px', bodyStyle: { padding: 0 } }
         },
         {
             id: 'notepad',

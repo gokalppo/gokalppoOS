@@ -32,6 +32,8 @@ import paintIcon from '../assets/images/paint.png';
 import Messenger from './apps/messenger/MessengerContainer';
 import VisitorCounter from './VisitorCounter';
 
+const ICON_POSITIONS_KEY = 'gokalppoOS_iconPositions';
+
 const DesktopIcon = ({ id, title, icon, position, isSelected, onDoubleClick, onDrag, onStop, onClick }) => {
     const nodeRef = useRef(null);
     const lastClickRef = useRef(0);
@@ -160,7 +162,16 @@ const Desktop = ({
         },
     ];
 
-    const [icons, setIcons] = useState(initialApps);
+    const [icons, setIcons] = useState(() => {
+        try {
+            const saved = JSON.parse(localStorage.getItem(ICON_POSITIONS_KEY) || '{}');
+            return initialApps.map((app) =>
+                saved[app.id] ? { ...app, x: saved[app.id].x, y: saved[app.id].y } : app
+            );
+        } catch {
+            return initialApps;
+        }
+    });
     const [selectedIconIds, setSelectedIconIds] = useState([]);
     const [selection, setSelection] = useState(null);
     const [isDraggingGroup, setIsDraggingGroup] = useState(false);
@@ -320,6 +331,20 @@ const Desktop = ({
         }));
     };
 
+    // Persist positions once the drag ends (not on every onDrag tick).
+    const persistIconPositions = () => {
+        setIcons((prev) => {
+            try {
+                const positions = {};
+                prev.forEach((icon) => { positions[icon.id] = { x: icon.x, y: icon.y }; });
+                localStorage.setItem(ICON_POSITIONS_KEY, JSON.stringify(positions));
+            } catch {
+                // localStorage unavailable (private mode, quota, etc.) — fail silently.
+            }
+            return prev;
+        });
+    };
+
     return (
         <div
             className="desktop"
@@ -345,7 +370,7 @@ const Desktop = ({
                         isSelected={selectedIconIds?.includes(app.id)}
                         onDoubleClick={() => onOpenWindow(app.title, app.content, { icon: app.icon, ...app.options })}
                         onDrag={handleIconDrag}
-                        onStop={() => { }}
+                        onStop={persistIconPositions}
                         onClick={(e) => handleIconClick(e, app.id)}
                     />
                 ))}

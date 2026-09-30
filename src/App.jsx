@@ -5,6 +5,7 @@ import Window from './components/Window'; // Eksik olan buydu!
 import BootScreen from './components/BootScreen';
 import AssetLoader from './components/AssetLoader';
 import ScreenSaver from './components/ScreenSaver';
+import BSOD from './components/BSOD';
 import './App.css';
 import shutdownSound from './assets/windows98shutdown.mp3';
 import windowsLogo from './assets/images/windows.png';
@@ -109,6 +110,7 @@ function App() {
           />
 
           <ScreenSaver />
+          <BSOD />
 
           {/* BACKGROUND SHUTDOWN SCREEN */}
           {isShuttingDown && (

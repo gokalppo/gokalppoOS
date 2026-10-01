@@ -49,6 +49,10 @@ const TIPS = {
         "CV'mi mi inceliyorsunuz? Umarım beğenirsiniz!",
         "Terminal'den 'resume' yazarak da açabilirsiniz."
     ],
+    systemproperties: [
+        "Hangi teknolojiyi hangi projede kullandığımı görmek için Device Manager sekmesine bakın.",
+        "Bir cihaza (teknolojiye) tıklayın, nerede kullanıldığı altta yazıyor."
+    ],
     musicplayer: [
         "Müzik mi dinliyorsunuz? İyi seçim.",
         "İpucu: Ses seviyesini taskbar'daki hoparlör ikonundan da ayarlayabilirsiniz."
@@ -57,7 +61,10 @@ const TIPS = {
         "Merhaba! Ben gokalppoOS'un asistanıyım. Bir simgeye çift tıklayarak başlayabilirsiniz.",
         "İpucu: Masaüstüne sağ tıklayıp ikonları düzenleyebilirsiniz.",
         "Gizli bir kod var: yön tuşları + B + A. Denemekten zarar gelmez.",
-        "Terminal'i açıp 'help' yazarsanız neler yapabileceğinizi görürsünüz."
+        "Terminal'i açıp 'help' yazarsanız neler yapabileceğinizi görürsünüz.",
+        "Pencereleri kenarlarından boyutlandırabilir, Alt + ` ile pencereler arasında geçebilirsiniz.",
+        "Hoparlör ikonuna tıklayıp 'System sounds' kutusunu işaretlerseniz sistem sesleri açılır.",
+        "Saate tıklarsanız takvim açılır."
     ]
 };
 

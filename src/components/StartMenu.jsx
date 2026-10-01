@@ -2,10 +2,12 @@ import { lazy } from 'react';
 import './StartMenu.css';
 import documentsIcon from '../assets/images/documents.png';
 import helpIcon from '../assets/images/help.png';
+import computerIcon from '../assets/images/This_PC_1995.svg';
 
 // Pulls in @emailjs/browser + Firebase — split into its own chunk so it's
 // only fetched if the user actually opens "New Message".
 const OutlookExpress = lazy(() => import('./apps/OutlookExpress'));
+const SystemProperties = lazy(() => import('./apps/SystemProperties'));
 
 const StartMenu = ({ isOpen, onClose, onLaunch, onShutdown }) => {
 
@@ -25,6 +27,13 @@ const StartMenu = ({ isOpen, onClose, onLaunch, onShutdown }) => {
         <span className="os-version">gokalppoOS</span>
       </div>
       <div className="start-content">
+        <div className="start-item" onClick={() => handleLaunch("System Properties", <SystemProperties />, {
+          width: '430px', height: '470px', minWidth: '430px', minHeight: '470px', resizable: false,
+          bodyStyle: { padding: 0 }, icon: <img src={computerIcon} alt="System Properties" />
+        })}>
+          <span className="icon"><img src={computerIcon} alt="" style={{ width: '24px' }} /></span>
+          <span className="label">System Properties</span>
+        </div>
         <div className="start-item" onClick={() => handleLaunch("Documents", <div>My Documents folder...</div>)}>
           <span className="icon"><img src={documentsIcon} alt="" style={{ width: '24px' }} /></span>
           <span className="label">Documents</span>

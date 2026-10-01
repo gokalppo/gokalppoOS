@@ -82,6 +82,7 @@ const HELP = {
         "  sl         - A steam locomotive",
         "  hack       - Look busy",
         "  fakeinstall - A fake installer",
+        "  love       - A little heart (love Ayşe adds a name)",
         "  sudo       - Try your luck",
         "Filters (work after a |, or on a file):",
         "  grep       - Keep matching lines (-i -v -c -n)",
@@ -142,6 +143,7 @@ const HELP = {
         "  sl         - Buharlı lokomotif",
         "  hack       - Meşgul görün",
         "  fakeinstall - Sahte yükleyici",
+        "  love       - Küçük bir kalp (love Ayşe isim ekler)",
         "  sudo       - Şansını dene",
         "Filtreler (| sonrasında veya bir dosyada çalışır):",
         "  grep       - Eşleşen satırları tut (-i -v -c -n)",
@@ -233,6 +235,9 @@ export const parseCommand = (raw) => {
 
 const text = (lines) => ({ type: 'text', lines });
 
+// `love Ayşe` puts a name under the heart; anything that is not a letter, space, hyphen or apostrophe is dropped.
+const cleanName = (value) => String(value).replace(/[^\p{L}\s'-]/gu, '').replace(/\s+/g, ' ').trim().slice(0, 24);
+
 // Result types: text | open | clear | matrix | neofetch | heart | crash | empty.
 // A text result may also carry `ops` (file-system changes), `cwd` (new folder), `appId` (program to open)
 // and `closeIds` (windows to close) for the Terminal to carry out.
@@ -286,7 +291,8 @@ export const executeCommand = (raw, now = new Date(), lang = 'en', env = {}) => 
             case 'cls': return { type: 'clear' };
             case 'matrix': return { type: 'matrix' };
             case 'neofetch': return { type: 'neofetch' };
-            case 'ece': return { type: 'heart' };
+            case 'love':
+            case 'kalp': return { type: 'heart', name: cleanName(args.join(' ')) };
             case 'crash': return { type: 'crash' };
             default:
                 return fsCommand(name, args, ctx)
@@ -309,7 +315,7 @@ export const executeCommand = (raw, now = new Date(), lang = 'en', env = {}) => 
 // Command names for Tab completion (the hidden easter eggs are left out).
 export const COMMAND_NAMES = [
     'help', 'about', 'clear', 'cls', 'date', 'echo', 'history', 'matrix', 'neofetch', 'github', 'linkedin',
-    'projects', 'contact', 'resume', 'cv', 'apps', 'start', 'open', 'tasklist', 'kill', 'taskkill', 'man', 'sudo',
+    'projects', 'contact', 'resume', 'cv', 'love', 'kalp', 'apps', 'start', 'open', 'tasklist', 'kill', 'taskkill', 'man', 'sudo',
     ...FS_COMMANDS, ...FILTER_COMMANDS, ...SYSTEM_COMMANDS
 ];
 

@@ -19,7 +19,7 @@ describe('normalizeEntry', () => {
 
 describe('validateEntry', () => {
     it('accepts a normal entry', () => {
-        expect(validateEntry({ name: 'Ece', message: 'Great site!' })).toEqual([]);
+        expect(validateEntry({ name: 'Ayşe', message: 'Great site!' })).toEqual([]);
     });
 
     it('requires both fields (whitespace does not count)', () => {

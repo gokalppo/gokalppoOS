@@ -261,3 +261,17 @@ describe('Terminal: streaming, sudo, themes', () => {
         expect(text).toMatch(/Theme:\s*green/);
     });
 });
+
+describe('Terminal: love', () => {
+    it('draws the heart with the name under it, in both languages of the caption', async () => {
+        vi.useFakeTimers();
+        setup();
+        run('love Ayşe');
+        for (let i = 0; i < 30; i++) await act(async () => { await vi.advanceTimersByTimeAsync(100); });
+        expect(screenText()).toContain('Dear Ayşe ❤️');
+        run('love');
+        for (let i = 0; i < 30; i++) await act(async () => { await vi.advanceTimersByTimeAsync(100); });
+        expect(screenText()).toContain('Hug someone you love ❤️');
+        vi.useRealTimers();
+    });
+});

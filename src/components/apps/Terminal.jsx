@@ -69,7 +69,7 @@ const MatrixRain = ({ active }) => {
     return <canvas ref={canvasRef} className="matrix-canvas" />;
 };
 
-const HeartAnim = () => {
+const HeartAnim = ({ name, lang }) => {
     const [lines, setLines] = useState([]);
     const fullText = [
         "      ******       ******      ",
@@ -86,7 +86,9 @@ const HeartAnim = () => {
         "              ***              ",
         "               *               ",
         "",
-        "      Canım Sevgilim ❤️    "
+        name
+            ? `   ${lang === 'tr' ? 'Canım' : 'Dear'} ${name} ❤️`
+            : `   ${lang === 'tr' ? 'Sevdiklerine sarıl' : 'Hug someone you love'} ❤️`
     ];
 
     useEffect(() => {
@@ -338,7 +340,7 @@ const Terminal = () => {
                     ? (lang === 'tr' ? "Matrix'e giriliyor..." : "Entering the Matrix...")
                     : (lang === 'tr' ? "Matrix kapatıldı." : "Matrix disabled.")];
             case 'neofetch': return [renderNeofetch()];
-            case 'heart': return [<HeartAnim />];
+            case 'heart': return [<HeartAnim name={result.name} lang={lang} />];
             case 'crash': return [<Bomb />];
             case 'train': return [<Train />];
             case 'sudo':

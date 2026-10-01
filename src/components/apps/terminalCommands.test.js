@@ -70,7 +70,7 @@ describe('executeCommand', () => {
         expect(executeCommand('clear')).toEqual({ type: 'clear' });
         expect(executeCommand('matrix')).toEqual({ type: 'matrix' });
         expect(executeCommand('neofetch')).toEqual({ type: 'neofetch' });
-        expect(executeCommand('ece')).toEqual({ type: 'heart' });
+        expect(executeCommand('love')).toEqual({ type: 'heart', name: '' });
         expect(executeCommand('crash')).toEqual({ type: 'crash' });
     });
 
@@ -123,5 +123,23 @@ describe('apps', () => {
 
     it('prints just the heading when no programs are known yet', () => {
         expect(appsLines()).toEqual(['Installed programs:']);
+    });
+});
+
+describe('love', () => {
+    it('shows a heart, with an optional name that keeps its capital letters', () => {
+        expect(executeCommand('love')).toEqual({ type: 'heart', name: '' });
+        expect(executeCommand('love Ayşe')).toEqual({ type: 'heart', name: 'Ayşe' });
+        expect(executeCommand('kalp Ali Can')).toEqual({ type: 'heart', name: 'Ali Can' });
+    });
+
+    it('only keeps letters, spaces, hyphens and apostrophes, and a sensible length', () => {
+        expect(executeCommand('love Ay$şe!').name).toBe('Ayşe');
+        expect(executeCommand("love Jean-Luc O'Brien 123 ❤️").name).toBe("Jean-Luc O'Brien");
+        expect(executeCommand(`love ${'x'.repeat(100)}`).name).toHaveLength(24);
+    });
+
+    it('is not tied to anyone any more: the old command is gone', () => {
+        expect(executeCommand('ece').lines[0]).toMatch(/Command not found/);
     });
 });

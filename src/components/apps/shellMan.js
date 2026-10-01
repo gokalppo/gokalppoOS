@@ -48,13 +48,14 @@ const PAGES = {
     theme: { usage: 'theme [name]', en: 'Change the terminal colors: green, amber, white, cyan or pink.', tr: 'Terminal renklerini değiştir: green, amber, white, cyan veya pink.', example: 'theme amber' },
     hack: { usage: 'hack', en: 'Look very busy while "hacking" something.', tr: 'Bir şeyi "hackliyormuş" gibi çok meşgul görün.', example: 'hack' },
     fakeinstall: { usage: 'fakeinstall', en: 'A fake installer with a progress bar. Installs nothing.', tr: 'İlerleme çubuklu sahte bir yükleyici. Hiçbir şey yüklemez.', example: 'fakeinstall' },
+    love: { usage: 'love [name]', en: 'A little animated heart. Add a name and it is written under the heart.', tr: 'Küçük animasyonlu bir kalp. Bir isim eklersen kalbin altına yazılır.', example: 'love Ayşe' },
     exit: { usage: 'exit', en: 'Close this Terminal window.', tr: 'Bu Terminal penceresini kapat.', example: 'exit' },
     sudo: { usage: 'sudo <command>', en: 'Ask for superuser powers. Good luck.', tr: 'Süper kullanıcı yetkisi iste. Bol şans.', example: 'sudo make me a sandwich' }
 };
 
 const ALIASES = {
     dir: 'ls', type: 'cat', md: 'mkdir', copy: 'cp', move: 'mv', ren: 'mv', rename: 'mv', del: 'rm', erase: 'rm', rmdir: 'rm',
-    cls: 'clear', cv: 'resume', programs: 'apps', open: 'start', taskkill: 'kill'
+    cls: 'clear', kalp: 'love', cv: 'resume', programs: 'apps', open: 'start', taskkill: 'kill'
 };
 
 export const MAN_TOPICS = Object.keys(PAGES);

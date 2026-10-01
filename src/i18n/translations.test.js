@@ -31,7 +31,7 @@ describe('translate', () => {
     const dict = { en: { hi: 'Hello {name}', only: 'English only' }, tr: { hi: 'Merhaba {name}' } };
 
     it('interpolates params', () => {
-        expect(translate(dict, 'tr', 'hi', { name: 'Ece' })).toBe('Merhaba Ece');
+        expect(translate(dict, 'tr', 'hi', { name: 'Ayşe' })).toBe('Merhaba Ayşe');
     });
 
     it('falls back to English, then to the key', () => {

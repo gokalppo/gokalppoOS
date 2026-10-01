@@ -6,6 +6,11 @@ import { OWNER, DEVICE_GROUPS } from '../../../data/profile';
 import { PROJECT_NOTES, PERSONAL_FACTS } from '../../../data/botNotes';
 import { localized } from '../../../i18n/translate';
 import { tokenize, normalizeText, tokenMatches, detectLanguage } from './botNlp';
+import { createMatcher, DEFAULT_THRESHOLD } from './botMatch';
+import { CORPUS_TR } from './botCorpusTr';
+import { CORPUS_EN } from './botCorpusEn';
+import { utilityReply } from './botUtilities';
+import { checkTeachable, TEACH_Q_MAX } from './botModeration';
 import { TEXT, BOT_NAME } from './botText';
 import {
     INTENTS, ASPECTS, ASPECT_ORDER, NAVIGATION, SKILL_QUERY_PHRASES, PROJECT_KEYWORDS,
@@ -14,6 +19,8 @@ import {
 
 export { BOT_NAME };
 
+export const MAX_LOCAL_TAUGHT = 100;
+export const MAX_LESSONS_PER_CHAT = 6;
 export const MESSAGE_MIN = 5;
 export const MESSAGE_MAX = 1500;
 const MATCH_LIMIT = 500;     // only the first characters of a message are analysed
@@ -47,7 +54,10 @@ export const createBotState = (memory = {}) => ({
     nudged: false,
     used: {},             // text key -> index of the variant used last
     counters: { joke: 0, fact: 0 },
-    pending: null         // { type: 'offer' } | { type: 'message', step: 'text'|'contact'|'confirm', draft }
+    pending: null,        // { type: 'offer' } | { type: 'message', step, draft } | { type: 'teach', step: 'question'|'answer', draft }
+    taught: Array.isArray(memory.taught) ? memory.taught.slice(-MAX_LOCAL_TAUGHT) : [],   // what this visitor taught the bot
+    teachCount: 0,        // lessons given in this chat
+    lastUnknown: null     // the last thing the bot could not answer, so it can be taught
 });
 
 const cloneState = (s) => ({ ...s, seen: [...s.seen], used: { ...s.used }, counters: { ...s.counters }, pending: s.pending ? { ...s.pending, draft: s.pending.draft ? { ...s.pending.draft } : undefined } : null });
@@ -71,12 +81,21 @@ const makeSayer = (s, lang, random) => {
         s.used[usedKey] = index;
         return value[index];
     };
+    // Like say(), for a list that is not a top-level key (e.g. the reasons a lesson was refused).
+    const pickFrom = (usedKey, list) => {
+        if (list.length === 1) return list[0];
+        const last = s.used[usedKey];
+        let index = Math.floor(random() * list.length);
+        if (index === last) index = (index + 1) % list.length;
+        s.used[usedKey] = index;
+        return list[index];
+    };
     const bubbles = (key, ...args) => {
         const raw = table[key];
         const value = typeof raw === 'function' ? raw(...args) : raw;
         return Array.isArray(value) ? value : [value];
     };
-    return { say, bubbles, table };
+    return { say, bubbles, pickFrom, table };
 };
 
 // ---------------------------------------------------------------------------
@@ -149,6 +168,8 @@ const findInterest = (tokens, text) => {
     const wantsRecommendation = INTEREST_PHRASES.some((p) => padded.includes(` ${p} `));
     if (!wantsRecommendation) return null;
     const hit = INTERESTS.find((i) => i.kw.some((k) => tokens.includes(k)));
+    // "I like pizza" or "recommend a movie" is small talk; only a topic or an explicit "where do I start?" counts
+    if (!hit && !START_ASKS.some((p) => padded.includes(` ${p} `))) return null;
     return { interest: hit || null };
 };
 
@@ -184,6 +205,7 @@ const chipsFor = (s, lang, primary) => {
     if (s.ended) return [];
     if (s.pending) {
         if (s.pending.type === 'offer') return [labels.yes, labels.no];
+        if (s.pending.type === 'teach') return [labels.cancel];
         if (s.pending.step === 'text') return [labels.cancel];
         if (s.pending.step === 'contact') return [labels.skip, labels.cancel];
         return [labels.yes, labels.no];
@@ -192,6 +214,10 @@ const chipsFor = (s, lang, primary) => {
         const project = PROJECTS.find((p) => p.slug === s.topic.slug);
         const second = project && project.links && project.links.demo ? labels.demo : labels.source;
         return [labels.more, second, labels.next, labels.allProjects];
+    }
+    if (primary === 'fallback' && s.lastUnknown) {
+        const others = CHIP_POOL.filter((k) => !s.seen.includes(k)).slice(0, 3);
+        return [labels.teach, ...others.map((k) => labels[k])];
     }
     if (primary === 'joke') return [labels.joke, labels.funFact, labels.projects, labels.contact];
     if (primary === 'funFact') return [labels.funFact, labels.joke, labels.projects, labels.contact];
@@ -238,6 +264,94 @@ const personalReply = (text, tokens, ctx) => {
 const buildContext = (s, lang, random, now) => ({ s, lang, random, now, ...makeSayer(s, lang, random) });
 
 // ---------------------------------------------------------------------------
+// small talk memory (the SimSimi part) and things people taught the bot
+// ---------------------------------------------------------------------------
+
+let corpusIndex = null;
+const getCorpus = () => {
+    if (!corpusIndex) {
+        const build = (corpus) => ({ corpus, matcher: createMatcher(corpus.map(([patterns], id) => ({ id, patterns }))) });
+        corpusIndex = { tr: build(CORPUS_TR), en: build(CORPUS_EN) };
+    }
+    return corpusIndex;
+};
+
+// Best stored sentence in either language (a small bonus for the language being spoken).
+const corpusMatch = (text, tokens, lang) => {
+    const index = getCorpus();
+    let best = null;
+    ['tr', 'en'].forEach((l) => {
+        const hit = index[l].matcher.match(text, tokens);
+        if (!hit) return;
+        const score = hit.score + (l === lang ? 0.04 : 0);
+        if (!best || score > best.score) best = { ...hit, score, lang: l, source: 'corpus', answers: index[l].corpus[hit.id][1], key: `${l}:corpus:${hit.id}` };
+    });
+    return best;
+};
+
+// What visitors taught: [{ q, a, lang }]. Local lessons count a little more than approved shared ones.
+const taughtMatch = (entries, text, tokens, bonus, source) => {
+    if (!entries || !entries.length) return null;
+    const hit = createMatcher(entries.map((e, i) => ({ id: i, patterns: [e.q] }))).match(text, tokens);
+    if (!hit) return null;
+    return { ...hit, score: hit.score + bonus, source, answers: [entries[hit.id].a], key: `taught:${source}:${hit.id}` };
+};
+
+const SOCIAL_KEEP = new Set(['greeting', 'thanks', 'bye']);
+const HONEST_INTENTS = new Set(['whoAreYou', 'creator']);
+const START_ASKS = ['where should i start', 'what should i look at', 'which one should', 'hangisine bakmaliyim', 'nereden baslamaliyim', 'nereden baslayayim'];
+
+// "teach: hello bot = hey there", "selam kanka dersem naber de", "when I say X, you say Y"
+const parseInlineTeach = (raw) => {
+    let m = /^(?:öğret|ogret|teach)\s*[:-]\s*(.+?)\s*(?:=>|->|=|>)\s*(.+)$/iu.exec(raw);
+    if (m) return { q: m[1].trim(), a: m[2].trim() };
+    m = /^(.+?)\s+(?:dersem|desem|derse)\s+(.+?)\s+de$/iu.exec(raw);
+    if (m) return { q: m[1].trim(), a: m[2].trim() };
+    m = /^when i say\s+(.+?),?\s+(?:you\s+)?(?:say|reply|answer)\s+(.+)$/i.exec(raw);
+    if (m) return { q: m[1].trim(), a: m[2].trim() };
+    return null;
+};
+
+// Stores a lesson; returns the effect that sends it on for approval.
+const learn = (s, q, a, lang) => {
+    const key = normalizeText(q);
+    s.taught = [...s.taught.filter((t) => normalizeText(t.q) !== key), { q, a, lang }].slice(-MAX_LOCAL_TAUGHT);
+    s.teachCount += 1;
+    s.pending = null;
+    s.lastUnknown = null;
+    return { type: 'teach', q, a, lang };
+};
+
+// Validates a lesson; returns a refusal text or null when it is fine.
+const refuseLesson = (q, a, ctx) => {
+    for (const [value, kind] of [[q, 'question'], [a, 'answer']]) {
+        const reason = checkTeachable(value, kind);
+        if (reason !== 'ok') return ctx.pickFrom(`teachRefused:${reason}`, ctx.table.teachRefused[reason]);
+    }
+    if (normalizeText(q) === normalizeText(a)) return ctx.say('teachSame');
+    return null;
+};
+
+const handleTeach = (input, s, lang, ctx) => {
+    const text = String(input).trim();
+    const { pending } = s;
+    if (isCancel(text)) {
+        s.pending = null;
+        return { bubbles: [ctx.say('cancelled')] };
+    }
+    if (pending.step === 'question') {
+        const reason = checkTeachable(text, 'question');
+        if (reason !== 'ok') return { bubbles: [ctx.pickFrom(`teachRefused:${reason}`, ctx.table.teachRefused[reason])] };
+        s.pending = { type: 'teach', step: 'answer', draft: { q: text } };
+        return { bubbles: [ctx.say('teachAskAnswer', text)] };
+    }
+    const refusal = refuseLesson(pending.draft.q, text, ctx);
+    if (refusal) return { bubbles: [refusal] };
+    const q = pending.draft.q;
+    return { bubbles: [ctx.say('teachSaved', q, text)], effects: [learn(s, q, text, lang)] };
+};
+
+// ---------------------------------------------------------------------------
 // the "leave a message" conversation
 // ---------------------------------------------------------------------------
 
@@ -263,6 +377,8 @@ const handlePending = (input, s, lang, ctx) => {
         if (isAnswer(text, NO_WORDS)) return { bubbles: [say('no')] };
         return null; // not an answer: carry on as a normal message
     }
+
+    if (pending.type === 'teach') return handleTeach(text, s, lang, ctx);
 
     // pending.type === 'message'
     if (isCancel(text)) {
@@ -369,6 +485,22 @@ const HANDLERS = {
         offer: true
     }),
     personal: (c) => personalReply(c.text, c.tokens, c),
+    teach: (c) => {
+        if (c.s.teachCount >= MAX_LESSONS_PER_CHAT) return { bubbles: [c.say('teachLimit')] };
+        const question = c.s.lastUnknown;
+        if (question) {
+            c.s.pending = { type: 'teach', step: 'answer', draft: { q: question } };
+            return { bubbles: [c.say('teachAskAnswer', question)] };
+        }
+        c.s.pending = { type: 'teach', step: 'question', draft: {} };
+        return { bubbles: [c.say('teachAskQuestion')] };
+    },
+    forget: (c) => {
+        const last = c.s.taught[c.s.taught.length - 1];
+        if (!last) return { bubbles: [c.say('nothingToForget')] };
+        c.s.taught = c.s.taught.slice(0, -1);
+        return { bubbles: [c.say('forgot', last.q)] };
+    },
     leaveMessage: (c) => {
         c.s.pending = { type: 'message', step: 'text', draft: {} };
         return { bubbles: [c.say('askMessage')], topic: null };
@@ -384,6 +516,7 @@ const SUPPRESS = {
     skill: ['skills', 'projects'],
     leaveMessage: ['contact', 'hire', 'personal'],
     creator: ['whoAreYou', 'site'],
+    whatDoing: ['whoAreYou'],
     whoAreYou: ['aboutOwner'],
     personal: ['aboutOwner', 'education'],
     education: ['aboutOwner'],
@@ -451,6 +584,23 @@ export const respond = (input, state, options = {}) => {
         lead.push(ctx.say('niceToMeet', s.name));
     }
 
+    // --- "teach: hello bot = hey there" in one go ---
+    const inline = parseInlineTeach(raw);
+    if (inline) {
+        if (s.teachCount >= MAX_LESSONS_PER_CHAT) return finish([...lead, ctx.say('teachLimit')], { primary: 'teach' });
+        const refusal = refuseLesson(inline.q, inline.a, ctx);
+        if (refusal) return finish([...lead, refusal], { primary: 'teach' });
+        const effect = learn(s, inline.q, inline.a, lang);
+        return finish([...lead, ctx.say('teachSaved', inline.q, inline.a)], { primary: 'teach', effects: [effect] });
+    }
+
+    // --- sums, coin flips, dice, "pizza or burger?" ---
+    const utility = utilityReply(raw, lang, random);
+    if (utility) {
+        s.misses = 0;
+        return finish([...lead, utility.text], { primary: 'utility' });
+    }
+
     // --- what is being asked? ---
     const found = [];
     const add = (id, group, score, pos, data) => found.push({ id, group, score, pos, data });
@@ -465,7 +615,8 @@ export const respond = (input, state, options = {}) => {
     });
 
     const padded = ` ${text} `;
-    const skillQuery = SKILL_QUERY_PHRASES.some((p) => padded.includes(` ${p} `));
+    // "do you know me?" is not a question about a technology
+    const skillQuery = SKILL_QUERY_PHRASES.some((p) => padded.includes(` ${p} `)) && !tokens.some((t) => ['me', 'my', 'beni', 'bana'].includes(t));
     const skill = findSkill(tokens, text);
     const titled = PROJECTS.find((p) => padded.includes(` ${normalizeText(p.title)} `));
     const interest = findInterest(tokens, text);
@@ -529,17 +680,44 @@ export const respond = (input, state, options = {}) => {
     // a greeting / thanks in front of real content is said first, briefly
     const preface = main.length && social.length && !['bye'].includes(social[0].id) ? [social[0]] : [];
 
+    // --- something a visitor taught the bot beats its own intents (except the honest "who/what am I" ones) ---
+    const taughtHit = [taughtMatch(s.taught, text, tokens, 0.08, 'local'), taughtMatch(options.taught, text, tokens, 0.04, 'shared')]
+        .filter(Boolean).sort((a, b) => b.score - a.score)[0];
+    if (taughtHit && taughtHit.score >= 0.9 && !(chosen[0] && HONEST_INTENTS.has(chosen[0].id))) {
+        s.misses = 0;
+        return finish([...lead, ctx.pickFrom(taughtHit.key, taughtHit.answers)], { primary: 'chat' });
+    }
+
+    // --- small talk: the closest sentence the bot remembers (its own, or taught by visitors) ---
+    const hasMain = chosen.some((f) => f.group !== 'social');
+    if (!hasMain) {
+        const candidates = [
+            taughtMatch(s.taught, text, tokens, 0.08, 'local'),
+            taughtMatch(options.taught, text, tokens, 0.04, 'shared'),
+            corpusMatch(text, tokens, lang)
+        ].filter(Boolean).sort((a, b) => b.score - a.score);
+        const hit = candidates[0];
+        const keepsIntent = chosen.some((f) => SOCIAL_KEEP.has(f.id));
+        const taughtWins = hit && hit.source !== 'corpus' && hit.score >= 0.9;
+        if (hit && hit.score >= DEFAULT_THRESHOLD && (taughtWins || !(chosen.length && (keepsIntent || hit.score < 0.85)))) {
+            s.misses = 0;
+            const answer = ctx.pickFrom(hit.key, hit.answers);
+            return finish([...lead, answer], { primary: 'chat' });
+        }
+    }
+
     if (!chosen.length && lead.length) {
         // just an introduction: be friendly, do not count it as a miss
         return finish([...lead, ctx.say('introFollowUp')], { primary: 'greeting' });
     }
 
     if (!chosen.length) {
-        // nothing understood
+        // nothing understood: remember what was said so the visitor can teach an answer
         s.misses += 1;
+        const clipped = raw.slice(0, TEACH_Q_MAX);
+        s.lastUnknown = checkTeachable(clipped, 'question') === 'ok' ? clipped : null;
         if (s.misses >= 2) {
             s.misses = 0;
-            s.pending = { type: 'offer' };
             return finish([...lead, ctx.say('fallbackTwice')], { primary: 'fallback' });
         }
         return finish([...lead, ctx.say('fallback')], { primary: 'fallback' });
@@ -665,6 +843,9 @@ export const botSendResult = (kind, uiLang = 'en') => {
     const key = { sent: 'sent', tooSoon: 'sendTooSoon' }[kind] || 'sendFailed';
     return table[key][0];
 };
+
+// The little note after a lesson that could not be sent on for approval ('teachGlobalFailed' | 'teachGlobalSlow').
+export const botLessonNote = (key, uiLang = 'en') => (TEXT[uiLang === 'tr' ? 'tr' : 'en'][key] || [''])[0];
 
 // Pacing: how long the bot "reads", types and pauses between bubbles. Tests shrink it with setBotTimingScale.
 let timingScale = 1;

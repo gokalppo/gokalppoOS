@@ -43,7 +43,7 @@ export const TEXT = {
             "I was written by Gökalp. I'm not a large language model, just a lot of hand-made rules, so I'm honest about what I don't know. What you type stays in your browser, except messages you ask me to forward."
         ],
         capabilities: [
-            "Here's what I can do:\n• tell you about Gökalp and each of his projects (ask for details, tech or source code)\n• go through his skills, or check whether he knows a specific technology\n• recommend a project if you tell me what you're into\n• share his contact details, GitHub and LinkedIn\n• pass a message on to him\n• chat, tell a joke or a fun fact 🙂",
+            "Here's what I can do:\n• tell you about Gökalp and each of his projects (ask for details, tech or source code)\n• go through his skills, or check whether he knows a specific technology\n• recommend a project if you tell me what you're into\n• share his contact details, GitHub and LinkedIn\n• pass a message on to him\n• chat like a friend, tell jokes and fun facts, do sums, flip a coin, pick between two things for you\n• learn from you: say \"let me teach you\" and teach me an answer 🙂",
             "I can walk you through his projects and skills, answer \"does he know X?\", share contact links, take a message for him, or just chat. Try me!"
         ],
         thanks: (name) => [
@@ -173,11 +173,30 @@ export const TEXT = {
 
         // --- when I don't understand ----------------------------------------
         fallback: [
-            "Hmm, I didn't quite get that. Could you say it another way? I'm best with questions about Gökalp, his projects and skills.",
-            "I'm not sure what you mean. I know about his projects, skills, resume and contact details, or we can just chat.",
-            "Sorry, that one went over my head! Try asking about a project, a skill, or how to reach Gökalp."
+            "Hmm, my brain just threw a 404 on that one 😅 Say it another way? Or teach me: tap \"Let me teach you\" and tell me what I should answer.",
+            "That one went right over my head, dude. Try again, or teach me what to say, I learn fast.",
+            "No clue what to say to that, honestly. You could teach me! Tell me \"let me teach you\" and I'll remember it."
         ],
-        fallbackTwice: ["I keep missing your point, sorry. I'm a simple bot. If it's something only Gökalp can answer, I can pass your question on to him."],
+        fallbackTwice: ["I keep missing your point, sorry 😅 I'm a simple bot. Teach me what to say (\"let me teach you\"), or if only Gökalp can answer, say \"leave a message\" and I'll pass it on."],
+
+        // --- teach me ---------------------------------------------------------
+        teachAskQuestion: ["Ooh, a lesson! What would someone say to me? (for example: \"how's life\")"],
+        teachAskAnswer: (q) => [`And when someone says "${q}", what should I answer?`, `Got it. "${q}": what's my reply going to be?`],
+        teachSaved: (q, a) => [`Learned it! ✅ Next time someone says "${q}", I'll say "${a}". If Gökalp approves, everyone will get that answer.`, `Noted! ✅ "${q}" now makes me say "${a}". Gökalp has to approve it before others see it.`],
+        teachRefused: {
+            short: ["That's too short for me to learn from. Give me a real sentence?"],
+            long: ["Whoa, that's too long. Keep it short and snappy?"],
+            link: ["No links or websites please, I'm not an ad board 😄"],
+            contact: ["No phone numbers or e-mail addresses please, that's private stuff."],
+            spam: ["Keyboard mash? I can't learn from that 😅"],
+            rude: ["Nope, I won't learn that one. Keep it friendly and I'm all ears 😇", "Not going to happen, Gökalp would take my keyboard away 😅"]
+        },
+        teachSame: ["The question and the answer are the same, that doesn't teach me much 😄 Give me a different answer?"],
+        teachLimit: ["That's enough lessons for now, my brain is full 😅 Try again a bit later."],
+        teachGlobalFailed: ["(I couldn't send it to Gökalp for approval just now, but I'll remember it for you.)"],
+        teachGlobalSlow: ["(I'll keep it for you, but you taught me a lot quickly, so I'll only send the next one to Gökalp a bit later.)"],
+        forgot: (q) => [`Forgotten! "${q}" is gone from my head.`],
+        nothingToForget: ["There's nothing to forget, you haven't taught me anything yet 😄"],
         idleNudge: [
             "Still there? 🙂 Feel free to ask about the projects, or tell me what you're curious about.",
             "No rush! I'm here whenever you want to ask something."
@@ -188,7 +207,7 @@ export const TEXT = {
             projects: 'Projects', skills: 'Skills', resume: 'Resume', contact: 'Contact', aboutOwner: 'About Gökalp',
             leaveMessage: 'Leave a message', joke: 'Tell me a joke', funFact: 'Fun fact',
             more: 'More details', source: 'Source code', demo: 'Demo', next: 'Next project', allProjects: 'All projects',
-            yes: 'Yes', no: 'No', skip: 'Skip', cancel: 'Cancel'
+            yes: 'Yes', no: 'No', skip: 'Skip', cancel: 'Cancel', teach: 'Let me teach you'
         }
     },
 
@@ -224,7 +243,7 @@ export const TEXT = {
             "Beni Gökalp yazdı. Büyük bir dil modeli değilim, sadece elle hazırlanmış bir sürü kuralım var; bu yüzden bilmediğim şeyi dürüstçe söylerim. Yazdıkların tarayıcında kalır, iletmemi istediğin mesajlar hariç."
         ],
         capabilities: [
-            "Şunları yapabilirim:\n• Gökalp'i ve her projesini anlatmak (detay, teknoloji ya da kaynak kod isteyebilirsin)\n• yeteneklerini sıralamak ya da belirli bir teknolojiyi bilip bilmediğini söylemek\n• neyle ilgilendiğini söylersen sana uygun bir proje önermek\n• iletişim bilgilerini, GitHub ve LinkedIn'ini paylaşmak\n• ona bir mesaj iletmek\n• sohbet etmek, fıkra ya da ilginç bir bilgi anlatmak 🙂",
+            "Şunları yapabilirim:\n• Gökalp'i ve her projesini anlatmak (detay, teknoloji ya da kaynak kod isteyebilirsin)\n• yeteneklerini sıralamak ya da belirli bir teknolojiyi bilip bilmediğini söylemek\n• neyle ilgilendiğini söylersen sana uygun bir proje önermek\n• iletişim bilgilerini, GitHub ve LinkedIn'ini paylaşmak\n• ona bir mesaj iletmek\n• kafa dengi sohbet etmek, fıkra ve ilginç bilgi anlatmak, hesap yapmak, yazı tura atmak, iki şey arasında senin için seçmek\n• senden öğrenmek: \"ben öğreteyim\" de, bana bir cevap öğret 🙂",
             "Projelerini ve yeteneklerini anlatabilirim, \"X'i biliyor mu?\" sorusuna cevap verebilirim, iletişim linklerini paylaşabilirim, ona mesaj alabilirim ya da sadece sohbet edebiliriz. Dene bakalım!"
         ],
         thanks: (name) => [
@@ -347,11 +366,29 @@ export const TEXT = {
         cancelled: ['Sorun değil, iptal ettim. Başka bir şey?'],
 
         fallback: [
-            'Hmm, bunu tam anlayamadım. Başka türlü söyler misin? En iyi Gökalp, projeleri ve yetenekleri hakkındaki sorularda işe yararım.',
-            'Ne demek istediğinden emin değilim. Projelerini, yeteneklerini, özgeçmişini ve iletişim bilgilerini biliyorum; ya da sadece sohbet edebiliriz.',
-            'Pardon, bu bana yüksek geldi! Bir proje, bir yetenek ya da Gökalp\'e nasıl ulaşılacağını sormayı dene.'
+            'Hmm, beynim bunda 404 verdi kanka 😅 Başka türlü söyler misin? Ya da bana öğret: "Ben öğreteyim" de, ne cevap vermem gerektiğini söyle.',
+            'Bu cümle bana yüksek geldi lan 😄 Bir daha dene, ya da bana öğret, çabuk öğrenirim.',
+            'Bunun cevabını bilmiyorum valla. İstersen sen öğret: "Ben öğreteyim" yaz, bir dahaki sefere söylerim.'
         ],
-        fallbackTwice: ["Seni sürekli yanlış anlıyorum, kusura bakma. Ben basit bir botum. Sadece Gökalp'in cevaplayabileceği bir şeyse sorunu ona iletebilirim."],
+        fallbackTwice: ['Seni bir türlü yakalayamıyorum, kusura bakma 😅 Basit bir botum. Bana öğret ("Ben öğreteyim"), ya da sadece Gökalp\'in cevaplayabileceği bir şeyse "mesaj bırak" de, ona ileteyim.'],
+
+        teachAskQuestion: ['Oo, ders başlıyor! Birisi bana ne dediğinde cevap vereyim? (örneğin: "naber lan")'],
+        teachAskAnswer: (q) => [`Peki biri "${q}" dediğinde ne cevap vereyim?`, `Tamam. "${q}" denince cevabım ne olacak?`],
+        teachSaved: (q, a) => [`Öğrendim! ✅ Bir dahaki sefere biri "${q}" derse "${a}" diyeceğim. Gökalp onaylarsa herkes için de geçerli olacak.`, `Not aldım! ✅ "${q}" denince artık "${a}" diyorum. Başkalarının görmesi için Gökalp'in onaylaması lazım.`],
+        teachRefused: {
+            short: ['Bu benim öğrenmem için fazla kısa. Gerçek bir cümle yazar mısın?'],
+            long: ['Vay, bu çok uzun. Kısa ve öz yazar mısın?'],
+            link: ['Link ya da site yok lütfen, ben reklam panosu değilim 😄'],
+            contact: ['Telefon numarası ya da e-posta adresi olmaz, bunlar özel şeyler.'],
+            spam: ['Klavyeye mi bastın? Bundan bir şey öğrenemem 😅'],
+            rude: ['Hayır, bunu öğrenmeyeceğim. Tatlı dille gel, kulağım sende 😇', 'Olmaz, Gökalp klavyemi elimden alır 😅']
+        },
+        teachSame: ['Soruyla cevap aynı olmuş, bu bana pek bir şey öğretmiyor 😄 Başka bir cevap yazar mısın?'],
+        teachLimit: ['Şimdilik bu kadar ders yeter, beynim doldu 😅 Biraz sonra tekrar dene.'],
+        teachGlobalFailed: ['(Onay için Gökalp\'e şu an gönderemedim ama senin için hatırlıyorum.)'],
+        teachGlobalSlow: ['(Senin için aklımda tutuyorum, ama çok hızlı öğrettin; bir sonrakini Gökalp\'e biraz sonra göndereceğim.)'],
+        forgot: (q) => [`Unuttum! "${q}" kafamdan silindi.`],
+        nothingToForget: ['Unutacak bir şey yok, bana henüz bir şey öğretmedin 😄'],
         idleNudge: [
             'Hâlâ orada mısın? 🙂 Projeleri sorabilirsin ya da neyi merak ettiğini söyle.',
             'Acele yok! Bir şey sormak istediğinde buradayım.'
@@ -361,7 +398,7 @@ export const TEXT = {
             projects: 'Projeler', skills: 'Yetenekler', resume: 'Özgeçmiş', contact: 'İletişim', aboutOwner: 'Gökalp kimdir?',
             leaveMessage: 'Mesaj bırak', joke: 'Fıkra anlat', funFact: 'İlginç bilgi',
             more: 'Daha fazla detay', source: 'Kaynak kod', demo: 'Demo', next: 'Sonraki proje', allProjects: 'Tüm projeler',
-            yes: 'Evet', no: 'Hayır', skip: 'Geç', cancel: 'İptal'
+            yes: 'Evet', no: 'Hayır', skip: 'Geç', cancel: 'İptal', teach: 'Ben öğreteyim'
         }
     }
 };

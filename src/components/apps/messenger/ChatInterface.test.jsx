@@ -340,6 +340,129 @@ describe('admin inbox', () => {
     });
 });
 
+describe('admin: bot lessons', () => {
+    const seedLessons = () => {
+        fakeDb.seed('botTaught/pending/p1', { q: 'how is life', a: 'pretty good, you?', lang: 'en', uid: 'u1', timestamp: 3000 });
+        fakeDb.seed('botTaught/pending/p2', { q: 'selam kanka', a: 'naber şampiyon', lang: 'tr', uid: 'u2', timestamp: 2000 });
+        fakeDb.seed('botTaught/pending/p3', { q: 'say something rude', a: 'fuck you', lang: 'en', uid: 'u3', timestamp: 1000 });
+        fakeDb.seed('botTaught/approved/a1', { q: 'best fruit', a: 'Mango', lang: 'en', approvedAt: 500 });
+    };
+    const openLessons = () => {
+        fireEvent.click(screen.getByText(/📥 Inbox/));
+        fireEvent.click(screen.getByRole('tab', { name: /Bot lessons/ }));
+    };
+
+    it('is hidden from regular users', () => {
+        seedLessons();
+        renderChat(me);
+        expect(screen.queryByText(/📥 Inbox/)).toBeNull();
+    });
+
+    it('counts waiting lessons on the Inbox button and on the tab', () => {
+        seedLessons();
+        renderChat(admin);
+        expect(screen.getByRole('button', { name: '📥 Inbox (3)' })).toBeTruthy();
+        fireEvent.click(screen.getByRole('button', { name: '📥 Inbox (3)' }));
+        expect(screen.getByRole('tab', { name: 'Bot lessons (3)' })).toBeTruthy();
+    });
+
+    it('lists what is waiting, newest first, and shows what was taught', () => {
+        seedLessons();
+        renderChat(admin);
+        openLessons();
+        const rows = [...document.querySelectorAll('.lessons-pane .inbox-row')].map((r) => r.querySelector('.inbox-from').textContent);
+        expect(rows).toEqual(['how is life', 'selam kanka', 'say something rude']);
+        fireEvent.click(screen.getByText('selam kanka'));
+        expect(screen.getByLabelText('When someone says').value).toBe('selam kanka');
+        expect(screen.getByLabelText('The bot answers').value).toBe('naber şampiyon');
+        expect(screen.getByText('Turkish')).toBeTruthy();
+    });
+
+    it('warns about a lesson that looks rude', () => {
+        seedLessons();
+        renderChat(admin);
+        openLessons();
+        fireEvent.click(screen.getByText('say something rude'));
+        expect(screen.getByRole('alert').textContent).toMatch(/may be rude/);
+        fireEvent.click(screen.getByText('how is life'));
+        expect(screen.queryByRole('alert')).toBeNull();
+    });
+
+    it('approving moves a lesson to the public list', async () => {
+        seedLessons();
+        renderChat(admin);
+        openLessons();
+        fireEvent.click(screen.getByText('how is life'));
+        fireEvent.click(screen.getByText('Approve'));
+
+        await waitFor(() => expect(fakeDb.read('botTaught/pending/p1')).toBeNull());
+        expect(fakeDb.read('botTaught/approved/p1')).toMatchObject({ q: 'how is life', a: 'pretty good, you?', lang: 'en' });
+        expect(typeof fakeDb.read('botTaught/approved/p1/approvedAt')).toBe('number');
+    });
+
+    it('lets the admin fix a typo before approving', async () => {
+        seedLessons();
+        renderChat(admin);
+        openLessons();
+        fireEvent.click(screen.getByText('selam kanka'));
+        fireEvent.change(screen.getByLabelText('The bot answers'), { target: { value: 'naber şampiyon, nasılsın?' } });
+        fireEvent.click(screen.getByText('Approve'));
+        await waitFor(() => expect(fakeDb.read('botTaught/approved/p2/a')).toBe('naber şampiyon, nasılsın?'));
+    });
+
+    it('refuses to approve an empty lesson', async () => {
+        seedLessons();
+        renderChat(admin);
+        openLessons();
+        fireEvent.click(screen.getByText('how is life'));
+        fireEvent.change(screen.getByLabelText('The bot answers'), { target: { value: ' ' } });
+        fireEvent.click(screen.getByText('Approve'));
+        await waitFor(() => expect(screen.getByText(/empty or too long/)).toBeTruthy());
+        expect(fakeDb.read('botTaught/approved/p1')).toBeNull();
+    });
+
+    it('rejects a lesson only after confirming', async () => {
+        seedLessons();
+        renderChat(admin);
+        openLessons();
+        fireEvent.click(screen.getByText('say something rude'));
+        fireEvent.click(screen.getByText('Reject'));
+        fireEvent.click(screen.getByText('Cancel'));
+        expect(fakeDb.read('botTaught/pending/p3')).not.toBeNull();
+
+        fireEvent.click(screen.getByText('Reject'));
+        fireEvent.click(screen.getByText('OK'));
+        await waitFor(() => expect(fakeDb.read('botTaught/pending/p3')).toBeNull());
+        expect(fakeDb.read('botTaught/approved/p3')).toBeNull();
+    });
+
+    it('shows approved lessons and can take one back', async () => {
+        seedLessons();
+        renderChat(admin);
+        openLessons();
+        fireEvent.click(screen.getByRole('button', { name: /Approved \(1\)/ }));
+        fireEvent.click(screen.getByText('best fruit'));
+        expect(screen.getByLabelText('The bot answers').disabled).toBe(true);
+        fireEvent.click(screen.getByText('Remove'));
+        fireEvent.click(screen.getByText('OK'));
+        await waitFor(() => expect(fakeDb.read('botTaught/approved/a1')).toBeNull());
+    });
+
+    it('announces a new lesson while the admin is online', async () => {
+        renderChat(admin);
+        await act(async () => {
+            fakeDb.seed('botTaught/pending/n1', { q: 'new thing', a: 'new answer', lang: 'en', uid: 'u9', timestamp: 9000 });
+        });
+        await waitFor(() => expect(screen.getByText(/taught Gökalp Bot something new/)).toBeTruthy());
+    });
+
+    it('says so when nothing is waiting', () => {
+        renderChat(admin);
+        openLessons();
+        expect(screen.getByText('Nothing is waiting for approval.')).toBeTruthy();
+    });
+});
+
 describe('ban kill-switch', () => {
     it('shows the system-error overlay when the signed-in user is banned', async () => {
         fakeDb.seed('users/me/isBanned', true);

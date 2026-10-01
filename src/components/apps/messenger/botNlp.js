@@ -32,13 +32,14 @@ export const editDistance = (a, b, limit = 3) => {
 
 // Does one typed word match a keyword?
 //   "=word"  exact only
-//   long words also match with a suffix ("projelerinden" ~ "proje") or one/two typos ("linkedn" ~ "linkedin")
+//   long words also match with a suffix ("projelerinden" ~ "proje") or a typo ("linkedn" ~ "linkedin")
 export const tokenMatches = (token, keyword) => {
     if (keyword.startsWith('=')) return token === keyword.slice(1);
     if (token === keyword) return true;
     if (keyword.length >= 4 && token.startsWith(keyword)) return true;
-    if (keyword.length >= 5 && token.length >= 5) {
-        const limit = keyword.length >= 8 ? 2 : 1;
+    // typos: only for longer words, and the first letter must be right ("beach" is not "reach", "think" is not "thank")
+    if (keyword.length >= 6 && token.length >= 5 && token[0] === keyword[0]) {
+        const limit = keyword.length >= 9 ? 2 : 1;
         return editDistance(token, keyword, limit) <= limit;
     }
     return false;

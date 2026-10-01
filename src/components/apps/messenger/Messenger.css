@@ -593,3 +593,15 @@
 .inbox-meta { border-bottom: 1px solid #ccc; padding-bottom: 4px; margin-bottom: 4px; line-height: 1.5; }
 .inbox-message { flex: 1; white-space: pre-wrap; overflow-wrap: anywhere; overflow-y: auto; }
 .inbox-actions { display: flex; gap: 4px; padding-top: 6px; border-top: 1px solid #ccc; }
+
+.inbox-tabs { display: flex; gap: 2px; padding-top: 4px; }
+.inbox-tab {
+    font-family: inherit; font-size: 11px; padding: 3px 12px; cursor: pointer; color: #000;
+    background: var(--win-gray); border: 2px solid; border-color: #fff #404040 #404040 #fff;
+}
+.inbox-tab.active { font-weight: bold; border-color: #404040 #fff #fff #404040; }
+.lessons-pane { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+.lesson-field { display: flex; flex-direction: column; gap: 2px; margin-bottom: 6px; font-size: 11px; }
+.lesson-field input, .lesson-field textarea { font-family: inherit; font-size: 11px; padding: 2px 4px; }
+.lesson-field textarea { min-height: 60px; resize: vertical; }
+.lesson-warning { color: #a00000; font-weight: bold; margin-top: 4px; }

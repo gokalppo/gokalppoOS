@@ -1,18 +1,20 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import {
-    respond, createBotState, getBotGreeting, botIdleNudge, botSendResult, botTypingDelayMs, botReadPauseMs, botGapMs, botIdleMs, BOT_NAME
+    respond, createBotState, getBotGreeting, botIdleNudge, botSendResult, botLessonNote, botTypingDelayMs, botReadPauseMs, botGapMs, botIdleMs, BOT_NAME
 } from '../botEngine';
 import { loadBotMemory, saveBotMemory } from '../botMemory';
 import { nowMs } from '../chatUtils';
+import { loadSharedLessons } from '../botTeach';
 
 export const ME_UID = 'me-local';
 export const BOT_UID = 'gokalpbot';
 
 const defaultSubmit = (payload) => import('../botInbox').then((m) => m.submitBotMessage(payload));
+const defaultSubmitLesson = (lesson) => import('../botTeach').then((m) => m.submitLesson(lesson));
 
 // Conversation with Gökalp Bot. Nothing is stored on a server; only the visitor's name and visit count
 // are remembered, in this browser. A message the visitor asks the bot to pass on goes through `submit`.
-export const useBotChat = (lang, { submit = defaultSubmit } = {}) => {
+export const useBotChat = (lang, { submit = defaultSubmit, submitLesson = defaultSubmitLesson, loadLessons = loadSharedLessons } = {}) => {
     const counterRef = useRef(0);
     const timersRef = useRef([]);
     const pendingRef = useRef(0);
@@ -25,11 +27,18 @@ export const useBotChat = (lang, { submit = defaultSubmit } = {}) => {
     // The visitor's name and visit count live in this browser only.
     const [initial] = useState(() => {
         const saved = loadBotMemory();
-        const memory = { name: saved.name, visits: saved.visits + 1 };
+        const memory = { name: saved.name, visits: saved.visits + 1, taught: saved.taught };
         return { memory, bot: createBotState(memory) };
     });
     const memoryRef = useRef(initial.memory);
     const stateRef = useRef(initial.bot);
+    // Lessons Gökalp approved, shared by everyone (loaded once; the bot works without them)
+    const sharedRef = useRef([]);
+    useEffect(() => {
+        let cancelled = false;
+        Promise.resolve(loadLessons()).then((list) => { if (!cancelled) sharedRef.current = list || []; }).catch(() => {});
+        return () => { cancelled = true; };
+    }, [loadLessons]);
     useEffect(() => { saveBotMemory(memoryRef.current); }, []);
 
     const makeMessage = useCallback((fromBot, text, suggestions) => ({
@@ -101,10 +110,10 @@ export const useBotChat = (lang, { submit = defaultSubmit } = {}) => {
 
         setMessages((prev) => [...prev, makeMessage(false, text)]);
 
-        const out = respond(text, stateRef.current, { lang, now: new Date() });
+        const out = respond(text, stateRef.current, { lang, now: new Date(), taught: sharedRef.current });
         stateRef.current = out.state;
-        if (out.state.name !== memoryRef.current.name) {
-            memoryRef.current = { ...memoryRef.current, name: out.state.name };
+        if (out.state.name !== memoryRef.current.name || out.state.taught !== memoryRef.current.taught) {
+            memoryRef.current = { ...memoryRef.current, name: out.state.name, taught: out.state.taught };
             saveBotMemory(memoryRef.current);
         }
 
@@ -121,8 +130,19 @@ export const useBotChat = (lang, { submit = defaultSubmit } = {}) => {
                     play([{ text: botSendResult(kind, out.lang) }], out.suggestions);
                 });
         });
+        // A lesson: remembered right away; also sent to Gökalp for approval so everyone can benefit.
+        out.effects.filter((e) => e.type === 'teach').forEach((effect) => {
+            Promise.resolve()
+                .then(() => submitLesson(effect))
+                .catch(() => 'failed')
+                .then((kind) => {
+                    if (!aliveRef.current || kind === 'sent') return;
+                    const key = kind === 'tooSoon' ? 'teachGlobalSlow' : 'teachGlobalFailed';
+                    play([{ text: botLessonNote(key, out.lang) }], out.suggestions);
+                });
+        });
         return true;
-    }, [lang, makeMessage, play, armIdleNudge, submit]);
+    }, [lang, makeMessage, play, armIdleNudge, submit, submitLesson]);
 
     return { messages, isTyping, send };
 };

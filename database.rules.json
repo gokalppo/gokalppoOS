@@ -130,6 +130,66 @@
         }
       }
     },
+    "botTaught": {
+      "approved": {
+        ".read": true,
+        "$id": {
+          ".write": "auth != null && root.child('users').child(auth.uid).child('role').val() === 'admin'",
+          ".validate": "newData.hasChildren(['q', 'a', 'lang', 'approvedAt'])",
+          "q": {
+            ".validate": "newData.isString() && newData.val().length >= 2 && newData.val().length <= 80"
+          },
+          "a": {
+            ".validate": "newData.isString() && newData.val().length >= 2 && newData.val().length <= 200"
+          },
+          "lang": {
+            ".validate": "newData.val() === 'en' || newData.val() === 'tr'"
+          },
+          "approvedAt": {
+            ".validate": "newData.isNumber()"
+          },
+          "$other": {
+            ".validate": false
+          }
+        }
+      },
+      "pending": {
+        ".read": "auth != null && root.child('users').child(auth.uid).child('role').val() === 'admin'",
+        ".indexOn": [
+          "timestamp"
+        ],
+        "$id": {
+          ".write": "auth != null && ((!data.exists() && newData.exists() && newData.child('uid').val() === auth.uid && newData.parent().parent().parent().child('botTeachMeta').child(auth.uid).child('lastAt').val() === now && (!root.child('botTeachMeta').child(auth.uid).child('lastAt').exists() || root.child('botTeachMeta').child(auth.uid).child('lastAt').val() < now - 10000)) || root.child('users').child(auth.uid).child('role').val() === 'admin')",
+          ".validate": "newData.hasChildren(['q', 'a', 'lang', 'uid', 'timestamp'])",
+          "q": {
+            ".validate": "newData.isString() && newData.val().length >= 2 && newData.val().length <= 80"
+          },
+          "a": {
+            ".validate": "newData.isString() && newData.val().length >= 2 && newData.val().length <= 200"
+          },
+          "lang": {
+            ".validate": "newData.val() === 'en' || newData.val() === 'tr'"
+          },
+          "uid": {
+            ".validate": "newData.isString()"
+          },
+          "timestamp": {
+            ".validate": "newData.val() === now"
+          },
+          "$other": {
+            ".validate": false
+          }
+        }
+      }
+    },
+    "botTeachMeta": {
+      "$uid": {
+        "lastAt": {
+          ".write": "auth != null && auth.uid === $uid",
+          ".validate": "newData.val() === now"
+        }
+      }
+    },
     "siteStats": {
       "visitorCount": {
         ".read": true,

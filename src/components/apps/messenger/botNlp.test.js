@@ -18,7 +18,8 @@ describe('tokenMatches', () => {
         expect(tokenMatches('projelerinden', 'proje')).toBe(true);
         expect(tokenMatches('linkedn', 'linkedin')).toBe(true);
         expect(tokenMatches('resum', 'resume')).toBe(true);
-        expect(tokenMatches('projlr', 'projeler')).toBe(true);
+        expect(tokenMatches('projelr', 'projeler')).toBe(true);
+        expect(tokenMatches('iletisimm', 'iletisim')).toBe(true);
     });
 
     it('does not match unrelated or very short words loosely', () => {
@@ -26,6 +27,8 @@ describe('tokenMatches', () => {
         expect(tokenMatches('his', 'hi')).toBe(false);
         expect(tokenMatches('banana', 'project')).toBe(false);
         expect(tokenMatches('chat', 'cv')).toBe(false);
+        expect(tokenMatches('beach', 'reach')).toBe(false);   // the first letter has to be right
+        expect(tokenMatches('think', 'thanks')).toBe(false);
     });
 
     it('"=" means exact only', () => {

@@ -17,6 +17,7 @@ import { useNudge } from './hooks/useNudge';
 import { useFriendActions } from './hooks/useFriendActions';
 import { useAdminTools } from './hooks/useAdminTools';
 import { useInbox } from './hooks/useInbox';
+import { useLessons } from './hooks/useLessons';
 import { useReadReceipts } from './hooks/useReadReceipts';
 import { useBotChat } from './hooks/useBotChat';
 import BotPanel from './components/BotPanel';
@@ -67,6 +68,7 @@ const ChatInterface = ({ user, onLogout }) => {
     });
     const admin = useAdminTools({ user, currentRoom, activeContactId, showNotification });
     const inbox = useInbox({ user, showNotification });
+    const lessons = useLessons({ user, showNotification });
     const [showInbox, setShowInbox] = useState(false);
 
     // Self-healing: make sure my public profile has a username, and keep my
@@ -208,7 +210,7 @@ const ChatInterface = ({ user, onLogout }) => {
                 onSignOut={handleSignOut}
                 onOpenAdmin={admin.openAdminPanel}
                 onOpenInbox={() => setShowInbox(true)}
-                inboxUnread={inbox.unread}
+                inboxUnread={inbox.unread + lessons.pending.length}
                 contacts={contacts}
                 friendStatuses={friendStatuses}
                 nudgedContacts={nudgedContacts}
@@ -277,7 +279,7 @@ const ChatInterface = ({ user, onLogout }) => {
                 />
             )}
 
-            {showInbox && <InboxPanel inbox={inbox} onClose={() => setShowInbox(false)} />}
+            {showInbox && <InboxPanel inbox={inbox} lessons={lessons} onClose={() => setShowInbox(false)} />}
 
             {admin.msgToDelete && (
                 <MessageBox

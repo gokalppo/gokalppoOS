@@ -33,7 +33,7 @@ describe('greeting and small talk', () => {
 
     it('answers "how are you" and keeps the chat going', () => {
         const r = chat().say('how are you?');
-        expect(text(r)).toMatch(/How are you|you doing/i);
+        expect(text(r)).toMatch(/you\?/i);
         expect(r.suggestions.length).toBeGreaterThan(0);
     });
 
@@ -413,13 +413,13 @@ describe('leaving a message for Gökalp', () => {
         expect(text(done)).toMatch(/gönderiyorum/);
     });
 
-    it('is offered after two misunderstandings in a row, and "yes" starts it', () => {
+    it('after two misunderstandings in a row it suggests teaching it or leaving a message', () => {
         const c = chat();
         expect(isFallback(c.say('zzzz qqqq'))).toBe(true);
         const second = c.say('xxxx wwww');
-        expect(text(second)).toMatch(/pass your question on/);
-        expect(second.suggestions).toEqual(['Yes', 'No']);
-        expect(text(c.say('yes'))).toMatch(/What would you like me to tell him/);
+        expect(text(second)).toMatch(/Teach me|teach me|leave a message/i);
+        expect(second.suggestions[0]).toBe('Let me teach you');
+        expect(text(c.say('leave a message'))).toMatch(/What would you like me to tell him/);
     });
 
     it('lets the visitor carry on normally if they ignore the offer', () => {

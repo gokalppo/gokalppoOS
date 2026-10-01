@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import MessageBox from '../../../MessageBox';
 import LinkedText from './LinkedText';
+import LessonsPane from './LessonsPane';
 import { filterEntries, sourceOf, replyHref } from '../inboxUtils';
 
 const FILTERS = [['all', 'All'], ['unread', 'Unread'], ['bot', '🤖 Bot'], ['form', '✉ Form']];
@@ -8,7 +9,8 @@ const FILTERS = [['all', 'All'], ['unread', 'Unread'], ['bot', '🤖 Bot'], ['fo
 const when = (timestamp) => (timestamp ? new Date(timestamp).toLocaleString() : '');
 
 // Admin-only inbox: everything visitors left through Gökalp Bot or the contact form.
-const InboxPanel = ({ inbox, onClose }) => {
+const InboxPanel = ({ inbox, lessons, onClose }) => {
+    const [tab, setTab] = useState('messages');
     const [filter, setFilter] = useState('all');
     const [selectedId, setSelectedId] = useState(null);
     const [confirmDelete, setConfirmDelete] = useState(false);
@@ -38,6 +40,16 @@ const InboxPanel = ({ inbox, onClose }) => {
                 <button onClick={onClose} aria-label="Close inbox" className="inbox-close">X</button>
             </div>
 
+            <div className="inbox-tabs" role="tablist">
+                <button role="tab" aria-selected={tab === 'messages'} className={`inbox-tab${tab === 'messages' ? ' active' : ''}`} onClick={() => setTab('messages')}>
+                    Messages{inbox.unread > 0 ? ` (${inbox.unread})` : ''}
+                </button>
+                <button role="tab" aria-selected={tab === 'lessons'} className={`inbox-tab${tab === 'lessons' ? ' active' : ''}`} onClick={() => setTab('lessons')}>
+                    Bot lessons{lessons.pending.length > 0 ? ` (${lessons.pending.length})` : ''}
+                </button>
+            </div>
+
+            {tab === 'lessons' ? <LessonsPane lessons={lessons} /> : (<>
             <div className="inbox-toolbar">
                 {FILTERS.map(([id, label]) => (
                     <button
@@ -98,6 +110,7 @@ const InboxPanel = ({ inbox, onClose }) => {
                     )}
                 </div>
             </div>
+            </>)}
 
             {confirmDelete && (
                 <MessageBox

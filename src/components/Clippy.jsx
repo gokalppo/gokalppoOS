@@ -2,13 +2,18 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import './Clippy.css';
 import { useLanguage } from '../context/LanguageContext';
 import { getClippyTips } from '../i18n/clippyTips';
+import { createTipBag, nextDiscovery } from './clippyLogic';
+
+const IDLE_AFTER_MS = 75000;   // a quiet spell before Clippy nudges towards something not tried yet
+const IDLE_CHECK_MS = 15000;
+const MAX_IDLE_TIPS = 6;
 
 const resolveCategory = (TIPS, openWindows, focusedWindowId) => {
     const win = openWindows.find((w) => w.id === focusedWindowId);
     if (!win) return 'default';
     if (win.id === 'computer') return 'mycomputer';
     if (win.id === 'recycle') return 'recyclebin';
-    if (TIPS[win.id]) return win.id;
+    if (Array.isArray(TIPS[win.id])) return win.id;
     if (win.title && win.title.toLowerCase().endsWith('.txt')) return 'notepad';
     return 'default';
 };
@@ -22,14 +27,19 @@ const Clippy = ({ openWindows, focusedWindowId }) => {
     const [blinking, setBlinking] = useState(false);
     const lastCategoryRef = useRef(null);
     const eyesRef = useRef(null);
+    const bagRef = useRef(null);
+    if (!bagRef.current) bagRef.current = createTipBag();
+    const visitedRef = useRef(new Set());       // apps the visitor has opened this session
+    const lastActivityRef = useRef(Date.now());
+    const idleTipsRef = useRef(0);
     const [pupilOffset, setPupilOffset] = useState({ x: 0, y: 0 });
 
     const showTipForCategory = useCallback((category) => {
-        const pool = TIPS[category] || TIPS.default;
-        const text = pool[Math.floor(Math.random() * pool.length)];
-        setMessage(text);
+        const pool = Array.isArray(TIPS[category]) ? TIPS[category] : TIPS.default;
+        const key = `${lang}:${Array.isArray(TIPS[category]) ? category : 'default'}`;
+        setMessage(bagRef.current.next(key, pool));
         setBubbleOpen(true);
-    }, [TIPS]);
+    }, [TIPS, lang]);
 
     // Appear shortly after boot, with a friendly greeting.
     useEffect(() => {
@@ -47,9 +57,41 @@ const Clippy = ({ openWindows, focusedWindowId }) => {
         const category = resolveCategory(TIPS, openWindows, focusedWindowId);
         if (category !== lastCategoryRef.current) {
             lastCategoryRef.current = category;
+            lastActivityRef.current = Date.now();
+            if (category !== 'default') visitedRef.current.add(category);
             if (focusedWindowId) showTipForCategory(category);
         }
     }, [TIPS, openWindows, focusedWindowId, visible, showTipForCategory]);
+
+    // Any click or key press counts as activity, so Clippy only speaks up after a real quiet spell.
+    useEffect(() => {
+        const mark = () => { lastActivityRef.current = Date.now(); };
+        window.addEventListener('pointerdown', mark);
+        window.addEventListener('keydown', mark);
+        return () => {
+            window.removeEventListener('pointerdown', mark);
+            window.removeEventListener('keydown', mark);
+        };
+    }, []);
+
+    // After a quiet spell, nudge towards an app not opened yet (or share a general tip once all were seen).
+    useEffect(() => {
+        if (!visible) return undefined;
+        const interval = setInterval(() => {
+            if (idleTipsRef.current >= MAX_IDLE_TIPS || Date.now() - lastActivityRef.current < IDLE_AFTER_MS) return;
+            const id = nextDiscovery(visitedRef.current, TIPS);
+            if (id) {
+                visitedRef.current.add(id); // each nudge is made once
+                setMessage(TIPS.discover[id]);
+                setBubbleOpen(true);
+            } else {
+                showTipForCategory('default');
+            }
+            idleTipsRef.current += 1;
+            lastActivityRef.current = Date.now();
+        }, IDLE_CHECK_MS);
+        return () => clearInterval(interval);
+    }, [visible, TIPS, showTipForCategory]);
 
     // Idle blink animation.
     useEffect(() => {
@@ -87,6 +129,7 @@ const Clippy = ({ openWindows, focusedWindowId }) => {
                 <div className="clippy-bubble" role="status" aria-live="polite">
                     <button className="clippy-bubble-close" onClick={() => setBubbleOpen(false)} title={t('clippy.close')}>×</button>
                     <div className="clippy-bubble-text">{message}</div>
+                    <button type="button" className="clippy-bubble-next" onClick={() => showTipForCategory(category)}>{t('clippy.another')}</button>
                 </div>
             )}
             <div className="clippy-character">

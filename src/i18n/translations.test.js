@@ -77,7 +77,9 @@ describe('Clippy tips', () => {
         expect(Object.keys(CLIPPY_TIPS.tr).sort()).toEqual(Object.keys(CLIPPY_TIPS.en).sort());
         for (const lang of ['en', 'tr']) {
             for (const [category, tips] of Object.entries(CLIPPY_TIPS[lang])) {
-                expect(tips.length, `${lang}:${category}`).toBeGreaterThan(0);
+                // `discover` is an object (one nudge per app); every other category is a list of tips
+                const size = Array.isArray(tips) ? tips.length : Object.keys(tips).length;
+                expect(size, `${lang}:${category}`).toBeGreaterThan(0);
             }
         }
     });

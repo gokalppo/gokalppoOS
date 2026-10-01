@@ -2,6 +2,7 @@
 // Pure: they return result descriptors (text lines, `stream` for slow output, `{ live }` lines that
 // replace the previous live line) and never touch the DOM, the clock or Math.random directly.
 import { THEME_NAMES, isTheme, DEFAULT_THEME } from './terminalThemes';
+import { FORTUNES } from './terminalFortunes';
 
 export const OS_VERSION = '1.0.4';
 export const HOSTNAME = 'gokalppo-pc';
@@ -69,37 +70,6 @@ const MSG = {
         installDone: 'Bitti. Aslında hiçbir şey yüklenmedi.',
         exit: 'Terminal kapatılıyor...'
     }
-};
-
-const FORTUNES = {
-    en: [
-        'It works on my machine.',
-        'There are only two hard things in computer science: cache invalidation, naming things, and off-by-one errors.',
-        'A good programmer looks both ways before crossing a one-way street.',
-        'Weeks of coding can save you hours of planning.',
-        'Real programmers count from zero.',
-        'The cloud is just someone else\'s computer.',
-        'Have you tried turning it off and on again?',
-        'First, solve the problem. Then, write the code.',
-        'Debugging is being the detective in a crime movie where you are also the murderer.',
-        'Never trust a computer you can\'t throw out of a window.',
-        'Today is a good day to commit.',
-        'Ctrl+S is a lifestyle.'
-    ],
-    tr: [
-        'Bende çalışıyor.',
-        'Bilgisayar biliminde sadece iki zor şey var: önbellek geçersiz kılma, isim koymak ve bir eksik/fazla hataları.',
-        'İyi bir programcı tek yönlü sokağı geçerken iki yana da bakar.',
-        'Haftalarca kod yazmak, saatlerce plan yapmaktan seni kurtarabilir.',
-        'Gerçek programcılar sıfırdan sayar.',
-        'Bulut, başkasının bilgisayarından ibarettir.',
-        'Kapatıp tekrar açmayı denedin mi?',
-        'Önce problemi çöz. Sonra kodu yaz.',
-        'Hata ayıklamak, katilin de sen olduğun bir polisiye filmde dedektif olmaktır.',
-        'Pencereden fırlatamayacağın bir bilgisayara asla güvenme.',
-        'Bugün commit atmak için güzel bir gün.',
-        'Ctrl+S bir yaşam tarzıdır.'
-    ]
 };
 
 // ---------------------------------------------------------------------------

@@ -64,6 +64,7 @@ export const translations = {
         'sp.cancel': 'Cancel',
 
         'clippy.close': 'Close',
+        'clippy.another': 'Another tip ▸',
         'clippy.click': 'Click me',
         'clippy.hide': 'Hide the assistant',
 
@@ -282,6 +283,7 @@ export const translations = {
         'sp.cancel': 'İptal',
 
         'clippy.close': 'Kapat',
+        'clippy.another': 'Başka ipucu ▸',
         'clippy.click': 'Bana tıklayın',
         'clippy.hide': 'Asistanı gizle',
 

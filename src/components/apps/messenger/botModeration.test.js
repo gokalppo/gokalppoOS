@@ -3,13 +3,13 @@ import { checkTeachable, hasBlockedWord, TEACH_A_MAX, TEACH_Q_MAX } from './botM
 
 describe('what visitors may teach', () => {
     it('accepts ordinary, friendly sentences in both languages', () => {
-        for (const t of ['Bugün hava çok güzel', 'selam nasılsın', 'I love pizza', 'cats are better than dogs', 'Kanka bu iş tamam', 'got it, thanks', 'my pic is in the album']) {
+        for (const t of ['Bugün hava çok güzel', 'selam nasılsın', 'I love pizza', 'cats are better than dogs', 'Kanka bu iş tamam', 'got it, thanks', 'my pic is in the album', 'sık sık görüşelim', 'Erken ve sık commit at']) {
             expect(checkTeachable(t), t).toBe('ok');
         }
     });
 
     it('turns away insults and slurs, even with odd spelling or separators', () => {
-        for (const t of ['siktir git', 'Sen bir orospusun', 'fuck you', 'what the f.u.c.k', 's i k t i r', 'you bitch', 'ORospu çocuğu', 'amk']) {
+        for (const t of ['siktir git', 'Sen bir orospusun', 'fuck you', 'what the f.u.c.k', 's i k t i r', 'you bitch', 'ORospu çocuğu', 'amk', 'sik']) {
             expect(checkTeachable(t), t).toBe('rude');
         }
         expect(hasBlockedWord('picnic with a cocktail')).toBe(false);

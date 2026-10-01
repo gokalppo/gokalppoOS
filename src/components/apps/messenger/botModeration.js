@@ -26,7 +26,9 @@ const EXACT_ONLY = new Set(['amk', 'aq', 'sik', 'dick', 'cock', 'rape', 'pust'])
 const BLOCKED = BLOCKED_STEMS.map((s) => fold(s));
 const isBlockedToken = (token) => BLOCKED.some((stem) => (EXACT_ONLY.has(stem) ? token === stem : token === stem || token.startsWith(stem)));
 
-export const hasBlockedWord = (text) => {
+export const hasBlockedWord = (rawText) => {
+    // Turkish "sık" (frequent: "sık sık") loses its dot when folded and would look like a rude word
+    const text = String(rawText).replace(/(?<![\p{L}])sık(?![\p{L}])/giu, ' ');
     if (tokenize(text).some(isBlockedToken)) return true;
     // "s i k t i r" or "f.u.c.k": single letters separated by spaces or punctuation, glued back together
     const spelled = String(text).match(/(?:^|[^\p{L}])((?:\p{L}[\s.\-_*]+){3,}\p{L})(?![\p{L}])/gu) || [];

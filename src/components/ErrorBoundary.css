@@ -1,0 +1,57 @@
+.eb-root {
+    height: 100%;
+    box-sizing: border-box;
+    padding: 16px;
+    background: #c0c0c0;
+    font-family: gokalppoOS, sans-serif;
+    font-size: 12px;
+    color: #000;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.eb-body { display: flex; gap: 14px; align-items: flex-start; }
+
+.eb-body p { margin: 0 0 8px; line-height: 1.4; }
+
+.eb-icon {
+    flex: none;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: #c00000;
+    color: #fff;
+    font-size: 20px;
+    line-height: 32px;
+    text-align: center;
+    font-weight: bold;
+}
+
+.eb-details {
+    margin: 0;
+    padding: 6px;
+    background: #fff;
+    border: 2px solid;
+    border-color: #808080 #fff #fff #808080;
+    font-size: 11px;
+    white-space: pre-wrap;
+    word-break: break-word;
+    max-height: 90px;
+    overflow: auto;
+}
+
+.eb-buttons { display: flex; gap: 8px; justify-content: center; margin-top: auto; }
+
+.eb-btn {
+    min-width: 84px;
+    padding: 4px 10px;
+    background: #c0c0c0;
+    border: 2px solid;
+    border-color: #fff #404040 #404040 #fff;
+    font-family: inherit;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.eb-btn:active { border-color: #404040 #fff #fff #404040; }

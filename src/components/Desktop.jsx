@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState, lazy, Suspense } from 'react';
 import Draggable from 'react-draggable';
 import Taskbar from './Taskbar';
 import Window from './Window';
+import ErrorBoundary from './ErrorBoundary';
 import PlaceholderApp from './apps/PlaceholderApp';
 import Contact from './apps/Contact';
 import MyResume from './apps/MyResume';
@@ -499,9 +500,11 @@ const Desktop = ({
                     icon={win.icon}
                 >
                     {/* SAFELY RENDER CONTENT — lazy-loaded apps resolve inside this boundary */}
-                    <Suspense fallback={<AppLoadingFallback />}>
-                        {win.content ? win.content : <div style={{ padding: '20px' }}>Content Loading Error...</div>}
-                    </Suspense>
+                    <ErrorBoundary title={win.title} onClose={() => onCloseWindow(win.id)}>
+                        <Suspense fallback={<AppLoadingFallback />}>
+                            {win.content ? win.content : <div style={{ padding: '20px' }}>Content Loading Error...</div>}
+                        </Suspense>
+                    </ErrorBoundary>
                 </Window>
             ))}
 

@@ -1,6 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import './Terminal.css';
 
+const Bomb = () => {
+    throw new Error('Illegal operation: user typed the forbidden command.');
+};
+
 const MatrixRain = ({ active }) => {
     const canvasRef = useRef(null);
 
@@ -208,8 +212,11 @@ const Terminal = () => {
                     "",
                     "4. AI Image Detector",
                     "   ResNet18 model detecting AI-generated",
-                    "   images at 99.97% accuracy, Gradio UI."
+                    "   images at 97.2% accuracy, Gradio UI."
                 ];
+                break;
+            case 'crash':
+                output = [<Bomb />];
                 break;
             case 'clear':
                 setHistory([]);

@@ -248,3 +248,35 @@ describe('teach mode', () => {
         expect(text(c.say('best color'))).toBe('blue');
     });
 });
+
+describe('lessons that look like a "pick one" question or a sum', () => {
+    it('answers a taught "X or Y" question even when the words are in a different order', () => {
+        const c = chat({ lang: 'tr' });
+        c.say('teach: spiderman mı hulk mu daha güçlü = Hulk tabii, ağzından çıkan yeşil duman bile ağır');
+        expect(text(c.say('spiderman mı hulk mu daha güçlü'))).toMatch(/^Hulk tabii/);
+        expect(text(c.say('spiderman mı daha güçlü hulk mu'))).toMatch(/^Hulk tabii/);
+        expect(text(c.say('hulk mu spiderman mı daha güçlü'))).toMatch(/^Hulk tabii/);
+    });
+
+    it('works the same in English and for a taught "A or B" that the pick-one trick would catch', () => {
+        const c = chat();
+        c.say('teach: tea or coffee = Tea, always');
+        expect(text(c.say('tea or coffee?'))).toBe('Tea, always');
+        const d = chat({ lang: 'tr' });
+        d.say('teach: çay mı kahve mi = Her ikisi de, kafein şart');
+        expect(text(d.say('çay mı kahve mi'))).toBe('Her ikisi de, kafein şart');
+        expect(text(d.say('kahve mi çay mı'))).toBe('Her ikisi de, kafein şart');
+    });
+
+    it('still picks for questions nobody taught', () => {
+        const c = chat({ lang: 'tr' });
+        c.say('teach: spiderman mı hulk mu daha güçlü = Hulk');
+        expect(text(c.say('pizza mı burger mı'))).toMatch(/pizza/);
+    });
+
+    it('a lesson does not hide the honest answers about what the bot is', () => {
+        const c = chat();
+        c.say('teach: who are you = a human');
+        expect(text(c.say('who are you'))).toMatch(/not the real Gökalp/);
+    });
+});

@@ -594,6 +594,19 @@ export const respond = (input, state, options = {}) => {
         return finish([...lead, ctx.say('teachSaved', inline.q, inline.a)], { primary: 'teach', effects: [effect] });
     }
 
+    // --- something a visitor taught the bot beats everything but the honest "who/what am I" answers
+    //     (so a taught "spiderman or hulk, who is stronger?" is not swallowed by the "pick one" trick) ---
+    const taughtHit = [taughtMatch(s.taught, text, tokens, 0.08, 'local'), taughtMatch(options.taught, text, tokens, 0.04, 'shared')]
+        .filter(Boolean).sort((a, b) => b.score - a.score)[0];
+    if (taughtHit && taughtHit.score >= 0.9) {
+        // only when the visitor asks exactly one of those questions ("what are you doing" is not "what are you")
+        const honest = INTENTS.filter((i) => HONEST_INTENTS.has(i.id)).some((i) => (i.phr || []).includes(text));
+        if (!honest) {
+            s.misses = 0;
+            return finish([...lead, ctx.pickFrom(taughtHit.key, taughtHit.answers)], { primary: 'chat' });
+        }
+    }
+
     // --- sums, coin flips, dice, "pizza or burger?" ---
     const utility = utilityReply(raw, lang, random);
     if (utility) {
@@ -679,14 +692,6 @@ export const respond = (input, state, options = {}) => {
     }
     // a greeting / thanks in front of real content is said first, briefly
     const preface = main.length && social.length && !['bye'].includes(social[0].id) ? [social[0]] : [];
-
-    // --- something a visitor taught the bot beats its own intents (except the honest "who/what am I" ones) ---
-    const taughtHit = [taughtMatch(s.taught, text, tokens, 0.08, 'local'), taughtMatch(options.taught, text, tokens, 0.04, 'shared')]
-        .filter(Boolean).sort((a, b) => b.score - a.score)[0];
-    if (taughtHit && taughtHit.score >= 0.9 && !(chosen[0] && HONEST_INTENTS.has(chosen[0].id))) {
-        s.misses = 0;
-        return finish([...lead, ctx.pickFrom(taughtHit.key, taughtHit.answers)], { primary: 'chat' });
-    }
 
     // --- small talk: the closest sentence the bot remembers (its own, or taught by visitors) ---
     const hasMain = chosen.some((f) => f.group !== 'social');

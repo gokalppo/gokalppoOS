@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { executeCommand, promptFor } from './terminalCommands';
-import { tokenize, resolvePath, pathOf } from './shellFs';
+import { executeCommand, executeLine, promptFor } from './terminalCommands';
+import { tokenize, resolvePath, pathOf, applyOpsToNodes } from './shellFs';
 
 const makeFS = () => ({
     root: { id: 'root', type: 'folder', name: 'My Computer', parentId: null, children: ['documents', 'localdisk'] },
@@ -19,56 +19,26 @@ const PROGRAMS = [
     { id: 'terminal', title: 'Terminal' }
 ];
 
-// A tiny stand-in for the FileSystemContext so multi-step scenarios can be tested end to end.
+// A tiny stand-in for the Terminal + FileSystemContext so multi-step scenarios can be tested end to end.
 const session = (lang = 'en', windows = []) => {
     let nodes = makeFS();
     let cwd = 'root';
-    let counter = 0;
     const opened = [];
-    const apply = (ops = []) => {
-        ops.forEach((op) => {
-            if (op.op === 'mkdir' || op.op === 'create') {
-                const id = `new${counter++}`;
-                nodes = {
-                    ...nodes,
-                    [id]: op.op === 'mkdir'
-                        ? { id, type: 'folder', name: op.name, parentId: op.parentId, children: [] }
-                        : { id, type: 'file', name: op.name, parentId: op.parentId, content: op.content || '' },
-                    [op.parentId]: { ...nodes[op.parentId], children: [...nodes[op.parentId].children, id] }
-                };
-                if (op.open) opened.push(id);
-            } else if (op.op === 'write') {
-                nodes = { ...nodes, [op.id]: { ...nodes[op.id], content: op.content } };
-            } else if (op.op === 'rename') {
-                nodes = { ...nodes, [op.id]: { ...nodes[op.id], name: op.name } };
-            } else if (op.op === 'recycle') {
-                const n = nodes[op.id];
-                nodes = {
-                    ...nodes,
-                    [n.parentId]: { ...nodes[n.parentId], children: nodes[n.parentId].children.filter((c) => c !== op.id) },
-                    [op.id]: { ...n, parentId: 'recycle' },
-                    recycle: { ...nodes.recycle, children: [...nodes.recycle.children, op.id] }
-                };
-            } else if (op.op === 'move') {
-                const n = nodes[op.id];
-                nodes = {
-                    ...nodes,
-                    [n.parentId]: { ...nodes[n.parentId], children: nodes[n.parentId].children.filter((c) => c !== op.id) },
-                    [op.parentId]: { ...nodes[op.parentId], children: [...nodes[op.parentId].children, op.id] },
-                    [op.id]: { ...n, parentId: op.parentId }
-                };
-            } else if (op.op === 'open') {
-                opened.push(op.id);
-            }
+    const history = [];
+    const runLine = (cmd) => {
+        history.push(cmd);
+        const results = executeLine(cmd, new Date(), lang, { programs: PROGRAMS, windows, nodes, cwd, canStore: () => true, history });
+        results.forEach((result) => {
+            (result.ops || []).forEach((op) => {
+                if (op.op === 'open' || (op.op === 'create' && op.open)) opened.push(op.id);
+            });
+            nodes = applyOpsToNodes(nodes, result.ops);
+            if (result.cwd) cwd = result.cwd;
         });
+        return results;
     };
-    const run = (cmd) => {
-        const result = executeCommand(cmd, new Date(), lang, { programs: PROGRAMS, windows, nodes, cwd, canStore: () => true });
-        apply(result.ops);
-        if (result.cwd) cwd = result.cwd;
-        return result;
-    };
-    return { run, opened, get nodes() { return nodes; }, get cwd() { return cwd; } };
+    const run = (cmd) => runLine(cmd).at(-1);
+    return { run, runLine, opened, get nodes() { return nodes; }, get cwd() { return cwd; } };
 };
 
 const names = (s, folderId) => s.nodes[folderId].children.map((id) => s.nodes[id].name);
@@ -323,5 +293,75 @@ describe('programs', () => {
         expect(s.run('kill paint')).toMatchObject({ error: true });
         expect(s.run('kill')).toMatchObject({ error: true });
         expect(session().run('tasklist').lines).toEqual(['No windows are open.']);
+    });
+});
+
+describe('chaining and pipes', () => {
+    it('&& runs the next command only after a success, ; always continues', () => {
+        const s = session();
+        s.runLine('mkdir box && cd box && echo hi > a.txt');
+        expect(s.nodes[s.cwd].name).toBe('box');
+        expect(names(s, s.cwd)).toEqual(['a.txt']);
+
+        const failed = session();
+        const results = failed.runLine('cd nowhere && mkdir never');
+        expect(results).toHaveLength(1);
+        expect(results[0].error).toBe(true);
+        expect(names(failed, 'root')).not.toContain('never');
+
+        const always = session();
+        always.runLine('cd nowhere ; mkdir yes');
+        expect(names(always, 'root')).toContain('yes');
+    });
+
+    it('prints every segment in order and ignores operators inside quotes', () => {
+        const s = session();
+        expect(s.runLine('echo one && echo two').map((r) => r.lines[0])).toEqual(['one', 'two']);
+        expect(s.runLine('echo "a && b"').map((r) => r.lines[0])).toEqual(['a && b']);
+        expect(s.runLine('echo hi &&')).toHaveLength(1);
+    });
+
+    it('pipes one command into a filter', () => {
+        const s = session();
+        s.run('cd "My Documents"');
+        expect(s.run('ls | grep txt').lines).toEqual(['Welcome.txt']);
+        expect(s.run('ls | grep -c .').lines).toEqual(['2']);
+        expect(s.run('ls | sort -r | head -n 1').lines).toEqual(['Welcome.txt']);
+        expect(s.run('ls | wc -l').lines).toEqual(['2']);
+        expect(s.run('cat welcome.txt | tail -n 1').lines).toEqual(['world']);
+    });
+
+    it('a pipe can end in a redirect', () => {
+        const s = session();
+        s.run('cd "My Documents"');
+        s.run('ls | grep png > pics.txt');
+        expect(s.run('cat pics.txt').lines).toEqual(['drawing.png']);
+    });
+
+    it('stops a pipeline when an early stage fails', () => {
+        const s = session();
+        const result = s.run('cat nope.txt | grep x');
+        expect(result.error).toBe(true);
+        expect(result.lines[0]).toMatch(/No such file/);
+    });
+
+    it('filters read files directly too', () => {
+        const s = session();
+        s.run('cd "My Documents"');
+        expect(s.run('grep -n world welcome.txt').lines).toEqual(['2:world']);
+        expect(s.run('grep -i HELLO welcome.txt').lines).toEqual(['hello']);
+        expect(s.run('grep -v hello welcome.txt').lines).toEqual(['world']);
+        expect(s.run('head -1 welcome.txt').lines).toEqual(['hello']);
+        expect(s.run('wc welcome.txt').lines).toEqual(['2 2 11']);
+        expect(s.run('grep x')).toMatchObject({ error: true });
+        expect(s.run('grep')).toMatchObject({ error: true });
+        expect(s.run('grep x drawing.png')).toMatchObject({ error: true });
+    });
+
+    it('history lists the commands typed so far', () => {
+        const s = session();
+        s.runLine('echo a');
+        s.runLine('echo b');
+        expect(s.run('history').lines).toEqual(['   1  echo a', '   2  echo b', '   3  history']);
     });
 });

@@ -1,7 +1,7 @@
 // Pure program-launching commands for the Terminal: apps, start/open, notepad/paint <file>,
 // tasklist and kill. Like shellFs, they return descriptors the Terminal carries out.
 import { fileKind, extensionOf, sanitizeFileName } from './fileTypes';
-import { resolvePath, splitTarget } from './shellFs';
+import { resolvePath, splitTarget, newId } from './shellFs';
 
 const MSG = {
     en: {
@@ -96,7 +96,7 @@ const launchWithFile = (program, filePath, ctx, name) => {
     if (!clean || clean !== target.name.trim()) return out([m.badName(name, target.name)], { error: true });
     const fileName = extensionOf(clean) ? clean : `${clean}.txt`;
     return out([m.created(fileName)], {
-        ops: [{ op: 'create', parentId: target.parent.id, name: fileName, content: '', open: true }]
+        ops: [{ op: 'create', id: newId(), parentId: target.parent.id, name: fileName, content: '', open: true }]
     });
 };
 

@@ -57,8 +57,8 @@ export const FileSystemProvider = ({ children }) => {
         return folder.children.map((id) => nodes[id]).filter(Boolean);
     }, [nodes]);
 
-    const createFolder = useCallback((parentId, name) => {
-        const id = genId();
+    const createFolder = useCallback((parentId, name, presetId) => {
+        const id = presetId || genId();
         setNodes((prev) => ({
             ...prev,
             [id]: { id, type: 'folder', name, parentId, children: [] },
@@ -67,8 +67,8 @@ export const FileSystemProvider = ({ children }) => {
         return id;
     }, []);
 
-    const createFile = useCallback((parentId, name, content = '') => {
-        const id = genId();
+    const createFile = useCallback((parentId, name, content = '', presetId) => {
+        const id = presetId || genId();
         setNodes((prev) => ({
             ...prev,
             [id]: { id, type: 'file', name, parentId, content, modifiedAt: Date.now() },

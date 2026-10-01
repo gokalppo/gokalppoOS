@@ -51,7 +51,7 @@ describe('executeCommand', () => {
         expect(listed.length).toBeGreaterThan(0);
         for (const name of listed) {
             const result = executeCommand(name, new Date(), 'en', { programs: [{ id: 'notepad', title: 'Notepad' }, { id: 'paint', title: 'Paint' }] });
-            const isMissing = result.type === 'text' && result.lines[0].startsWith('Command not found');
+            const isMissing = result.type === 'text' && !!result.lines[0]?.startsWith('Command not found');
             expect(isMissing, `"${name}" is in help but not implemented`).toBe(false);
         }
     });

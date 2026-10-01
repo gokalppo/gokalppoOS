@@ -2,7 +2,10 @@
 // descriptor so the UI decides how to render it (and so it is unit-testable).
 import { PROJECTS } from '../../data/projects';
 import { localized } from '../../i18n/translate';
-import { tokenize, fsCommand, writeRedirect, promptFor } from './shellFs';
+import { tokenize, fsCommand, writeRedirect, promptFor, applyOpsToNodes, FS_COMMANDS } from './shellFs';
+import { filterCommand, FILTER_COMMANDS } from './shellFilters';
+import { splitLine } from './shellLine';
+import { formatHistory } from './terminalHistory';
 import { appsLines, programCommand, startCommand, tasklistCommand, killCommand } from './shellApps';
 
 export { promptFor, appsLines };
@@ -34,6 +37,7 @@ const HELP = {
         "  clear      - Clear the terminal",
         "  date       - Show current date/time",
         "  echo       - Print text (echo hi > a.txt saves it)",
+        "  history    - Show the commands you typed",
         "  matrix     - Enter the matrix",
         "  neofetch   - System Information",
         "  github     - Open my GitHub profile",
@@ -59,7 +63,14 @@ const HELP = {
         "  paint      - Open Paint (paint picture.png)",
         "  tasklist   - List open windows",
         "  kill       - Close a window (kill notepad)",
-        "Tip: put names with spaces in \"quotes\"."
+        "Filters (work after a |, or on a file):",
+        "  grep       - Keep matching lines (-i -v -c -n)",
+        "  head       - First lines (-n 5)",
+        "  tail       - Last lines (-n 5)",
+        "  sort       - Sort lines (-r reverse)",
+        "  wc         - Count lines, words, characters",
+        "Tips: Tab completes, Up/Down recall, Ctrl+C cancels, Ctrl+L clears.",
+        "Chain with && or ;  -  pipe with |  -  put names with spaces in \"quotes\"."
     ],
     tr: [
         "Kullanılabilir Komutlar:",
@@ -68,6 +79,7 @@ const HELP = {
         "  clear      - Terminali temizle",
         "  date       - Tarih/saati göster",
         "  echo       - Metin yazdır (echo merhaba > a.txt kaydeder)",
+        "  history    - Yazdığın komutları göster",
         "  matrix     - Matrix'e gir",
         "  neofetch   - Sistem bilgisi",
         "  github     - GitHub profilimi aç",
@@ -93,7 +105,14 @@ const HELP = {
         "  paint      - Paint'i aç (paint resim.png)",
         "  tasklist   - Açık pencereleri listele",
         "  kill       - Pencereyi kapat (kill notepad)",
-        "İpucu: boşluklu adları \"tırnak\" içine al."
+        "Filtreler (| sonrasında veya bir dosyada çalışır):",
+        "  grep       - Eşleşen satırları tut (-i -v -c -n)",
+        "  head       - İlk satırlar (-n 5)",
+        "  tail       - Son satırlar (-n 5)",
+        "  sort       - Satırları sırala (-r ters)",
+        "  wc         - Satır, kelime, karakter say",
+        "İpuçları: Tab tamamlar, Yukarı/Aşağı geçmişi getirir, Ctrl+C iptal eder, Ctrl+L temizler.",
+        "&& veya ; ile zincirle  -  | ile boruya ver  -  boşluklu adları \"tırnak\" içine al."
     ]
 };
 
@@ -209,6 +228,7 @@ export const executeCommand = (raw, now = new Date(), lang = 'en', env = {}) => 
             case 'contact': return text(pick(CONTACT));
             case 'projects': return text(projectLines(lang));
             case 'echo': return text([args.join(' ')]);
+            case 'history': return text(formatHistory(env.history || []));
             case 'apps':
             case 'programs': return text(appsLines(env.programs, lang));
             case 'start':
@@ -225,6 +245,7 @@ export const executeCommand = (raw, now = new Date(), lang = 'en', env = {}) => 
             case 'crash': return { type: 'crash' };
             default:
                 return fsCommand(name, args, ctx)
+                    || filterCommand(name, args, ctx)
                     || programCommand(name, args, ctx)
                     || { type: 'text', lines: [m.notFound(normalized)], error: true };
         }
@@ -237,4 +258,43 @@ export const executeCommand = (raw, now = new Date(), lang = 'en', env = {}) => 
         return writeRedirect(result.lines, redirect, ctx);
     }
     return result;
+};
+
+// Command names for Tab completion (the hidden easter eggs are left out).
+export const COMMAND_NAMES = [
+    'help', 'about', 'clear', 'cls', 'date', 'echo', 'history', 'matrix', 'neofetch', 'github', 'linkedin',
+    'projects', 'contact', 'resume', 'cv', 'apps', 'start', 'open', 'tasklist', 'kill', 'taskkill',
+    ...FS_COMMANDS, ...FILTER_COMMANDS
+];
+
+// Runs a whole line: `a && b`, `a ; b` and `a | b | c`. Returns one result per segment so the Terminal
+// can show them in order. `&&` stops at the first failed segment; each segment sees the file changes
+// and folder moves of the ones before it.
+export const executeLine = (raw, now = new Date(), lang = 'en', env = {}) => {
+    const results = [];
+    let nodes = env.nodes;
+    let cwd = env.cwd || 'root';
+
+    for (const segment of splitLine(raw)) {
+        let stdin;
+        let result = { type: 'empty' };
+        let aborted = false;
+
+        for (let i = 0; i < segment.stages.length; i++) {
+            const last = i === segment.stages.length - 1;
+            result = executeCommand(segment.stages[i], now, lang, { ...env, nodes, cwd, stdin: i > 0 ? stdin : undefined });
+            if (!last) {
+                if (result.error) { aborted = true; break; }
+                stdin = result.type === 'text' ? result.lines : [];
+            }
+        }
+
+        results.push(result);
+        if (nodes && result.ops && result.ops.length) nodes = applyOpsToNodes(nodes, result.ops);
+        if (result.cwd) cwd = result.cwd;
+        if (segment.op === '&&' && (aborted || result.error)) break;
+    }
+
+    const shown = results.filter((r) => r.type !== 'empty');
+    return shown.length ? shown : [{ type: 'empty' }];
 };

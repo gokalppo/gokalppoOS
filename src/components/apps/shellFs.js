@@ -58,6 +58,11 @@ function quote(name) {
 
 const lower = (s) => String(s).toLowerCase();
 
+// New files and folders get their id here, so a chain like `mkdir a && cd a` can refer to a folder
+// that the Terminal has not created yet.
+let idSeq = 0;
+export const newId = () => `t${Date.now().toString(36)}${(idSeq++).toString(36)}`;
+
 // ---------------------------------------------------------------------------
 // Parsing
 // ---------------------------------------------------------------------------
@@ -164,6 +169,49 @@ export const splitTarget = (nodes, cwd, path) => {
     return { parent, name };
 };
 
+// Replays ops on a copy of the node map, so later commands in the same line see earlier changes.
+export const applyOpsToNodes = (nodes, ops = []) => ops.reduce((acc, op) => {
+    const withChild = (parentId, child) => (acc[parentId]
+        ? { ...acc, [child.id]: child, [parentId]: { ...acc[parentId], children: [...acc[parentId].children, child.id] } }
+        : acc);
+    const without = (node) => (acc[node.parentId]
+        ? { [node.parentId]: { ...acc[node.parentId], children: acc[node.parentId].children.filter((c) => c !== node.id) } }
+        : {});
+    switch (op.op) {
+        case 'mkdir':
+            return withChild(op.parentId, { id: op.id, type: 'folder', name: op.name, parentId: op.parentId, children: [] });
+        case 'create':
+            return withChild(op.parentId, { id: op.id, type: 'file', name: op.name, parentId: op.parentId, content: op.content || '', modifiedAt: Date.now() });
+        case 'write':
+            return acc[op.id] ? { ...acc, [op.id]: { ...acc[op.id], content: op.content, modifiedAt: Date.now() } } : acc;
+        case 'rename':
+            return acc[op.id] ? { ...acc, [op.id]: { ...acc[op.id], name: op.name } } : acc;
+        case 'recycle': {
+            const node = acc[op.id];
+            if (!node || !acc.recycle) return acc;
+            return {
+                ...acc,
+                ...without(node),
+                [op.id]: { ...node, parentId: 'recycle', originalParentId: node.parentId },
+                recycle: { ...acc.recycle, children: [...acc.recycle.children, op.id] }
+            };
+        }
+        case 'move': {
+            const node = acc[op.id];
+            const target = acc[op.parentId];
+            if (!node || !target) return acc;
+            return {
+                ...acc,
+                ...without(node),
+                [op.parentId]: { ...target, children: [...target.children, op.id] },
+                [op.id]: { ...node, parentId: op.parentId }
+            };
+        }
+        default:
+            return acc;
+    }
+}, nodes);
+
 export const pathOf = (nodes, id) => {
     const chain = [];
     let cur = nodes[id];
@@ -245,7 +293,7 @@ export const writeRedirect = (lines, redirect, ctx) => {
     const name = cleanName(target.name);
     if (!name) return fail(m.badName('>', target.name));
     if (!canStore(text.length)) return fail(m.full('>'));
-    return out([], { ops: [{ op: 'create', parentId: target.parent.id, name: withExtension(name), content: text }] });
+    return out([], { ops: [{ op: 'create', id: newId(), parentId: target.parent.id, name: withExtension(name), content: text }] });
 };
 
 // ---------------------------------------------------------------------------
@@ -365,7 +413,7 @@ export const fsCommand = (name, args, ctx) => {
                 if (childByName(nodes, target.parent, clean) || claimed.has(key)) return fail(m.exists(name, p));
                 if (!canStore(clean.length + 120)) return fail(m.full(name));
                 claimed.add(key);
-                ops.push({ op: 'mkdir', parentId: target.parent.id, name: clean });
+                ops.push({ op: 'mkdir', id: newId(), parentId: target.parent.id, name: clean });
             });
             return done();
         }
@@ -384,7 +432,7 @@ export const fsCommand = (name, args, ctx) => {
                 const clean = cleanName(target.name);
                 if (!clean) return fail(m.badName(name, target.name));
                 if (!canStore(clean.length + 200)) return fail(m.full(name));
-                ops.push({ op: 'create', parentId: target.parent.id, name: withExtension(clean), content: '' });
+                ops.push({ op: 'create', id: newId(), parentId: target.parent.id, name: withExtension(clean), content: '' });
             });
             return done();
         }
@@ -448,7 +496,7 @@ export const fsCommand = (name, args, ctx) => {
 
                 if (cmd === 'cp') {
                     budget += String(node.content ?? '').length;
-                    ops.push({ op: 'create', parentId: parent.id, name: newName, content: node.content ?? '' });
+                    ops.push({ op: 'create', id: newId(), parentId: parent.id, name: newName, content: node.content ?? '' });
                 } else {
                     if (newName !== node.name) ops.push({ op: 'rename', id: node.id, name: newName });
                     if (parent.id !== node.parentId) ops.push({ op: 'move', id: node.id, parentId: parent.id });

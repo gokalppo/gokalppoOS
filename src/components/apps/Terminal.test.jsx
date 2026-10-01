@@ -105,3 +105,65 @@ describe('Terminal and the desktop', () => {
         expect(seen).toEqual([{ id: 'notepad' }]);
     });
 });
+
+describe('Terminal keyboard', () => {
+    const key = (k, extra = {}) => fireEvent.keyDown(input(), { key: k, ...extra });
+
+    it('Up and Down recall earlier commands and give the unfinished line back', () => {
+        setup();
+        run('echo one');
+        run('echo two');
+        fireEvent.change(input(), { target: { value: 'dra' } });
+        key('ArrowUp');
+        expect(input().value).toBe('echo two');
+        key('ArrowUp');
+        expect(input().value).toBe('echo one');
+        key('ArrowDown');
+        key('ArrowDown');
+        expect(input().value).toBe('dra');
+    });
+
+    it('remembers commands across reloads', () => {
+        const first = setup();
+        run('echo kept');
+        first.unmount();
+        setup();
+        key('ArrowUp');
+        expect(input().value).toBe('echo kept');
+    });
+
+    it('Tab completes commands and file names, and lists several candidates', () => {
+        setup();
+        fireEvent.change(input(), { target: { value: 'neof' } });
+        key('Tab');
+        expect(input().value).toBe('neofetch ');
+        fireEvent.change(input(), { target: { value: 'cd my d' } });
+        key('Tab');
+        expect(input().value).toBe('cd "My Documents\\');
+        fireEvent.change(input(), { target: { value: 'ta' } });
+        key('Tab');
+        expect(screenText()).toContain('tasklist');
+    });
+
+    it('Ctrl+C cancels the line and Ctrl+L clears the screen', () => {
+        setup();
+        fireEvent.change(input(), { target: { value: 'half typed' } });
+        key('c', { ctrlKey: true });
+        expect(input().value).toBe('');
+        expect(screenText()).toContain('half typed^C');
+        key('l', { ctrlKey: true });
+        expect(screenText()).not.toContain('half typed');
+        expect(screenText()).not.toContain('Kernel');
+    });
+
+    it('runs chains and pipes, and the history command lists what was typed', () => {
+        setup();
+        run('mkdir box && cd box && echo hi > a.txt');
+        expect(prompt()).toBe('C:\\box>');
+        run('ls | grep txt');
+        expect(screenText()).toContain('a.txt');
+        run('history');
+        expect(screenText()).toContain('1  mkdir box && cd box && echo hi > a.txt');
+        expect(JSON.parse(localStorage.getItem(STORAGE_KEY)).root.children).toHaveLength(3);
+    });
+});

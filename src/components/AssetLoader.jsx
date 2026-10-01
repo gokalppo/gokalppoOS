@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 
 // IMAGES
-import wallpaper from '../assets/images/image.png';
+import wallpaper from '../assets/images/image.webp';
 import startBtn from '../assets/images/windows.png';
 import documentsIcon from '../assets/images/documents.png';
 import findIcon from '../assets/images/find.png';

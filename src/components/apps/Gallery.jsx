@@ -2,10 +2,10 @@ import React, { useState } from 'react';
 import './Gallery.css';
 
 // Import images
-import imgIoT from '../../assets/images/gallery01.jpeg';
-import imgTOTP from '../../assets/images/gallery02.jpeg';
-import imgScanner from '../../assets/images/gallery03.png';
-import imgAI from '../../assets/images/gallery04.png';
+import imgIoT from '../../assets/images/gallery01.webp';
+import imgTOTP from '../../assets/images/gallery02.webp';
+import imgScanner from '../../assets/images/gallery03.webp';
+import imgAI from '../../assets/images/gallery04.webp';
 import imgCindraNet from '../../assets/images/cindranet.svg';
 
 const Gallery = () => {

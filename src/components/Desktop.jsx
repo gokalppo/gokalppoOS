@@ -21,8 +21,8 @@ const FileExplorer = lazy(() => import('./apps/FileExplorer'));
 // ...
 
 import './Desktop.css';
-import wallpaper from '../assets/images/image.png';
-import minesweeperIcon from '../assets/images/minesweeper.svg';
+import wallpaper from '../assets/images/image.webp';
+import minesweeperIcon from '../assets/images/minesweeper.png';
 import binEmptyIcon from '../assets/images/Bin_Empty95.svg';
 import binFullIcon from '../assets/images/Bin_Full95.svg';
 import notepadIcon from '../assets/images/Notepad16.svg';

@@ -1,0 +1,60 @@
+.fd-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9998;
+}
+
+.fd-dialog {
+    background: var(--win-gray);
+    border: 2px solid;
+    border-color: #fff #404040 #404040 #fff;
+    box-shadow: 3px 3px 8px rgba(0, 0, 0, 0.5);
+    font-family: 'gokalppoOS', sans-serif;
+    color: #000;
+}
+
+.fd-open { width: 90%; height: 80%; max-width: 500px; display: flex; flex-direction: column; }
+.fd-saveas { width: 330px; }
+.fd-open-body { flex: 1; overflow: hidden; display: flex; }
+
+.fd-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: linear-gradient(90deg, var(--title-from), var(--title-to));
+    color: #fff;
+    padding: 3px 6px;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.fd-close {
+    background: var(--win-gray);
+    border: 1px outset #fff;
+    cursor: pointer;
+    font-size: 10px;
+    line-height: 1;
+}
+
+.fd-saveas-body { padding: 14px; display: flex; flex-direction: column; gap: 6px; font-size: 11px; }
+.fd-input { padding: 3px 4px; font-size: 12px; border: 1px inset #808080; }
+.fd-hint { color: #404040; }
+.fd-warning { color: #805000; }
+.fd-error { color: #a00000; }
+.fd-actions { display: flex; gap: 6px; justify-content: flex-end; margin-top: 8px; }
+
+.fd-btn {
+    background: var(--win-gray);
+    border: 2px solid;
+    border-color: #fff #404040 #404040 #fff;
+    padding: 3px 14px;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 11px;
+}
+
+.fd-btn:active { border-color: #404040 #fff #fff #404040; }

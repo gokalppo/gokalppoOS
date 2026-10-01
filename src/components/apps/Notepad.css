@@ -2,7 +2,7 @@
     display: flex;
     flex-direction: column;
     flex: 1;
-    /* Grow to fill window body */
+    position: relative;
     width: 100%;
     height: 100%;
     background-color: var(--win-gray);
@@ -10,61 +10,8 @@
     box-sizing: border-box;
 }
 
-.notepad-menubar {
-    display: flex;
-    background-color: var(--win-gray);
-    padding: 1px 0 2px 0;
-    user-select: none;
-    flex-shrink: 0;
-}
-
-.notepad-menu-item {
-    padding: 2px 6px;
-    cursor: default;
-    font-size: 13px;
-    position: relative;
-    color: black;
-    font-family: 'gokalppoOS', sans-serif;
-}
-
-.notepad-menu-item:hover {
-    background-color: var(--win-blue);
-    color: white;
-}
-
-.notepad-dropdown {
-    position: absolute;
-    top: 100%;
-    left: 0;
-    min-width: 150px;
-    background-color: var(--win-gray);
-    border: 1px solid black;
-    border-top: 1px solid white;
-    border-left: 1px solid white;
-    border-right: 1px solid black;
-    border-bottom: 1px solid black;
-    box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.2);
-    display: flex;
-    flex-direction: column;
-    z-index: 9999;
-}
-
-.notepad-dropdown-item {
-    padding: 3px 12px;
-    cursor: default;
-    color: black;
-    font-size: 13px;
-    font-family: 'gokalppoOS', sans-serif;
-}
-
-.notepad-dropdown-item:hover {
-    background-color: var(--win-blue);
-    color: white;
-}
-
 .notepad-textarea {
     flex: 1;
-    /* Fill remaining space */
     width: 100%;
     height: 100%;
     resize: none;
@@ -74,19 +21,18 @@
     padding: 4px;
     margin: 0;
     border: none;
-    /* User requested border: none, assuming inset applied via other means or we add it back */
-
-    /* Re-adding Sunken 3D Border as specifically requested to keep aesthetic but ensuring content fills */
     border-top: 2px solid #808080;
     border-left: 2px solid #808080;
     border-right: 2px solid white;
     border-bottom: 2px solid white;
-
     background-color: white;
+    color: #000;
     overflow-y: scroll;
     box-sizing: border-box;
-    /* Crucial for width: 100% + border */
 }
+
+.notepad-textarea.nowrap { white-space: pre; overflow-x: auto; }
+
 .notepad-filename {
     margin-left: auto;
     padding: 2px 8px;
@@ -96,91 +42,50 @@
     align-self: center;
 }
 
-.notepad-modal-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.3);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 9998;
-}
-
-.notepad-open-dialog {
-    width: 90%;
-    height: 80%;
-    max-width: 500px;
-    background: var(--win-gray);
-    border: 2px solid;
-    border-color: #fff #404040 #404040 #fff;
-    box-shadow: 3px 3px 8px rgba(0, 0, 0, 0.5);
-    display: flex;
-    flex-direction: column;
-}
-
-.notepad-saveas-dialog {
-    width: 320px;
-    background: var(--win-gray);
-    border: 2px solid;
-    border-color: #fff #404040 #404040 #fff;
-    box-shadow: 3px 3px 8px rgba(0, 0, 0, 0.5);
-}
-
-.notepad-dialog-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    background: var(--win-blue);
-    color: white;
-    padding: 3px 6px;
-    font-size: 12px;
-    font-weight: bold;
-}
-
-.notepad-dialog-close {
-    background: var(--win-gray);
-    border: 1px outset white;
-    cursor: pointer;
-    font-size: 10px;
-    line-height: 1;
-}
-
-.notepad-dialog-body {
-    flex: 1;
-    overflow: hidden;
-    display: flex;
-}
-
-.notepad-saveas-body {
-    padding: 14px;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    font-size: 11px;
+.np-status {
+    min-height: 16px;
+    padding: 1px 6px;
     font-family: 'gokalppoOS', sans-serif;
-}
-
-.notepad-saveas-input {
-    padding: 3px 4px;
-    font-size: 12px;
-    border: 1px inset #808080;
-}
-
-.notepad-saveas-actions {
-    display: flex;
-    gap: 6px;
-    justify-content: flex-end;
-    margin-top: 8px;
-}
-
-.notepad-saveas-actions button {
-    background: var(--win-gray);
-    border: 1px solid;
-    border-color: #fff #404040 #404040 #fff;
-    padding: 3px 14px;
-    cursor: pointer;
     font-size: 11px;
+    color: #000;
+    border-top: 1px solid #808080;
 }
+
+/* Find / Replace panel */
+.np-find {
+    position: absolute;
+    top: 26px;
+    right: 8px;
+    z-index: 20;
+    background: var(--win-gray);
+    border: 2px solid;
+    border-color: #fff #404040 #404040 #fff;
+    box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.4);
+    padding: 6px 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    font-family: 'gokalppoOS', sans-serif;
+    font-size: 11px;
+    color: #000;
+}
+
+.np-find-row { display: flex; align-items: center; gap: 6px; }
+.np-find-row label { min-width: 74px; }
+.np-find-row input[type="text"], .np-find-row input:not([type]) { width: 150px; font-size: 11px; padding: 2px 3px; }
+.np-find-foot { justify-content: space-between; }
+.np-find-foot label { min-width: 0; display: flex; align-items: center; gap: 4px; }
+.np-find-count { color: #404040; }
+
+.np-btn {
+    padding: 2px 10px;
+    background: var(--win-gray);
+    border: 2px solid;
+    border-color: #fff #404040 #404040 #fff;
+    font-family: inherit;
+    font-size: 11px;
+    cursor: pointer;
+}
+
+.np-btn:active:not(:disabled) { border-color: #404040 #fff #fff #404040; }
+.np-btn:disabled { color: #808080; cursor: default; }

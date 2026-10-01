@@ -1,5 +1,7 @@
 import { createContext, useContext, useState, useCallback, useEffect } from 'react';
 
+import { STORAGE_LIMIT_CHARS } from './fsLimits';
+
 const FileSystemContext = createContext();
 
 export const useFileSystem = () => useContext(FileSystemContext);
@@ -159,6 +161,20 @@ export const FileSystemProvider = ({ children }) => {
         });
     }, []);
 
+    // Does a file with this name already exist directly inside `parentId`? (case-insensitive)
+    const findFileByName = useCallback((parentId, name) => {
+        const wanted = String(name).toLowerCase();
+        return Object.values(nodes).find(
+            (n) => n.type === 'file' && n.parentId === parentId && n.name.toLowerCase() === wanted
+        ) || null;
+    }, [nodes]);
+
+    // Would `extraChars` more data still fit on the virtual disk?
+    const canStore = useCallback(
+        (extraChars) => JSON.stringify(nodes).length + extraChars <= STORAGE_LIMIT_CHARS,
+        [nodes]
+    );
+
     const getPath = useCallback((id) => {
         const path = [];
         let current = nodes[id];
@@ -183,6 +199,8 @@ export const FileSystemProvider = ({ children }) => {
                 restoreNode,
                 permanentlyDelete,
                 emptyRecycleBin,
+                findFileByName,
+                canStore,
                 getPath
             }}
         >

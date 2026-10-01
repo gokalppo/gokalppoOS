@@ -146,3 +146,18 @@ describe('paths and persistence', () => {
         expect(second.result.current.getChildren('root').map((n) => n.name)).toContain('Saved');
     });
 });
+
+describe('findFileByName and canStore', () => {
+    it('finds a file by name inside a folder, case-insensitively', () => {
+        const { result } = setup();
+        expect(result.current.findFileByName('documents', 'welcome.TXT')?.id).toBe('welcome');
+        expect(result.current.findFileByName('documents', 'missing.txt')).toBeNull();
+        expect(result.current.findFileByName('localdisk', 'Welcome.txt')).toBeNull();
+    });
+
+    it('says whether more data still fits on the virtual disk', () => {
+        const { result } = setup();
+        expect(result.current.canStore(1000)).toBe(true);
+        expect(result.current.canStore(10_000_000)).toBe(false);
+    });
+});

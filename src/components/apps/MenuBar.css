@@ -1,0 +1,70 @@
+.mb-bar {
+    display: flex;
+    align-items: center;
+    background: var(--win-gray);
+    padding: 1px 0 2px;
+    user-select: none;
+    flex-shrink: 0;
+    font-family: 'gokalppoOS', sans-serif;
+    font-size: 13px;
+    position: relative;
+    z-index: 5;
+}
+
+.mb-menu { position: relative; }
+
+.mb-title {
+    padding: 2px 8px;
+    background: transparent;
+    border: 1px solid transparent;
+    font: inherit;
+    color: #000;
+    cursor: default;
+}
+
+.mb-title:hover,
+.mb-title.open,
+.mb-title:focus-visible {
+    background: var(--win-highlight);
+    color: #fff;
+    outline: none;
+}
+
+.mb-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    min-width: 190px;
+    background: var(--win-gray);
+    border: 2px solid;
+    border-color: #fff #404040 #404040 #fff;
+    box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.35);
+    display: flex;
+    flex-direction: column;
+    padding: 2px;
+    z-index: 9999;
+}
+
+.mb-item {
+    display: flex;
+    justify-content: space-between;
+    gap: 24px;
+    padding: 3px 14px 3px 10px;
+    background: transparent;
+    border: none;
+    font: inherit;
+    color: #000;
+    text-align: left;
+    cursor: default;
+}
+
+.mb-item:hover:not(:disabled),
+.mb-item:focus-visible {
+    background: var(--win-highlight);
+    color: #fff;
+    outline: none;
+}
+
+.mb-item:disabled { color: #808080; }
+.mb-shortcut { color: inherit; opacity: 0.8; }
+.mb-separator { height: 0; margin: 3px 2px; border-top: 1px solid #808080; border-bottom: 1px solid #fff; }

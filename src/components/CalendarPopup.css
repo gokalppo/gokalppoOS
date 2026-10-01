@@ -1,0 +1,80 @@
+.calendar-popup {
+    position: fixed;
+    right: 4px;
+    bottom: 34px;
+    width: 206px;
+    z-index: 600000; /* above the Clippy assistant */
+    background: #c0c0c0;
+    border: 2px solid;
+    border-color: #fff #404040 #404040 #fff;
+    box-shadow: 2px 2px 0 #000;
+    padding: 3px 3px 6px;
+    font-family: 'gokalppoOS', sans-serif;
+    font-size: 11px;
+    color: #000;
+}
+
+.calendar-title {
+    background: linear-gradient(90deg, #000080 0%, #1084d0 100%);
+    color: #fff;
+    font-weight: bold;
+    padding: 2px 4px;
+    margin-bottom: 4px;
+}
+
+.calendar-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 4px 2px;
+}
+
+.calendar-month { font-weight: bold; }
+
+.calendar-btn {
+    width: 20px;
+    height: 18px;
+    padding: 0;
+    font-size: 8px;
+    background: #c0c0c0;
+    border: 2px solid;
+    border-color: #fff #404040 #404040 #fff;
+    cursor: pointer;
+}
+
+.calendar-btn:active { border-color: #404040 #fff #fff #404040; }
+
+.calendar-grid {
+    width: calc(100% - 4px);
+    margin: 0 2px;
+    border-collapse: collapse;
+    background: #fff;
+    border: 2px solid;
+    border-color: #808080 #fff #fff #808080;
+    text-align: center;
+}
+
+.calendar-grid th {
+    background: #c0c0c0;
+    font-weight: normal;
+    border-bottom: 1px solid #808080;
+    padding: 2px 0;
+}
+
+.calendar-grid td { padding: 2px 0; height: 16px; }
+.calendar-grid td.outside { color: #a0a0a0; }
+.calendar-grid td.today { background: #000080; color: #fff; font-weight: bold; }
+
+.calendar-time {
+    margin: 6px 2px 0;
+    padding: 3px 4px;
+    background: #fff;
+    border: 2px solid;
+    border-color: #808080 #fff #fff #808080;
+    font-weight: bold;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+}
+
+.calendar-date { font-weight: normal; font-size: 10px; }

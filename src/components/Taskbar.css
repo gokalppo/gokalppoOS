@@ -167,7 +167,7 @@
     border-color: #fff #404040 #404040 #fff;
     padding: 5px 8px;
     box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.5);
-    z-index: 10001;
+    z-index: 600000; /* above the Clippy assistant */
     display: flex;
     flex-direction: column;
     gap: 8px;
@@ -250,3 +250,21 @@
     gap: 4px;
     font-size: 11px;
 }
+.show-desktop-btn {
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    margin-right: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #c0c0c0;
+    border: 2px solid;
+    border-color: #fff #404040 #404040 #fff;
+    cursor: pointer;
+}
+
+.show-desktop-btn:active { border-color: #404040 #fff #fff #404040; }
+
+.tray-clock { cursor: pointer; }
+.tray-network.offline { filter: grayscale(1); }

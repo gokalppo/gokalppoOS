@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { useOS } from '../context/OSContext';
 import StartMenu from './StartMenu';
+import { playSystemSound } from '../audio/systemSounds';
+import CalendarPopup from './CalendarPopup';
 import './Taskbar.css';
 import startIcon from '../assets/images/windows.png';
 import loudIcon from '../assets/images/loud.png';
@@ -10,16 +12,20 @@ const Taskbar = ({
     windows,
     activeWindowId,
     onToggleWindow,
+    onShowDesktop,
     onCloseWindow,
     onOpenWindow,
     isStartOpen = false,
     toggleStart = () => console.warn("toggleStart prop missing"),
     onShutdown // Add this prop
 }) => {
-    const { volume, setGlobalVolume } = useOS(); // Use Audio Driver
+    const { volume, setGlobalVolume, soundsEnabled, setSoundsEnabled, playSound } = useOS(); // Use Audio Driver
     const [time, setTime] = useState(new Date());
     const [contextMenu, setContextMenu] = useState(null); // { x, y, windowId }
     const [isVolumeOpen, setIsVolumeOpen] = useState(false);
+    const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+    const [isOnline, setIsOnline] = useState(() => navigator.onLine);
+    const [visitorCount, setVisitorCount] = useState(null);
     const [flashingWindows, setFlashingWindows] = useState(new Set());
 
     // Convert 0-1 range to 0-100 for slider
@@ -65,12 +71,28 @@ const Taskbar = ({
         return () => clearInterval(timer);
     }, []);
 
+    // Connection status and the visitor count (broadcast by VisitorCounter) for the tray.
+    useEffect(() => {
+        const goOnline = () => setIsOnline(true);
+        const goOffline = () => setIsOnline(false);
+        const onVisitors = (e) => setVisitorCount(e.detail.count);
+        window.addEventListener('online', goOnline);
+        window.addEventListener('offline', goOffline);
+        window.addEventListener('visitor-count', onVisitors);
+        return () => {
+            window.removeEventListener('online', goOnline);
+            window.removeEventListener('offline', goOffline);
+            window.removeEventListener('visitor-count', onVisitors);
+        };
+    }, []);
+
     // Outside Click Handling
     useEffect(() => {
         const handleClickOutside = () => {
             setContextMenu(null);
             if (isStartOpen) toggleStart(); // Close if open
             setIsVolumeOpen(false);
+            setIsCalendarOpen(false);
         };
         window.addEventListener('click', handleClickOutside);
         return () => window.removeEventListener('click', handleClickOutside);
@@ -78,8 +100,23 @@ const Taskbar = ({
 
     const handleStartClick = (e) => {
         e.stopPropagation();
+        playSound('menu');
         toggleStart();
         setIsVolumeOpen(false);
+        setIsCalendarOpen(false);
+    };
+
+    const toggleCalendar = (e) => {
+        e.stopPropagation();
+        setIsCalendarOpen(!isCalendarOpen);
+        setIsVolumeOpen(false);
+        if (isStartOpen) toggleStart();
+    };
+
+    const handleSoundsToggle = (e) => {
+        const enabled = e.target.checked;
+        setSoundsEnabled(enabled);
+        if (enabled) playSystemSound('notify', volume || 0.5);
     };
 
     const formatTime = (date) => {
@@ -102,6 +139,7 @@ const Taskbar = ({
     const toggleVolume = (e) => {
         e.stopPropagation();
         setIsVolumeOpen(!isVolumeOpen);
+        setIsCalendarOpen(false);
         if (isStartOpen) toggleStart();
     };
 
@@ -192,8 +230,19 @@ const Taskbar = ({
                         />
                         <label htmlFor="mute-check">Mute</label>
                     </div>
+                    <div className="volume-mute-container">
+                        <input
+                            type="checkbox"
+                            id="system-sounds-check"
+                            checked={soundsEnabled}
+                            onChange={handleSoundsToggle}
+                        />
+                        <label htmlFor="system-sounds-check">System sounds</label>
+                    </div>
                 </div>
             )}
+
+            {isCalendarOpen && <CalendarPopup now={time} />}
 
             <div className="taskbar" onClick={(e) => e.stopPropagation()}>
                 <button
@@ -209,10 +258,17 @@ const Taskbar = ({
                     />
                     Start
                 </button>
+                <button className="show-desktop-btn" onClick={(e) => { e.stopPropagation(); onShowDesktop && onShowDesktop(); }} title="Show Desktop">
+                    <svg width="16" height="14" viewBox="0 0 16 14" style={{ display: 'block' }}>
+                        <rect x="1" y="1" width="14" height="9" fill="#008080" stroke="#000" />
+                        <rect x="5" y="11" width="6" height="2" fill="#808080" />
+                    </svg>
+                </button>
                 <div className="task-area">
                     {windows.map((win) => (
                         <button
                             key={win.id}
+                            data-task-id={win.id}
                             className={`task-tab ${activeWindowId === win.id && !win.isMinimized ? 'active' : ''} ${flashingWindows.has(win.id) ? 'flashing' : ''}`}
                             onClick={(e) => { e.stopPropagation(); onToggleWindow(win.id); }}
                             onContextMenu={(e) => handleContextMenu(e, win.id)}
@@ -222,6 +278,12 @@ const Taskbar = ({
                     ))}
                 </div>
                 <div className="tray-area">
+                    <div className="tray-icon" title={isOnline ? 'Connected to the network' : 'No network connection'}>
+                        <span className={`tray-network ${isOnline ? '' : 'offline'}`}>{isOnline ? '🌐' : '⛔'}</span>
+                    </div>
+                    {visitorCount !== null && (
+                        <div className="tray-icon" title={`Site visitors: ${visitorCount}`}>👥</div>
+                    )}
                     <div className={`tray-icon ${isVolumeOpen ? 'active' : ''}`} onClick={toggleVolume} title="Volume">
                         <img
                             src={volumePercent === 0 ? mutedIcon : loudIcon}
@@ -230,7 +292,9 @@ const Taskbar = ({
                         />
                     </div>
                     <div className="tray-icon" onClick={toggleFullScreen} title="Full Screen">🖥️</div>
-                    <div className="tray-clock">{formatTime(time)}</div>
+                    <div className="tray-clock" onClick={toggleCalendar} title={time.toLocaleDateString([], { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}>
+                        {formatTime(time)}
+                    </div>
                 </div>
             </div>
         </>

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import starIcon from '../../../../assets/images/star.png';
 import AddContactPanel from './AddContactPanel';
 import FriendRequests from './FriendRequests';
+import { GUEST_FRIENDS_MESSAGE } from '../chatUtils';
 
 const ContactSidebar = ({
     user, status, onStatusChange, onSignOut, onOpenAdmin,
@@ -108,7 +109,11 @@ const ContactSidebar = ({
                 />
             ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-                    <button className="login-btn" style={{ fontSize: '10px' }} onClick={() => setShowAddContact(true)}>
+                    <button
+                        className="login-btn"
+                        style={{ fontSize: '10px' }}
+                        onClick={() => (user.isGuest ? showNotification(GUEST_FRIENDS_MESSAGE, 'warning') : setShowAddContact(true))}
+                    >
                         + Add Contact
                     </button>
                     <FriendRequests requests={friendRequests} onAccept={onAcceptRequest} onDecline={onDeclineRequest} />

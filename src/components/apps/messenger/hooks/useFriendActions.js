@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import { db } from '../../../../firebase';
 import { ref, get, set, remove } from 'firebase/database';
-import { nowMs, declineCooldownMinutesLeft } from '../chatUtils';
+import { nowMs, declineCooldownMinutesLeft, GUEST_FRIENDS_MESSAGE } from '../chatUtils';
 
 // Friend-request flows that originate from a chat message or the requests list.
 export const useFriendActions = ({ user, contacts, status, showNotification }) => {
@@ -9,6 +9,10 @@ export const useFriendActions = ({ user, contacts, status, showNotification }) =
 
     // Add-as-friend from a message's context menu (target = message author).
     const sendFriendRequest = useCallback(async (target) => {
+        if (user.isGuest) {
+            showNotification(GUEST_FRIENDS_MESSAGE, 'warning');
+            return;
+        }
         if (!target.senderUid || target.senderUid === uid) return;
 
         try {
@@ -35,7 +39,7 @@ export const useFriendActions = ({ user, contacts, status, showNotification }) =
         } catch (e) {
             showNotification('Error: ' + e.message, 'error');
         }
-    }, [uid, user.username, showNotification]);
+    }, [uid, user.username, user.isGuest, showNotification]);
 
     const acceptRequest = useCallback(async (req) => {
         const requestRef = ref(db, `friendRequests/${uid}/${req.fromUid}`);

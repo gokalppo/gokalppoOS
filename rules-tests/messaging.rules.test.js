@@ -117,3 +117,25 @@ describe('guest (anonymous) accounts', () => {
         await assertFails(dbAs(env, 'guest123').ref('users/guest123/role').set('admin'));
     });
 });
+
+describe('guests and friend requests', () => {
+    const guestDb = () => env.authenticatedContext('guest1', { firebase: { sign_in_provider: 'anonymous' } }).database();
+    const request = (fromUid) => ({ fromUid, fromName: fromUid, status: 'pending' });
+
+    it('a normal account can send a friend request', async () => {
+        await assertSucceeds(dbAs(env, 'alice').ref('friendRequests/bob/alice').set(request('alice')));
+    });
+
+    it('a guest (anonymous account) cannot send one', async () => {
+        await assertFails(guestDb().ref('friendRequests/bob/guest1').set(request('guest1')));
+    });
+
+    it('a guest can still answer or withdraw a request addressed to them', async () => {
+        await seed(env, { 'friendRequests/guest1/alice': request('alice') });
+        await assertSucceeds(guestDb().ref('friendRequests/guest1/alice').remove());
+    });
+
+    it('nobody can send a request in someone else\'s name', async () => {
+        await assertFails(dbAs(env, 'alice').ref('friendRequests/bob/carol').set(request('carol')));
+    });
+});

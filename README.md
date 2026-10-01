@@ -57,7 +57,7 @@ Instead of a static page of cards, my portfolio is a tiny operating system runni
 - **Nudge** (shakes the other person's window), notification sounds
 - **Live typing indicator** ("... is typing") in private chats
 - **Gökalp Bot**: a rule-based assistant (English and Turkish) that answers questions about the projects, skills, resume and contact details. It is pinned in the contact list and also available **without signing in** from the login screen; it runs in the browser, so it costs nothing
-- **Guest sign-in** (Firebase anonymous auth) for visitors who don't want to create an account
+- **Guest sign-in** (Firebase anonymous auth) for visitors who don't want to create an account. Guests can chat but cannot send friend requests; that is enforced in the database rules too, and the UI asks them to sign in
 - Message history loads in pages of 50 with a "Load older messages" button
 - **Read receipts** in private chats: ✓ sent, ✓✓ read (stored as per-friend `lastReadAt` stamps, never in someone else's data)
 - Admin role with message moderation and user bans, enforced in the database rules, not just the UI
@@ -100,7 +100,7 @@ A few design decisions worth mentioning:
 
 ## Hardening
 
-- **Database rules** (`database.rules.json`) are covered by an emulator test suite (`npm run test:rules`, 42 tests). Chat messages need a server timestamp and are limited to about one per second per person (the sender's `lastMessageAt` has to be stamped in the same atomic write); they also validate message length, the shape and size of `outbox` entries, guestbook posts and Minesweeper records; roles and bans can only be changed by admins.
+- **Database rules** (`database.rules.json`) are covered by an emulator test suite (`npm run test:rules`, 46 tests). Chat messages need a server timestamp and are limited to about one per second per person (the sender's `lastMessageAt` has to be stamped in the same atomic write); they also validate message length, the shape and size of `outbox` entries, guestbook posts and Minesweeper records; roles and bans can only be changed by admins.
 - **Visitor counter** increments once per browser session, so reloads cannot inflate it (each write is also limited to +1 by the rules).
 - **Firebase App Check (optional).** Set `VITE_RECAPTCHA_SITE_KEY` (see `.env.example`) to a reCAPTCHA v3 site key, register the same key in Firebase Console > App Check, deploy, and only then turn enforcement on. Without the key the code is compiled out, so the repo works as-is.
 - **EmailJS**: restrict the allowed domain and set a monthly limit in the EmailJS dashboard; the public key in the client is not a secret.

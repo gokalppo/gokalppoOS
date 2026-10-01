@@ -7,6 +7,8 @@ export const nowMs = () => Date.now();
 export const GLOBAL_ROOMS = ['global-1', 'global-2'];
 export const BOT_ROOM = 'bot';
 
+export const GUEST_FRIENDS_MESSAGE = "Guests can't add friends. Please sign in with an account first.";
+
 // Messages are loaded newest-first in pages; "Load older" fetches another page.
 export const PAGE_SIZE = 50;
 

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { db } from '../../../../firebase';
 import { ref, get, set, query, orderByChild, equalTo } from 'firebase/database';
 import starIcon from '../../../../assets/images/star.png';
-import { buildUsernameCandidates } from '../chatUtils';
+import { buildUsernameCandidates, GUEST_FRIENDS_MESSAGE } from '../chatUtils';
 
 // "Find Friend" form: look a user up by username and send a friend request.
 const AddContactPanel = ({ user, contacts, showNotification, onClose }) => {
@@ -35,6 +35,10 @@ const AddContactPanel = ({ user, contacts, showNotification, onClose }) => {
     };
 
     const sendRequest = async (target) => {
+        if (user.isGuest) {
+            setError(GUEST_FRIENDS_MESSAGE);
+            return;
+        }
         if (target.uid === user.uid) {
             setError('You cannot add yourself.');
             return;

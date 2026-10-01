@@ -383,3 +383,29 @@ describe('guest accounts', () => {
         expect(fakeDb.read('userPrivate/g1')).toBeNull(); // no email to store
     });
 });
+
+describe('guests and friends', () => {
+    const guest = { uid: 'g1', username: 'Guest-1234', email: null, role: 'user', isGuest: true };
+
+    it('"+ Add Contact" asks a guest to sign in instead of opening the search form', () => {
+        renderChat(guest);
+        fireEvent.click(screen.getByText('+ Add Contact'));
+        expect(screen.getByText(/Guests can't add friends\. Please sign in with an account first\./)).toBeTruthy();
+        expect(screen.queryByText('Find Friend:')).toBeNull();
+    });
+
+    it('"Add as Friend" from a message menu is refused for a guest and writes nothing', async () => {
+        fakeDb.seed('messages/global-1/m1', { senderUid: 'bob', senderName: 'Bob', text: 'hello', timestamp: 1 });
+        renderChat(guest);
+        fireEvent.click(screen.getByText('Bob'));
+        fireEvent.click(await screen.findByText('+ Add as Friend'));
+        await waitFor(() => expect(screen.getByText(/Guests can't add friends/)).toBeTruthy());
+        expect(fakeDb.read('friendRequests')).toBeNull();
+    });
+
+    it('a registered user still gets the search form', () => {
+        renderChat();
+        fireEvent.click(screen.getByText('+ Add Contact'));
+        expect(screen.getByText('Find Friend:')).toBeTruthy();
+    });
+});

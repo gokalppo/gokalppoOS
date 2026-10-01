@@ -23,6 +23,9 @@
         },
         "latestNudge": {
           ".write": "auth != null && newData.child('senderUid').val() === auth.uid"
+        },
+        "lastMessageAt": {
+          ".validate": "newData.val() === now"
         }
       }
     },
@@ -30,12 +33,15 @@
       "$room": {
         ".read": "auth != null",
         "$msgId": {
-          ".write": "auth != null && (!data.exists() ? newData.child('senderUid').val() === auth.uid : root.child('users').child(auth.uid).child('role').val() === 'admin')",
+          ".write": "auth != null && (!data.exists() ? (newData.child('senderUid').val() === auth.uid && newData.parent().parent().parent().child('users').child(auth.uid).child('lastMessageAt').val() === now && (!root.child('users').child(auth.uid).child('lastMessageAt').exists() || root.child('users').child(auth.uid).child('lastMessageAt').val() < now - 900)) : root.child('users').child(auth.uid).child('role').val() === 'admin')",
           "text": {
             ".validate": "newData.isString() && newData.val().length <= 1000"
           },
           "senderName": {
             ".validate": "newData.isString() && newData.val().length <= 40"
+          },
+          "timestamp": {
+            ".validate": "newData.val() === now"
           }
         }
       }
@@ -44,12 +50,15 @@
       "$roomId": {
         ".read": "auth != null && $roomId.contains(auth.uid)",
         "$msgId": {
-          ".write": "auth != null && $roomId.contains(auth.uid) && (!data.exists() ? newData.child('senderUid').val() === auth.uid : root.child('users').child(auth.uid).child('role').val() === 'admin')",
+          ".write": "auth != null && $roomId.contains(auth.uid) && (!data.exists() ? (newData.child('senderUid').val() === auth.uid && newData.parent().parent().parent().child('users').child(auth.uid).child('lastMessageAt').val() === now && (!root.child('users').child(auth.uid).child('lastMessageAt').exists() || root.child('users').child(auth.uid).child('lastMessageAt').val() < now - 900)) : root.child('users').child(auth.uid).child('role').val() === 'admin')",
           "text": {
             ".validate": "newData.isString() && newData.val().length <= 1000"
           },
           "senderName": {
             ".validate": "newData.isString() && newData.val().length <= 40"
+          },
+          "timestamp": {
+            ".validate": "newData.val() === now"
           }
         }
       }

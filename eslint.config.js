@@ -28,4 +28,9 @@ export default defineConfig([
       'react-refresh/only-export-components': ['error', { allowExportNames: ['useOS', 'useFileSystem', 'useLanguage', 'useDisplay'] }],
     },
   },
+  {
+    // Node-side files: security-rules tests and tool configs.
+    files: ['rules-tests/**/*.js', 'vitest*.js', 'vite.config.js'],
+    languageOptions: { globals: globals.node },
+  },
 ])

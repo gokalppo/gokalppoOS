@@ -9,7 +9,8 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "test:rules": "npx -y firebase-tools emulators:exec --only database --project demo-gokalppo \"vitest run --config vitest.rules.config.js\""
   },
   "dependencies": {
     "@emailjs/browser": "^4.4.1",
@@ -20,6 +21,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
+    "@firebase/rules-unit-testing": "^5.0.2",
     "@testing-library/react": "^16.3.3",
     "@types/react": "^19.2.5",
     "@types/react-dom": "^19.2.3",

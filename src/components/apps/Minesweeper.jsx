@@ -225,8 +225,12 @@ const Minesweeper = () => {
                 </div>
             </div>
 
-            {gameState === 'won' && timer > 0 && (
-                <SubmitScore key={boardVersion} time={timer} onSubmitted={() => setBoardVersion((v) => v + 1)} />
+            {gameState === 'won' && (
+                <SubmitScore
+                    time={Math.max(1, timer)}
+                    onSubmitted={() => setBoardVersion((v) => v + 1)}
+                    onViewBoard={() => setShowBoard(true)}
+                />
             )}
             {showBoard && <BestTimes onClose={() => setShowBoard(false)} refreshKey={boardVersion} />}
         </div>

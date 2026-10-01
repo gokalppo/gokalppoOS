@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useLanguage } from '../../context/LanguageContext';
 import { fetchTopTimes, submitTime } from './leaderboard';
 import { NAME_MAX, validateScore, cleanName } from './minesweeperScores';
@@ -42,16 +42,19 @@ export const BestTimes = ({ onClose, refreshKey }) => {
 };
 
 // Shown after a win: send the time to the board once.
-export const SubmitScore = ({ time, onSubmitted }) => {
+export const SubmitScore = ({ time, onSubmitted, onViewBoard }) => {
     const { t } = useLanguage();
     const [name, setName] = useState(readName);
     const [state, setState] = useState('idle'); // idle | sending | sent | error
     const [error, setError] = useState(null);
+    const inFlightRef = useRef(false); // blocks double-clicks before state has re-rendered
 
     const submit = async (e) => {
         e.preventDefault();
+        if (inFlightRef.current || state === 'sent') return;
         const problems = validateScore({ name, time });
         if (problems.length) { setError(t(`ms.err.${problems[0]}`)); return; }
+        inFlightRef.current = true;
         setState('sending');
         setError(null);
         try {
@@ -62,10 +65,19 @@ export const SubmitScore = ({ time, onSubmitted }) => {
         } catch {
             setState('error');
             setError(t('ms.err.failed'));
+        } finally {
+            inFlightRef.current = false;
         }
     };
 
-    if (state === 'sent') return <div className="ms-win-banner">{t('ms.submitted')}</div>;
+    if (state === 'sent') {
+        return (
+            <div className="ms-win-banner ms-sent" role="status">
+                <div>✓ {t('ms.submitted')}</div>
+                <button className="ms-btn" type="button" onClick={onViewBoard}>🏆 {t('ms.viewBoard')}</button>
+            </div>
+        );
+    }
 
     return (
         <form className="ms-win-banner" onSubmit={submit}>
@@ -79,7 +91,7 @@ export const SubmitScore = ({ time, onSubmitted }) => {
                     onChange={(e) => setName(e.target.value)}
                     aria-label={t('ms.namePlaceholder')}
                 />
-                <button className="ms-btn" type="submit" disabled={state === 'sending'}>{t('ms.submit')}</button>
+                <button className="ms-btn" type="submit" disabled={state === 'sending'}>{state === 'sending' ? t('ms.sending') : t('ms.submit')}</button>
             </div>
             {error && <div className="ms-error">{error}</div>}
         </form>

@@ -7,6 +7,7 @@ import {
     EXTERNAL_LINKS, HOME, toAddress, resolveAddress, initialHistory, navigate, back, forward,
     canGoBack, canGoForward, currentPath
 } from './ieNavigation';
+import ieLogo from '../../assets/images/ie.webp';
 import './InternetExplorer.css';
 
 const LOAD_MS = 280;
@@ -182,7 +183,7 @@ const InternetExplorer = () => {
                 <button className="ie-tool" onClick={() => step(back)} disabled={!canGoBack(history)}>◀ {t('ie.back')}</button>
                 <button className="ie-tool" onClick={() => step(forward)} disabled={!canGoForward(history)}>{t('ie.forward')} ▶</button>
                 <button className="ie-tool" onClick={() => go(HOME)}>🏠 {t('ie.home')}</button>
-                <div className={`ie-throbber ${loading ? 'spinning' : ''}`} aria-hidden="true">e</div>
+                <img src={ieLogo} alt="" className={`ie-throbber ${loading ? 'spinning' : ''}`} aria-hidden="true" />
             </div>
 
             <form className="ie-address" onSubmit={submitAddress}>

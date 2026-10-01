@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { useState } from 'react';
 import { render, screen, fireEvent, waitFor, cleanup } from '@testing-library/react';
 import { fakeDb } from '../../test/fakeDatabase';
 
@@ -48,7 +49,7 @@ describe('SubmitScore', () => {
         await waitFor(() => expect(scores()).toHaveLength(1));
         expect(scores()[0]).toMatchObject({ name: 'Ada', time: 27 });
         expect(typeof scores()[0].timestamp).toBe('number');
-        await waitFor(() => expect(screen.getByText(/Time submitted/)).toBeTruthy());
+        await waitFor(() => expect(screen.getByText(/Your time was submitted/)).toBeTruthy());
         expect(onSubmitted).toHaveBeenCalled();
         expect(localStorage.getItem('gokalppoOS_minesweeperName')).toBe('Ada');
     });
@@ -66,5 +67,51 @@ describe('SubmitScore', () => {
         fireEvent.click(screen.getByText('Submit'));
         expect(screen.getByText('That time cannot be submitted.')).toBeTruthy();
         expect(scores()).toHaveLength(0);
+    });
+
+    it('records a time only once even when Submit is hammered', async () => {
+        render(<SubmitScore time={27} onSubmitted={() => { }} />);
+        fireEvent.change(screen.getByPlaceholderText('Your name'), { target: { value: 'Ada' } });
+        const form = screen.getByText('Submit').closest('form');
+        for (let i = 0; i < 6; i++) fireEvent.submit(form);
+
+        await waitFor(() => expect(screen.getByText(/Your time was submitted/)).toBeTruthy());
+        expect(scores()).toHaveLength(1);
+    });
+
+    it('swaps the form for a confirmation and cannot be submitted again afterwards', async () => {
+        render(<SubmitScore time={27} onSubmitted={() => { }} />);
+        fireEvent.change(screen.getByPlaceholderText('Your name'), { target: { value: 'Ada' } });
+        fireEvent.click(screen.getByText('Submit'));
+
+        await waitFor(() => expect(screen.getByText(/Your time was submitted/)).toBeTruthy());
+        expect(screen.queryByText('Submit')).toBeNull();
+        expect(screen.queryByPlaceholderText('Your name')).toBeNull();
+        expect(scores()).toHaveLength(1);
+    });
+
+    it('keeps the confirmation when the parent re-renders (e.g. the board refreshes)', async () => {
+        const Parent = () => {
+            const [version, setVersion] = useState(0);
+            return <SubmitScore time={27} onSubmitted={() => setVersion((v) => v + 1)} onViewBoard={() => { }} data-v={version} />;
+        };
+        render(<Parent />);
+        fireEvent.change(screen.getByPlaceholderText('Your name'), { target: { value: 'Ada' } });
+        fireEvent.click(screen.getByText('Submit'));
+
+        await waitFor(() => expect(screen.getByText(/Your time was submitted/)).toBeTruthy());
+        await new Promise((r) => setTimeout(r, 50));
+        expect(screen.getByText(/Your time was submitted/)).toBeTruthy();
+        expect(screen.queryByText('Submit')).toBeNull();
+    });
+
+    it('offers a button to open the best times after submitting', async () => {
+        const onViewBoard = vi.fn();
+        render(<SubmitScore time={27} onSubmitted={() => { }} onViewBoard={onViewBoard} />);
+        fireEvent.change(screen.getByPlaceholderText('Your name'), { target: { value: 'Ada' } });
+        fireEvent.click(screen.getByText('Submit'));
+        await waitFor(() => expect(screen.getByText(/View best times/)).toBeTruthy());
+        fireEvent.click(screen.getByText(/View best times/));
+        expect(onViewBoard).toHaveBeenCalled();
     });
 });

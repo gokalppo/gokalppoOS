@@ -79,14 +79,9 @@
 
 .ie-throbber {
     margin-left: auto;
-    width: 26px;
-    height: 26px;
-    border-radius: 50%;
-    background: #1a5fd0;
-    color: #fff;
-    font: bold 20px/26px Georgia, serif;
-    text-align: center;
-    border: 2px solid #f0c020;
+    width: 28px;
+    height: 28px;
+    image-rendering: auto;
 }
 
 .ie-throbber.spinning { animation: ie-spin 0.8s linear infinite; }

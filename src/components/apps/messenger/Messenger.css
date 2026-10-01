@@ -311,6 +311,13 @@
 
 .msg-text {
     padding-left: 8px;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+.msg-link {
+    color: #0000cc;
+    text-decoration: underline;
 }
 
 /* FEATURES */

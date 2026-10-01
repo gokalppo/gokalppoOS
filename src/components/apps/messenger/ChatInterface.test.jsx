@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, beforeAll, afterEach, vi } from 'vite
 import { render, screen, fireEvent, waitFor, cleanup } from '@testing-library/react';
 import { OSProvider } from '../../../context/OSContext';
 import { fakeDb } from '../../../test/fakeDatabase';
+import { setBotTimingScale } from './botEngine';
 
 vi.mock('firebase/database', async () => (await import('../../../test/fakeDatabase')).databaseMock);
 vi.mock('../../../firebase', () => ({
@@ -34,6 +35,7 @@ beforeAll(() => {
 });
 
 beforeEach(() => {
+    setBotTimingScale(0.02);
     localStorage.clear();
     fakeDb.reset();
     fakeDb.seed('.info/connected', true);
@@ -339,10 +341,10 @@ describe('Gökalp Bot inside the Messenger', () => {
         renderChat();
         fireEvent.click(screen.getByText(/Gökalp Bot/));
         expect(screen.getByText('Chatting with Gökalp Bot')).toBeTruthy();
-        expect(screen.getByText(/automated assistant/)).toBeTruthy();
+        expect(screen.getByText(/I live in this Messenger/)).toBeTruthy();
 
         typeAndSend('what projects do you have?');
-        await waitFor(() => expect(screen.getByText(/Here are the projects/)).toBeTruthy(), { timeout: 4000 });
+        await waitFor(() => expect(screen.getByText(/Here are Gökalp's projects/)).toBeTruthy(), { timeout: 4000 });
         expect(screen.getByText(/CindraNet/)).toBeTruthy();
     });
 
@@ -350,7 +352,7 @@ describe('Gökalp Bot inside the Messenger', () => {
         renderChat();
         fireEvent.click(screen.getByText(/Gökalp Bot/));
         typeAndSend('hello');
-        await waitFor(() => expect(screen.getAllByText(/automated assistant/).length).toBeGreaterThan(1), { timeout: 4000 });
+        await waitFor(() => expect(screen.getAllByText(/What can I do for you|Nice to see you|Ask me anything/).length).toBeGreaterThan(0), { timeout: 4000 });
         expect(fakeDb.read('messages/bot')).toBeNull();
         expect(fakeDb.read('users/me/lastMessageAt')).toBeNull();
     });
@@ -366,10 +368,10 @@ describe('Gökalp Bot inside the Messenger', () => {
         renderChat();
         fireEvent.click(screen.getByText(/Gökalp Bot/));
         typeAndSend('resume');
-        await waitFor(() => expect(screen.getByText(/My Resume/)).toBeTruthy(), { timeout: 4000 });
+        await waitFor(() => expect(screen.getByText(/gokalppo\.me\/resume\.pdf/)).toBeTruthy(), { timeout: 4000 });
         fireEvent.click(screen.getByText('Global-2'));
         fireEvent.click(screen.getByText(/Gökalp Bot/));
-        expect(screen.getByText(/My Resume/)).toBeTruthy();
+        expect(screen.getByText(/gokalppo\.me\/resume\.pdf/)).toBeTruthy();
     });
 });
 

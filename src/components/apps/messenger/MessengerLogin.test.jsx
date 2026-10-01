@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor, cleanup } from '@testing-library/react';
 import { fakeDb } from '../../../test/fakeDatabase';
+import { setBotTimingScale } from './botEngine';
 
 vi.mock('firebase/database', async () => (await import('../../../test/fakeDatabase')).databaseMock);
 
@@ -17,6 +18,7 @@ import LoginScreen from './LoginScreen';
 import MessengerContainer from './MessengerContainer';
 
 beforeEach(() => {
+    setBotTimingScale(0.02);
     localStorage.clear();
     fakeDb.reset();
     authMock.signInAnonymously.mockReset();
@@ -65,7 +67,7 @@ describe('chat with the bot without signing in', () => {
         render(<MessengerContainer />);
         fireEvent.click(screen.getByText(/Chat with Gökalp Bot/));
         expect(screen.getByText(/Chatting with Gökalp Bot/)).toBeTruthy();
-        expect(screen.getByText(/automated assistant/)).toBeTruthy();
+        expect(screen.getByText(/I live in this Messenger/)).toBeTruthy();
 
         fireEvent.click(screen.getByText(/Sign in/));
         expect(screen.getByText('Continue as guest', { exact: false })).toBeTruthy();

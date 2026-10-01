@@ -1,5 +1,5 @@
 import { GLOBAL_ROOMS, BOT_ROOM } from '../chatUtils';
-import { BOT_NAME } from '../botReplies';
+import { BOT_NAME } from '../botText';
 
 const roomLabel = (room) => room.charAt(0).toUpperCase() + room.slice(1);
 

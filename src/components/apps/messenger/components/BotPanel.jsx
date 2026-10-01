@@ -1,6 +1,6 @@
 import MessageList from './MessageList';
 import Composer from './Composer';
-import { BOT_NAME } from '../botReplies';
+import { BOT_NAME } from '../botText';
 import { ME_UID } from '../hooks/useBotChat';
 
 const ME = { uid: ME_UID, role: 'user' };

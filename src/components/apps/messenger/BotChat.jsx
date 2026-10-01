@@ -2,7 +2,7 @@ import './Messenger.css';
 import BotPanel from './components/BotPanel';
 import { useBotChat } from './hooks/useBotChat';
 import { useLanguage } from '../../../context/LanguageContext';
-import { BOT_NAME } from './botReplies';
+import { BOT_NAME } from './botText';
 
 // Chat with Gökalp Bot without signing in: no account, no Firebase, no cost.
 const BotChat = ({ onBack }) => {

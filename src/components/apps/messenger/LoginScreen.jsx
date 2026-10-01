@@ -37,7 +37,6 @@ const LoginScreen = ({ onLogin }) => {
             const user = userCredential.user;
 
             // LOGIN GUARD: Check status
-            const userRef = ref(db, `users/${user.uid}`);
             const snapshot = await get(ref(db, `users/${user.uid}`));
             const userData = snapshot.val();
 

@@ -1,14 +1,14 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useOS } from '../../context/OSContext';
 import './MusicPlayer.css';
-import demoTrack1 from '../../assets/isimolmaz.mp3';
-import demoTrack2 from '../../assets/ikiyabanci.mp3';
-import demoTrack3 from '../../assets/Metallica - Master of Puppets.mp3';
-import demoTrack4 from '../../assets/Corona - The Rhythm of the Night.mp3';
-import demoTrack5 from '../../assets/Alice Deejay - Better Off Alone.mp3';
-import demoTrack6 from '../../assets/Another One Bites the Dust.mp3';
-import demoTrack7 from '../../assets/Cakkıdı.mp3';
-import demoTrack8 from '../../assets/BombaBomba.com.mp3';
+import demoTrack1 from '../../assets/isimolmaz.m4a';
+import demoTrack2 from '../../assets/ikiyabanci.m4a';
+import demoTrack3 from '../../assets/Metallica - Master of Puppets.m4a';
+import demoTrack4 from '../../assets/Corona - The Rhythm of the Night.m4a';
+import demoTrack5 from '../../assets/Alice Deejay - Better Off Alone.m4a';
+import demoTrack6 from '../../assets/Another One Bites the Dust.m4a';
+import demoTrack7 from '../../assets/Cakkıdı.m4a';
+import demoTrack8 from '../../assets/BombaBomba.com.m4a';
 
 const MusicPlayer = () => {
     const { volume: globalVolume } = useOS(); // Use Audio Driver

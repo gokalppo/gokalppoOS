@@ -15,7 +15,10 @@ Instead of a static page of cards, my portfolio is a tiny operating system runni
 
 ### The OS shell
 - **BIOS boot sequence**, Windows 98 startup and shutdown sounds, taskbar with a live clock and volume control
-- **Window manager**: drag, maximize on title-bar double-click, focus and z-order handling, taskbar entries per window
+- **Window manager**: drag, resize from all eight edges and corners, minimize (the window flies to its taskbar button), maximize, open/close transitions (reduced-motion aware), focus and z-order handling, dimmed inactive title bars
+- **Taskbar**: click a button to minimize or restore, a Show Desktop button, a clock that opens a calendar, and tray icons for network status, live visitor count and volume
+- **Alt + `** (and Alt+Tab where the browser lets it through) opens a Win98-style window switcher; release Alt to jump, Esc to cancel
+- **Optional system sounds** (synthesized with Web Audio, off by default): open, close, minimize, restore, error. Toggle them from the volume popup
 - **Desktop icons** you can drag, multi-select with a selection box, and rearrange. Positions persist in `localStorage`, and right-click > **Arrange Icons** animates them back to their defaults
 - **Virtual file system** shared by My Computer, the Recycle Bin, and Notepad: create folders and files, rename, delete to the bin, restore, or delete permanently. Stored in `localStorage`
 - **Clippy-style assistant** that gives context-aware tips depending on which app you have focused (and follows your cursor with its eyes)
@@ -36,6 +39,7 @@ Instead of a static page of cards, my portfolio is a tiny operating system runni
 | **Music Player** | Playlist player |
 | **My Computer / Recycle Bin** | File Explorer over the virtual file system |
 | **Contact** | Contact card with copy-to-clipboard email |
+| **System Properties** | Win98 "System Properties" dialog (Start menu): a General tab and a Device Manager tree listing the technologies from my projects and where each one is used |
 | **Visitor counter** | Real, atomic counter stored in Firebase |
 
 ### Messenger (the big one)
@@ -99,7 +103,7 @@ Open <http://localhost:5173>, wait for the BIOS text, and press **Enter**.
 | `npm run dev` | Start the Vite dev server |
 | `npm run build` | Production build into `dist/` |
 | `npm run preview` | Serve the production build locally |
-| `npm test` | Run the Vitest suite (62 tests) |
+| `npm test` | Run the Vitest suite (92 tests) |
 | `npm run lint` | Run ESLint |
 
 ### Using your own Firebase project

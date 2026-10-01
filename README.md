@@ -20,6 +20,7 @@ Instead of a static page of cards, my portfolio is a tiny operating system runni
 - **Virtual file system** shared by My Computer, the Recycle Bin, and Notepad: create folders and files, rename, delete to the bin, restore, or delete permanently. Stored in `localStorage`
 - **Clippy-style assistant** that gives context-aware tips depending on which app you have focused (and follows your cursor with its eyes)
 - **Warp-speed screensaver** after two minutes of inactivity
+- **Crash-proof windows**: each app runs inside an error boundary, so a crashing program shows a Win98-style "illegal operation" dialog instead of taking the desktop down (hidden `crash` terminal command to see it)
 - **Hidden easter egg**: try the Konami Code
 
 ### Apps
@@ -76,6 +77,8 @@ A few design decisions worth mentioning:
 
 - **Code splitting.** Every app is loaded with `React.lazy`, and the Firebase SDK is deferred until it is needed. The initial JavaScript bundle went from ~582 KB to ~271 KB, and each app (2-30 KB) is fetched the first time you open it.
 - **State kept out of stale closures.** Rapid-fire interactions (double-clicks, fast window focus changes, multi-icon drags) read from refs that are updated synchronously next to React state, which fixed several race conditions with `z-index` and drag selection.
+- **Tested where it matters.** Vitest covers the virtual file system, the Terminal command parser, the Messenger helpers, and the whole chat UI against an in-memory Firebase fake (send/censor, private rooms and unread counts, typing, friend requests, admin delete/ban, the ban kill-switch).
+- **Messenger is split into small pieces.** `ChatInterface` is a thin orchestrator over focused hooks (`usePresence`, `useMessages`, `useTypingIndicator`, `useNudge`, `useFriendActions`, `useAdminTools`, ...) and presentational components, with pure logic in `chatUtils.js`.
 - **Security lives in the database rules.** The client is never trusted: `role` and `isBanned` can only be changed by admins, private messages and typing state are readable only by the two participants, friend lists cannot be forged, and email addresses are kept in a separate `userPrivate` node. Rules are in [`database.rules.json`](database.rules.json).
 
 ## Running it locally
@@ -96,6 +99,7 @@ Open <http://localhost:5173>, wait for the BIOS text, and press **Enter**.
 | `npm run dev` | Start the Vite dev server |
 | `npm run build` | Production build into `dist/` |
 | `npm run preview` | Serve the production build locally |
+| `npm test` | Run the Vitest suite (62 tests) |
 | `npm run lint` | Run ESLint |
 
 ### Using your own Firebase project
@@ -120,7 +124,6 @@ The app talks to my Firebase project by default. The Firebase web config in [`sr
 - Welcome window and an About Me app
 - Messenger demo bot for visitors who are not signed in
 - Keyboard navigation and screen reader support
-- Tests for the file system and terminal commands
 
 ## Author
 

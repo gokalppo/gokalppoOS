@@ -1,4 +1,4 @@
-import { createContext, useState, useContext, useCallback, useEffect } from 'react';
+import { createContext, useState, useContext, useCallback } from 'react';
 
 const OSContext = createContext();
 

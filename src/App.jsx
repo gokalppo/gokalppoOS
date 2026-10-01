@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import { useOS } from './context/OSContext';
 import Desktop from './components/Desktop';
 import Window from './components/Window'; // Eksik olan buydu!
@@ -77,11 +77,11 @@ function App() {
     if (focusedWindowId === id) setFocusedWindowId(null);
   };
 
-  const handleShutdown = (type) => {
+  const handleShutdown = () => {
     // 1. Audio Fix (User requested specific log)
     const audio = new Audio(shutdownSound);
     audio.volume = volume; // Apply global volume
-    audio.play().catch(e => console.log('Ses çalınamadı, devam ediliyor...'));
+    audio.play().catch(() => console.log('Ses çalınamadı, devam ediliyor...'));
 
     // 2. Visual Shutdown
     setIsShuttingDown(true);

@@ -8,11 +8,8 @@ const Window = ({
     children,
     content,
     zIndex,
-    isMinimized, // Passed from App.jsx options or state
-    isOpen,
     initialPosition,
     onClose,
-    onMinimize, // Not currently passed by App.jsx, handling gracefully
     onFocus,
     style: propStyle, // Receive passed style (display: none etc)
     bodyStyle,

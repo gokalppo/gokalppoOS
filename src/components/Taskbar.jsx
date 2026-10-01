@@ -48,15 +48,16 @@ const Taskbar = ({
         return () => window.removeEventListener('flash-taskbar', handleFlash);
     }, [activeWindowId]);
 
-    useEffect(() => {
-        if (activeWindowId) {
-            setFlashingWindows(prev => {
-                const newSet = new Set(prev);
-                newSet.delete(activeWindowId);
-                return newSet;
-            });
+    // Focusing a window stops its taskbar flash (adjusted during render, not in an effect).
+    const [lastActiveWindowId, setLastActiveWindowId] = useState(activeWindowId);
+    if (lastActiveWindowId !== activeWindowId) {
+        setLastActiveWindowId(activeWindowId);
+        if (activeWindowId && flashingWindows.has(activeWindowId)) {
+            const next = new Set(flashingWindows);
+            next.delete(activeWindowId);
+            setFlashingWindows(next);
         }
-    }, [activeWindowId]);
+    }
 
     // Clock
     useEffect(() => {

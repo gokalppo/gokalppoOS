@@ -12,6 +12,8 @@ import demoTrack8 from '../../assets/BombaBomba.com.mp3';
 
 const MusicPlayer = () => {
     const { volume: globalVolume } = useOS(); // Use Audio Driver
+    // Fixed per-bar animation speeds (picked once so they don't jitter on re-render).
+    const [barDurations] = useState(() => Array.from({ length: 10 }, () => 0.3 + Math.random() * 0.4));
     // Static Playlist per user request
     const [playlist] = useState([
         { title: '1. İsim Olmaz', src: demoTrack1 },
@@ -125,7 +127,7 @@ const MusicPlayer = () => {
                             key={i}
                             className={`mp-bar ${isPlaying ? 'animating' : ''}`}
                             style={{
-                                animationDuration: `${0.3 + Math.random() * 0.4}s`
+                                animationDuration: `${barDurations[i]}s`
                             }}
                         ></div>
                     ))}

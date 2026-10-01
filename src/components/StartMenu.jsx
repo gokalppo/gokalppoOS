@@ -1,9 +1,7 @@
 import { lazy } from 'react';
 import './StartMenu.css';
 import documentsIcon from '../assets/images/documents.png';
-import findIcon from '../assets/images/find.png';
 import helpIcon from '../assets/images/help.png';
-import keyIcon from '../assets/images/admin.png';
 
 // Pulls in @emailjs/browser + Firebase — split into its own chunk so it's
 // only fetched if the user actually opens "New Message".

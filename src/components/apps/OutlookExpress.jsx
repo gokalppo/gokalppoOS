@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useOS } from '../../context/OSContext';
 import { db } from '../../firebase';
-import { ref, push, set } from "firebase/database";
+import { ref, push } from "firebase/database";
 import emailjs from '@emailjs/browser';
 import './OutlookExpress.css';
 
@@ -73,7 +73,9 @@ const OutlookExpress = () => {
                 osc.start();
                 osc.stop(ctx.currentTime + 0.3);
             }
-        } catch (e) { }
+        } catch {
+            // Web Audio unavailable — the send sound is optional.
+        }
     };
 
     const handleSend = async () => {
@@ -162,7 +164,7 @@ const OutlookExpress = () => {
                     playSentSound();
                 }, 500);
 
-            } catch (dbError) {
+            } catch {
                 clearInterval(timer);
                 setIsSending(false);
                 alert("Critical Error: Could not send or save message.");

@@ -215,7 +215,6 @@ const Desktop = ({
         setSelectedIconIds(ids);
     };
     const [selection, setSelection] = useState(null);
-    const [isDraggingGroup, setIsDraggingGroup] = useState(false);
     const [desktopContextMenu, setDesktopContextMenu] = useState(null);
     const [isResetAnimating, setIsResetAnimating] = useState(false);
 

@@ -1,13 +1,22 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import './Contact.css';
 
 const Contact = () => {
-    const [tooltip, setTooltip] = useState('');
+    const [copyState, setCopyState] = useState('idle'); // 'idle' | 'copied' | 'manual'
+    const copyTimer = useRef(null);
+    const emailInputRef = useRef(null);
 
-    const copyEmail = () => {
-        navigator.clipboard.writeText('ekergokalp@gmail.com');
-        setTooltip('Email copied!');
-        setTimeout(() => setTooltip(''), 2000);
+    const copyEmail = async () => {
+        try {
+            await navigator.clipboard.writeText('ekergokalp@gmail.com');
+            setCopyState('copied');
+        } catch {
+            // Clipboard blocked (permissions / insecure context): select the text so Ctrl+C works.
+            emailInputRef.current?.select();
+            setCopyState('manual');
+        }
+        clearTimeout(copyTimer.current);
+        copyTimer.current = setTimeout(() => setCopyState('idle'), 2000);
     };
 
     return (
@@ -20,10 +29,11 @@ const Contact = () => {
                         type="text"
                         value="ekergokalp@gmail.com"
                         readOnly
+                        ref={emailInputRef}
                         className="email-input-integrated"
                     />
                     <button className="copy-btn-integrated" onClick={copyEmail} title="Copy Email">
-                        Copy
+                        {copyState === 'copied' ? 'Copied!' : copyState === 'manual' ? 'Ctrl+C' : 'Copy'}
                     </button>
                 </div>
 
@@ -38,8 +48,7 @@ const Contact = () => {
                         target="_blank"
                         rel="noopener noreferrer"
                         className="social-link github"
-                        onMouseEnter={() => setTooltip('Follow me on GitHub')}
-                        onMouseLeave={() => setTooltip('')}
+                        title="Follow me on GitHub"
                     >
                         {/* GitHub Icon SVG */}
                         <svg viewBox="0 0 24 24" width="48" height="48">
@@ -52,8 +61,7 @@ const Contact = () => {
                         target="_blank"
                         rel="noopener noreferrer"
                         className="social-link linkedin"
-                        onMouseEnter={() => setTooltip('Connect on LinkedIn')}
-                        onMouseLeave={() => setTooltip('')}
+                        title="Connect on LinkedIn"
                     >
                         {/* LinkedIn Icon SVG - Retro Blue */}
                         <svg viewBox="0 0 24 24" width="48" height="48">
@@ -66,8 +74,7 @@ const Contact = () => {
                         target="_blank"
                         rel="noopener noreferrer"
                         className="social-link instagram"
-                        onMouseEnter={() => setTooltip('Check my Instagram')}
-                        onMouseLeave={() => setTooltip('')}
+                        title="Check my Instagram"
                     >
                         {/* Instagram Icon SVG - Minimalist/Retro Version */}
                         <svg viewBox="0 0 24 24" width="48" height="48">

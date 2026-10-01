@@ -90,3 +90,22 @@ describe('Desktop open-app bus', () => {
         expect(screen.getByRole('button', { name: 'About Me' })).toBeTruthy();
     });
 });
+
+describe('Desktop file opening', () => {
+    it('opens .txt files in Notepad and pictures in Paint, ignoring other types', () => {
+        // handleOpenFile is passed to My Computer's content; reach it through the program list.
+        const { onOpenWindow } = setup();
+        openApp('mycomputer');
+        const content = onOpenWindow.mock.calls.at(-1)[1];
+        const open = content.props.onOpenFile;
+
+        onOpenWindow.mockClear();
+        open({ id: 'n1', name: 'a.txt' });
+        open({ id: 'n2', name: 'b.png' });
+        open({ id: 'n3', name: 'c.exe' });
+        expect(onOpenWindow).toHaveBeenCalledTimes(2);
+        expect(onOpenWindow.mock.calls[0][0]).toBe('a.txt');
+        expect(onOpenWindow.mock.calls[1][0]).toBe('b.png');
+        expect(onOpenWindow.mock.calls[1][2].width).toBe('830px');
+    });
+});

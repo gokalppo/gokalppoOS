@@ -28,6 +28,7 @@ import minesweeperIcon from '../assets/images/minesweeper.png';
 import ieIcon from '../assets/images/ie.webp';
 import aboutIcon from '../assets/images/about.svg';
 import { OPEN_APP_EVENT } from './appBus';
+import { fileKind } from './apps/fileTypes';
 import guestbookIcon from '../assets/images/guestbook.svg';
 import solitaireIcon from '../assets/images/solitaire.webp';
 import binEmptyIcon from '../assets/images/Bin_Empty95.svg';
@@ -142,9 +143,15 @@ const Desktop = ({
     // Initial App Data
     // Opens a .txt file from the file system in its own Notepad window.
     const handleOpenFile = (node) => {
-        if (node.name.toLowerCase().endsWith('.txt')) {
+        const kind = fileKind(node.name);
+        if (kind === 'text') {
             onOpenWindow(node.name, <Notepad initialFileId={node.id} />, {
                 icon: <img src={notepadIcon} alt="Notepad" style={{ width: '32px', height: '32px' }} />
+            });
+        } else if (kind === 'image') {
+            onOpenWindow(node.name, <Paint initialFileId={node.id} />, {
+                icon: <img src={paintIcon} alt="Paint" style={{ width: '32px', height: '32px' }} />,
+                width: '830px', height: '600px', minWidth: '750px', minHeight: '550px', bodyStyle: { padding: 0 }
             });
         }
     };

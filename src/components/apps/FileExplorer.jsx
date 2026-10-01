@@ -1,12 +1,15 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useFileSystem } from '../../context/FileSystemContext';
+import { useLanguage } from '../../context/LanguageContext';
+import { fileKind, isImageDataUrl } from './fileTypes';
 import folderIcon from '../../assets/images/folder.svg';
 import notepadIcon from '../../assets/images/Notepad16.svg';
 import './FileExplorer.css';
 
 // `rootId`: 'root' for My Computer, 'recycle' for Recycle Bin.
-// `onOpenFile`: called with a file node when the user double-clicks a .txt file.
+// `onOpenFile`: called with a file node when the user double-clicks a file (the caller decides what it can open).
 const FileExplorer = ({ rootId, onOpenFile }) => {
+    const { t } = useLanguage();
     const { getNode, getChildren, getPath, createFolder, createFile, renameNode,
         moveToRecycle, restoreNode, permanentlyDelete, emptyRecycleBin } = useFileSystem();
 
@@ -84,15 +87,17 @@ const FileExplorer = ({ rootId, onOpenFile }) => {
     };
 
     const handleNewFolder = () => {
-        const id = createFolder(currentFolderId, 'New Folder');
+        const name = t('fe.newFolder');
+        const id = createFolder(currentFolderId, name);
         closeMenu();
-        startRename({ id, name: 'New Folder' });
+        startRename({ id, name });
     };
 
     const handleNewTextFile = () => {
-        const id = createFile(currentFolderId, 'New Text Document.txt', '');
+        const name = t('fe.newTextFile');
+        const id = createFile(currentFolderId, name, '');
         closeMenu();
-        startRename({ id, name: 'New Text Document.txt' });
+        startRename({ id, name });
     };
 
     const handleDelete = (id) => {
@@ -106,34 +111,39 @@ const FileExplorer = ({ rootId, onOpenFile }) => {
     };
 
     const handlePermanentDelete = (id) => {
-        if (window.confirm('Permanently delete this item? This cannot be undone.')) {
+        if (window.confirm(t('fe.confirmDelete'))) {
             permanentlyDelete(id);
         }
         closeMenu();
     };
 
     const handleEmptyRecycleBin = () => {
-        if (window.confirm('Permanently delete all items in the Recycle Bin?')) {
+        if (window.confirm(t('fe.confirmEmpty'))) {
             emptyRecycleBin();
         }
         closeMenu();
     };
 
-    const iconFor = (node) => (node.type === 'folder' ? folderIcon : notepadIcon);
+    // Pictures show a thumbnail of themselves; folders and documents get the classic icons.
+    const iconFor = (node) => {
+        if (node.type === 'folder') return folderIcon;
+        if (fileKind(node.name) === 'image' && isImageDataUrl(node.content)) return node.content;
+        return notepadIcon;
+    };
 
     return (
         <div className="fe-container" ref={containerRef} onClick={closeMenu}>
             <div className="fe-toolbar">
-                <button className="fe-up-btn" onClick={handleUp} disabled={!currentFolder?.parentId} title="Up">⬆</button>
+                <button className="fe-up-btn" onClick={handleUp} disabled={!currentFolder?.parentId} title={t('fe.up')} aria-label={t('fe.up')}>⬆</button>
                 <div className="fe-path">{path.map((n) => n.name).join(' \\ ')}</div>
                 {isRecycleBin && (
-                    <button className="fe-empty-btn" onClick={handleEmptyRecycleBin}>Empty Recycle Bin</button>
+                    <button className="fe-empty-btn" onClick={handleEmptyRecycleBin}>{t('fe.emptyBin')}</button>
                 )}
             </div>
 
             <div className="fe-body" onContextMenu={handleBackgroundContextMenu}>
                 {children.length === 0 && (
-                    <div className="fe-empty-msg">{isRecycleBin ? 'Recycle Bin is empty' : 'This folder is empty'}</div>
+                    <div className="fe-empty-msg">{isRecycleBin ? t('fe.binEmpty') : t('fe.folderEmpty')}</div>
                 )}
                 {children.map((node) => (
                     <div
@@ -172,20 +182,20 @@ const FileExplorer = ({ rootId, onOpenFile }) => {
                 >
                     {!contextMenu.targetId && !isRecycleBin && (
                         <>
-                            <div className="fe-context-item" onClick={handleNewFolder}>New Folder</div>
-                            <div className="fe-context-item" onClick={handleNewTextFile}>New Text Document</div>
+                            <div className="fe-context-item" onClick={handleNewFolder}>{t('fe.newFolder')}</div>
+                            <div className="fe-context-item" onClick={handleNewTextFile}>{t('fe.newTextDoc')}</div>
                         </>
                     )}
                     {contextMenu.targetId && !isRecycleBin && (
                         <>
-                            <div className="fe-context-item" onClick={() => startRename(getNode(contextMenu.targetId))}>Rename</div>
-                            <div className="fe-context-item" onClick={() => handleDelete(contextMenu.targetId)}>Delete</div>
+                            <div className="fe-context-item" onClick={() => startRename(getNode(contextMenu.targetId))}>{t('fe.rename')}</div>
+                            <div className="fe-context-item" onClick={() => handleDelete(contextMenu.targetId)}>{t('fe.delete')}</div>
                         </>
                     )}
                     {contextMenu.targetId && isRecycleBin && (
                         <>
-                            <div className="fe-context-item" onClick={() => handleRestore(contextMenu.targetId)}>Restore</div>
-                            <div className="fe-context-item" onClick={() => handlePermanentDelete(contextMenu.targetId)}>Delete Permanently</div>
+                            <div className="fe-context-item" onClick={() => handleRestore(contextMenu.targetId)}>{t('fe.restore')}</div>
+                            <div className="fe-context-item" onClick={() => handlePermanentDelete(contextMenu.targetId)}>{t('fe.deleteForever')}</div>
                         </>
                     )}
                 </div>

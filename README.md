@@ -37,14 +37,14 @@ Instead of a static page of cards, my portfolio is a tiny operating system runni
 | **Gallery** | Project showcase with tech-stack badges |
 | **Terminal** | Real commands: `help`, `about`, `projects`, `github`, `linkedin`, `resume`, `contact`, `neofetch`, `matrix`, `ls`, `date`, `clear` |
 | **Messenger** | MSN-style real-time chat (details below) |
-| **Notepad** | Text editor with New / Open / Save / Save As and `.txt` download, backed by the virtual file system |
-| **Paint** | Pencil, eraser, line, rectangle and ellipse (outlined or filled), bucket fill, color palette, undo, and PNG export |
+| **Notepad** | Text editor with working Edit and Search menus: Undo/Cut/Copy/Paste, Select All, Time/Date (F5), Word Wrap, and **Find (Ctrl+F), Find Next (F3) and Replace (Ctrl+H)** with match case, a live match count and Replace All. Opens and saves `.txt` files in My Documents (saving under an existing name replaces it) |
+| **Paint** | Pencil, eraser, line, rectangle and ellipse (outlined or filled), bucket fill, **text tool** (font, size, bold, multi-line), color palette and undo. **File > Save / Save As / Open** keep pictures in My Documents (they reopen from My Computer), plus a PNG download |
 | **Minesweeper** | The classic, with flags, a timer and a global **Best Times** board (Firebase) |
 | **Solitaire** | Klondike (draw-one): drag and drop or click-to-move, double-click to send a card to its foundation, undo, timer and move counter |
 | **Internet Explorer** | A tiny browser with an address bar, history, a Favorites menu and internal pages (home, about, every project, links). Real sites open in a new tab |
 | **Guestbook** | Visitors leave a message that stays on the site (Firebase), with validation, a posting cooldown and a honeypot against bots |
 | **Music Player** | Playlist player |
-| **My Computer / Recycle Bin** | File Explorer over the virtual file system |
+| **My Computer / Recycle Bin** | File Explorer over the virtual file system; pictures show thumbnails and open in Paint, text files open in Notepad. The virtual disk lives in `localStorage` (about 3.5 MB are used before it politely refuses to save more) |
 | **Contact** | Contact card with copy-to-clipboard email |
 | **System Properties** | Win98 "System Properties" dialog (Start menu): a General tab and a Device Manager tree listing the technologies from my projects and where each one is used |
 | **Visitor counter** | Real, atomic counter stored in Firebase |
@@ -123,7 +123,7 @@ Open <http://localhost:5173>, wait for the BIOS text, and press **Enter**.
 | `npm run dev` | Start the Vite dev server |
 | `npm run build` | Production build into `dist/` |
 | `npm run preview` | Serve the production build locally |
-| `npm test` | Run the Vitest suite (277 tests) |
+| `npm test` | Run the Vitest suite (420+ tests) |
 | `npm run test:rules` | Run the security-rules tests against the Firebase Realtime Database emulator (needs Java; starts the emulator itself) |
 | `npm run lint` | Run ESLint |
 

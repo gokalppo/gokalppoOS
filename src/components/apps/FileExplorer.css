@@ -137,3 +137,5 @@
     background: var(--win-highlight);
     color: white;
 }
+
+.fe-item-icon[src^="data:image"] { object-fit: contain; background: #fff; border: 1px solid #808080; image-rendering: auto; }

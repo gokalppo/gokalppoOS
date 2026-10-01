@@ -1,4 +1,10 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
+import { useFileSystem } from '../../context/FileSystemContext';
+import { useLanguage } from '../../context/LanguageContext';
+import MenuBar from './MenuBar';
+import { OpenDialog, SaveAsDialog } from './FileDialogs';
+import { ensureExtension, fileKind, isImageDataUrl } from './fileTypes';
+import { TEXT_SIZES, TEXT_FONTS, DEFAULT_TEXT_OPTIONS, fontString, drawText, fitContain } from './paintText';
 import './Paint.css';
 
 const PALETTE = [
@@ -7,14 +13,15 @@ const PALETTE = [
 ];
 
 const TOOLS = [
-    { id: 'pencil', label: 'Pencil', icon: '✏️' },
-    { id: 'eraser', label: 'Eraser', icon: '🧹' },
-    { id: 'line', label: 'Line', icon: '📏' },
-    { id: 'rect', label: 'Rectangle', icon: '▭' },
-    { id: 'rectFilled', label: 'Filled Rectangle', icon: '▬' },
-    { id: 'ellipse', label: 'Ellipse', icon: '⬭' },
-    { id: 'ellipseFilled', label: 'Filled Ellipse', icon: '⬤' },
-    { id: 'fill', label: 'Fill', icon: '🪣' },
+    { id: 'pencil', icon: '✏️' },
+    { id: 'eraser', icon: '🧹' },
+    { id: 'line', icon: '📏' },
+    { id: 'rect', icon: '▭' },
+    { id: 'rectFilled', icon: '▬' },
+    { id: 'ellipse', icon: '⬭' },
+    { id: 'ellipseFilled', icon: '⬤' },
+    { id: 'fill', icon: '🪣' },
+    { id: 'text', icon: 'A' },
 ];
 
 const SIZES = [1, 3, 6];
@@ -118,7 +125,11 @@ const commitShape = (canvas, previewCanvas, tool, from, to, color, brushSize) =>
     previewCanvas.getContext('2d').clearRect(0, 0, previewCanvas.width, previewCanvas.height);
 };
 
-const Paint = () => {
+const Paint = ({ initialFileId }) => {
+    const { t } = useLanguage();
+    const { getNode, createFile, updateFileContent, findFileByName, canStore } = useFileSystem();
+    const containerRef = useRef(null);
+    const textAreaRef = useRef(null);
     const canvasRef = useRef(null);
     const previewRef = useRef(null);
     const coordsElRef = useRef(null);
@@ -126,6 +137,13 @@ const Paint = () => {
     const [tool, setTool] = useState('pencil');
     const [color, setColor] = useState('#000000');
     const [brushSize, setBrushSize] = useState(3);
+    const [textOptions, setTextOptions] = useState(DEFAULT_TEXT_OPTIONS);
+    const [textBox, setTextBox] = useState(null); // { x, y, scale } while typing text on the canvas
+    const [currentFileId, setCurrentFileId] = useState(initialFileId || null);
+    const [showOpen, setShowOpen] = useState(false);
+    const [showSaveAs, setShowSaveAs] = useState(false);
+    const [saveAsError, setSaveAsError] = useState(null);
+    const [status, setStatus] = useState('');
 
     // Mirrors of the UI state, read by the imperative mouse handlers below
     // (set up once on mount) so they always see the latest values without
@@ -136,6 +154,10 @@ const Paint = () => {
     useEffect(() => { toolRef.current = tool; }, [tool]);
     useEffect(() => { colorRef.current = color; }, [color]);
     useEffect(() => { brushSizeRef.current = brushSize; }, [brushSize]);
+    const textOptionsRef = useRef(textOptions);
+    const textBoxRef = useRef(null);
+    const commitTextRef = useRef(null);
+    useEffect(() => { textOptionsRef.current = textOptions; }, [textOptions]);
 
     const isDrawingRef = useRef(false);
     const startPointRef = useRef({ x: 0, y: 0 });
@@ -157,6 +179,33 @@ const Paint = () => {
         pushHistory();
     }, [pushHistory]);
 
+    const openTextBox = useCallback((pos, scale) => {
+        const box = { x: pos.x, y: pos.y, scale };
+        textBoxRef.current = box;
+        setTextBox(box);
+    }, []);
+
+    // Stamp the typed text onto the canvas (an empty box just disappears).
+    const commitText = useCallback(() => {
+        const box = textBoxRef.current;
+        if (!box) return;
+        const value = textAreaRef.current ? textAreaRef.current.value : '';
+        textBoxRef.current = null;
+        setTextBox(null);
+        if (!value.trim()) return;
+        drawText(canvasRef.current.getContext('2d'), {
+            text: value, x: box.x, y: box.y, color: colorRef.current, ...textOptionsRef.current
+        });
+        pushHistory();
+    }, [pushHistory]);
+
+    const cancelText = useCallback(() => {
+        textBoxRef.current = null;
+        setTextBox(null);
+    }, []);
+
+    useEffect(() => { commitTextRef.current = commitText; }, [commitText]);
+
     const getPos = useCallback((clientX, clientY) => {
         const canvas = canvasRef.current;
         const rect = canvas.getBoundingClientRect();
@@ -176,6 +225,18 @@ const Paint = () => {
 
         const handleDown = (e) => {
             const pos = getPos(e.clientX, e.clientY);
+
+            // Text tool: finish any box that is still open, then start a new one here.
+            // preventDefault keeps the canvas from stealing focus from the new text box.
+            if (toolRef.current === 'text') {
+                e.preventDefault();
+                if (commitTextRef.current) commitTextRef.current();
+                const rect = canvasRef.current.getBoundingClientRect();
+                openTextBox(pos, rect.width / canvasRef.current.width);
+                return;
+            }
+
+            if (containerRef.current) containerRef.current.focus({ preventScroll: true });
             startPointRef.current = pos;
             isDrawingRef.current = true;
 
@@ -240,7 +301,7 @@ const Paint = () => {
             window.removeEventListener('mousemove', handleMove);
             window.removeEventListener('mouseup', handleUp);
         };
-    }, [getPos, pushHistory]);
+    }, [getPos, pushHistory, openTextBox]);
 
     const handleUndo = () => {
         if (history.current.length <= 1) return;
@@ -264,28 +325,137 @@ const Paint = () => {
         pushHistory();
     };
 
+    // ---- files -------------------------------------------------------------
+    const currentFile = currentFileId ? getNode(currentFileId) : null;
+    const currentFileName = currentFile ? currentFile.name : t('pt.untitled');
+
+    // Draw a saved picture onto the canvas (shrinking it to fit if it is larger).
+    const loadDataUrl = useCallback((url) => new Promise((resolve, reject) => {
+        if (!isImageDataUrl(url)) { reject(new Error('not an image')); return; }
+        const img = new Image();
+        img.onload = () => {
+            const canvas = canvasRef.current;
+            if (canvas) {
+                const ctx = canvas.getContext('2d');
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                const fit = fitContain(img.width, img.height, canvas.width, canvas.height);
+                ctx.drawImage(img, fit.x, fit.y, fit.width, fit.height);
+                pushHistory();
+            }
+            resolve();
+        };
+        img.onerror = () => reject(new Error('could not load'));
+        img.src = url;
+    }), [pushHistory]);
+
+    // A picture handed over from My Computer.
+    useEffect(() => {
+        if (!initialFileId) return;
+        const node = getNode(initialFileId);
+        if (node) loadDataUrl(node.content).catch(() => setStatus(t('pt.badImage')));
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    const writeImage = (name) => {
+        const url = canvasRef.current.toDataURL('image/png');
+        if (!canStore(url.length)) return { error: t('pt.diskFull') };
+        const finalName = ensureExtension(name, 'png');
+        const existing = findFileByName('documents', finalName);
+        if (existing) {
+            updateFileContent(existing.id, url);
+            return { id: existing.id };
+        }
+        return { id: createFile('documents', finalName, url) };
+    };
+
     const handleSave = () => {
-        const canvas = canvasRef.current;
-        const url = canvas.toDataURL('image/png');
+        commitText();
+        if (!currentFileId) { setSaveAsError(null); setShowSaveAs(true); return; }
+        const url = canvasRef.current.toDataURL('image/png');
+        if (!canStore(url.length)) { setStatus(t('pt.diskFull')); return; }
+        updateFileContent(currentFileId, url);
+        setStatus(t('pt.saved'));
+    };
+
+    const handleSaveAs = () => { commitText(); setSaveAsError(null); setShowSaveAs(true); };
+
+    const confirmSaveAs = (name) => {
+        const result = writeImage(name);
+        if (result.error) { setSaveAsError(result.error); return; }
+        setCurrentFileId(result.id);
+        setShowSaveAs(false);
+        setStatus(t('pt.saved'));
+    };
+
+    const handleOpened = (node) => {
+        setShowOpen(false);
+        loadDataUrl(node.content)
+            .then(() => { setCurrentFileId(node.id); setStatus(''); })
+            .catch(() => setStatus(t('pt.badImage')));
+    };
+
+    const handleNew = () => {
+        cancelText();
+        handleClear();
+        setCurrentFileId(null);
+        setStatus('');
+    };
+
+    const handleDownload = () => {
+        commitText();
+        const url = canvasRef.current.toDataURL('image/png');
         const a = document.createElement('a');
         a.href = url;
-        a.download = 'painting.png';
+        a.download = ensureExtension(currentFileName, 'png', 'painting');
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
     };
 
+    const handleKeyDown = (e) => {
+        const mod = e.ctrlKey || e.metaKey;
+        if (mod && e.key.toLowerCase() === 's') { e.preventDefault(); handleSave(); }
+        else if (mod && e.key.toLowerCase() === 'z') { e.preventDefault(); handleUndo(); }
+    };
+
+    const menus = [
+        {
+            id: 'file', label: t('pt.menu.file'), items: [
+                { label: t('pt.new'), onSelect: handleNew },
+                { label: t('pt.open'), onSelect: () => setShowOpen(true) },
+                { label: t('pt.save'), shortcut: 'Ctrl+S', onSelect: handleSave },
+                { label: t('pt.saveAs'), onSelect: handleSaveAs },
+                { separator: true },
+                { label: t('pt.download'), onSelect: handleDownload }
+            ]
+        },
+        {
+            id: 'edit', label: t('pt.menu.edit'), items: [
+                { label: t('pt.undo'), shortcut: 'Ctrl+Z', onSelect: handleUndo },
+                { label: t('pt.clearImage'), onSelect: handleClear }
+            ]
+        }
+    ];
+
+    const toolLabel = (id) => t(`pt.tool.${id}`);
+
     return (
-        <div className="paint-container">
+        <div className="paint-container" ref={containerRef} tabIndex={-1} onKeyDown={handleKeyDown}>
+            <MenuBar menus={menus}>
+                <div className="paint-filename">{currentFileName}{currentFileId ? '' : t('pt.unsaved')}</div>
+            </MenuBar>
             <div className="paint-toolbar">
-                {TOOLS.map((t) => (
+                {TOOLS.map((def) => (
                     <button
-                        key={t.id}
-                        className={`paint-tool-btn ${tool === t.id ? 'active' : ''}`}
-                        title={t.label}
-                        onClick={() => setTool(t.id)}
+                        key={def.id}
+                        className={`paint-tool-btn ${tool === def.id ? 'active' : ''}`}
+                        title={toolLabel(def.id)}
+                        aria-label={toolLabel(def.id)}
+                        aria-pressed={tool === def.id}
+                        onClick={() => { if (def.id !== 'text') commitText(); setTool(def.id); }}
                     >
-                        {t.icon}
+                        {def.icon}
                     </button>
                 ))}
                 <div className="paint-toolbar-divider" />
@@ -300,14 +470,44 @@ const Paint = () => {
                     </button>
                 ))}
                 <div className="paint-toolbar-divider" />
-                <button className="paint-action-btn" onClick={handleUndo} title="Undo">↩ Undo</button>
-                <button className="paint-action-btn" onClick={handleClear} title="Clear canvas">🗑 Clear</button>
-                <button className="paint-action-btn" onClick={handleSave} title="Save as PNG">💾 Save</button>
+                <button className="paint-action-btn" onClick={handleUndo} title={t('pt.undo')}>↩ {t('pt.undo')}</button>
+                <button className="paint-action-btn" onClick={handleClear} title={t('pt.clearTitle')}>🗑 {t('pt.clear')}</button>
             </div>
+
+            {tool === 'text' && (
+                <div className="paint-textbar">
+                    <label>
+                        {t('pt.text.font')}
+                        <select
+                            value={textOptions.family}
+                            onChange={(e) => setTextOptions({ ...textOptions, family: e.target.value })}
+                        >
+                            {Object.keys(TEXT_FONTS).map((f) => <option key={f} value={f}>{t(`pt.font.${f}`)}</option>)}
+                        </select>
+                    </label>
+                    <label>
+                        {t('pt.text.size')}
+                        <select
+                            value={textOptions.size}
+                            onChange={(e) => setTextOptions({ ...textOptions, size: Number(e.target.value) })}
+                        >
+                            {TEXT_SIZES.map((n) => <option key={n} value={n}>{n}</option>)}
+                        </select>
+                    </label>
+                    <label>
+                        <input
+                            type="checkbox"
+                            checked={textOptions.bold}
+                            onChange={(e) => setTextOptions({ ...textOptions, bold: e.target.checked })}
+                        />
+                        {t('pt.text.bold')}
+                    </label>
+                </div>
+            )}
 
             <div className="paint-body">
                 <div className="paint-palette">
-                    <div className="paint-current-color" style={{ backgroundColor: color }} title="Current color" />
+                    <div className="paint-current-color" style={{ backgroundColor: color }} title={t('pt.currentColor')} />
                     <div className="paint-palette-grid">
                         {PALETTE.map((c) => (
                             <button
@@ -324,7 +524,7 @@ const Paint = () => {
                         className="paint-custom-color"
                         value={color}
                         onChange={(e) => setColor(e.target.value)}
-                        title="Custom color"
+                        title={t('pt.customColor')}
                     />
                 </div>
 
@@ -336,13 +536,55 @@ const Paint = () => {
                         height={480}
                         className="paint-canvas paint-preview-canvas"
                     />
+                    {textBox && (
+                        <textarea
+                            ref={textAreaRef}
+                            className="paint-text-input"
+                            autoFocus
+                            rows={1}
+                            spellCheck="false"
+                            aria-label={t('pt.tool.text')}
+                            style={{
+                                left: textBox.x * textBox.scale,
+                                top: textBox.y * textBox.scale,
+                                color,
+                                font: fontString({ ...textOptions, size: textOptions.size * textBox.scale }),
+                                lineHeight: 1.25
+                            }}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); commitText(); }
+                                else if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); cancelText(); }
+                            }}
+                            onBlur={commitText}
+                        />
+                    )}
                 </div>
             </div>
 
             <div className="paint-statusbar">
-                <span>Tool: {TOOLS.find((t) => t.id === tool)?.label}</span>
+                <span>{t('pt.toolStatus', { tool: toolLabel(tool) })}{status ? ` | ${status}` : ''}</span>
                 <span ref={coordsElRef}>0, 0</span>
             </div>
+
+            {showOpen && (
+                <OpenDialog
+                    title={t('pt.openTitle')}
+                    accept={(node) => fileKind(node.name) === 'image'}
+                    onOpen={handleOpened}
+                    onClose={() => setShowOpen(false)}
+                />
+            )}
+
+            {showSaveAs && (
+                <SaveAsDialog
+                    title={t('pt.saveAsTitle')}
+                    initialName={currentFileId ? currentFileName : t('pt.untitled')}
+                    exists={(name) => Boolean(findFileByName('documents', ensureExtension(name, 'png')))}
+                    error={saveAsError}
+                    onSave={confirmSaveAs}
+                    onCancel={() => setShowSaveAs(false)}
+                />
+            )}
         </div>
     );
 };

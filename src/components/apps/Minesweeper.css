@@ -9,6 +9,7 @@
 
 /* OUTSET Border for main layout (Top Panel + Grid) */
 .minesweeper-panel {
+    position: relative;
     border-top: 2px solid #808080;
     /* Dark Shadow Top */
     border-left: 2px solid #808080;
@@ -177,3 +178,72 @@
 .ms-cell.flagged {
     color: red;
 }
+.ms-trophy {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(34px, -50%);
+    background: transparent;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    padding: 0 4px;
+}
+
+.ms-win-banner {
+    margin-top: 8px;
+    padding: 6px 8px;
+    background: #ffffe0;
+    border: 1px solid #000;
+    font-size: 12px;
+    color: #000;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.ms-win-row { display: flex; gap: 4px; }
+.ms-input { flex: 1; min-width: 0; font-family: inherit; font-size: 12px; padding: 2px 4px; }
+.ms-error { color: #a00000; }
+
+.ms-btn {
+    font-family: inherit;
+    font-size: 12px;
+    padding: 2px 10px;
+    background: #c0c0c0;
+    border: 2px solid;
+    border-color: #fff #404040 #404040 #fff;
+    cursor: pointer;
+    color: #000;
+}
+
+.ms-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.35);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 5;
+}
+
+.ms-dialog {
+    background: #c0c0c0;
+    color: #000;
+    border: 2px solid;
+    border-color: #fff #404040 #404040 #fff;
+    box-shadow: 3px 3px 0 #000;
+    padding: 10px 14px;
+    min-width: 200px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: center;
+}
+
+.ms-dialog-title { font-weight: bold; }
+.ms-note { color: #404040; font-style: italic; }
+.ms-scores { margin: 0; padding-left: 22px; width: 100%; }
+.ms-scores li { display: list-item; }
+.ms-scores li > span { display: inline-block; }
+.ms-score-name { min-width: 120px; }

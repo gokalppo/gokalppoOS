@@ -95,6 +95,52 @@
         }
       }
     },
+    "guestbook": {
+      ".read": true,
+      ".indexOn": [
+        "timestamp"
+      ],
+      "$id": {
+        ".write": "(!data.exists() && newData.exists()) || (auth != null && root.child('users').child(auth.uid).child('role').val() === 'admin')",
+        ".validate": "newData.hasChildren(['name', 'message', 'timestamp'])",
+        "name": {
+          ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 30"
+        },
+        "message": {
+          ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 280"
+        },
+        "timestamp": {
+          ".validate": "newData.val() === now"
+        },
+        "$other": {
+          ".validate": false
+        }
+      }
+    },
+    "leaderboards": {
+      "minesweeper": {
+        ".read": true,
+        ".indexOn": [
+          "time"
+        ],
+        "$id": {
+          ".write": "!data.exists() && newData.exists()",
+          ".validate": "newData.hasChildren(['name', 'time', 'timestamp'])",
+          "name": {
+            ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 20"
+          },
+          "time": {
+            ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 999 && newData.val() % 1 === 0"
+          },
+          "timestamp": {
+            ".validate": "newData.val() === now"
+          },
+          "$other": {
+            ".validate": false
+          }
+        }
+      }
+    },
     ".read": false,
     ".write": false
   }

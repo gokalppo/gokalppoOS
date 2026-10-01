@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import './Minesweeper.css';
+import { useLanguage } from '../../context/LanguageContext';
+import { BestTimes, SubmitScore } from './MinesweeperBoard';
 
 const Minesweeper = () => {
+    const { t } = useLanguage();
     const ROWS = 9;
     const COLS = 9;
     const MINES = 10;
@@ -11,6 +14,8 @@ const Minesweeper = () => {
     const [mineCount, setMineCount] = useState(MINES);
     const [timer, setTimer] = useState(0);
     const [smiley, setSmiley] = useState('😊');
+    const [showBoard, setShowBoard] = useState(false);
+    const [boardVersion, setBoardVersion] = useState(0);
 
     // Timer Effect
     useEffect(() => {
@@ -191,6 +196,7 @@ const Minesweeper = () => {
                 >
                     {smiley}
                 </div>
+                <button className="ms-trophy" onClick={() => setShowBoard(true)} title={t('ms.bestTimes')}>🏆</button>
                 <div className="minesweeper-counter">
                     {String(timer).padStart(3, '0')}
                 </div>
@@ -218,6 +224,11 @@ const Minesweeper = () => {
                     ))}
                 </div>
             </div>
+
+            {gameState === 'won' && timer > 0 && (
+                <SubmitScore key={boardVersion} time={timer} onSubmitted={() => setBoardVersion((v) => v + 1)} />
+            )}
+            {showBoard && <BestTimes onClose={() => setShowBoard(false)} refreshKey={boardVersion} />}
         </div>
     );
 };

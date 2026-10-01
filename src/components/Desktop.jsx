@@ -24,6 +24,9 @@ const FileExplorer = lazy(() => import('./apps/FileExplorer'));
 import './Desktop.css';
 import wallpaper from '../assets/images/image.webp';
 import minesweeperIcon from '../assets/images/minesweeper.png';
+import ieIcon from '../assets/images/ie.svg';
+import guestbookIcon from '../assets/images/guestbook.svg';
+import solitaireIcon from '../assets/images/solitaire.svg';
 import binEmptyIcon from '../assets/images/Bin_Empty95.svg';
 import binFullIcon from '../assets/images/Bin_Full95.svg';
 import notepadIcon from '../assets/images/Notepad16.svg';
@@ -36,6 +39,9 @@ import resumeIcon from '../assets/images/resume.png';
 import messengerIcon from '../assets/images/msn.png';
 import paintIcon from '../assets/images/paint.png';
 
+const InternetExplorer = lazy(() => import('./apps/InternetExplorer'));
+const Guestbook = lazy(() => import('./apps/Guestbook'));
+const Solitaire = lazy(() => import('./apps/Solitaire'));
 const Messenger = lazy(() => import('./apps/messenger/MessengerContainer'));
 // Pulls in Firebase (auth + database) just to show a hit counter — split
 // into its own chunk instead of forcing every visitor to download Firebase
@@ -190,6 +196,33 @@ const Desktop = ({
             x: 100,
             y: 190,
             options: { width: '830px', height: '600px', minWidth: '750px', minHeight: '550px', bodyStyle: { padding: 0 } }
+        },
+        {
+            id: 'internetexplorer',
+            title: 'Internet Explorer',
+            icon: <img src={ieIcon} alt="Internet Explorer" style={{ width: '32px', height: '32px' }} />,
+            content: <InternetExplorer />,
+            x: 100,
+            y: 280,
+            options: { width: '720px', height: '520px', minWidth: '420px', minHeight: '320px', bodyStyle: { padding: 0 } }
+        },
+        {
+            id: 'guestbook',
+            title: 'Guestbook',
+            icon: <img src={guestbookIcon} alt="Guestbook" style={{ width: '32px', height: '32px' }} />,
+            content: <Guestbook />,
+            x: 100,
+            y: 370,
+            options: { width: '420px', height: '520px', minWidth: '340px', minHeight: '380px', bodyStyle: { padding: 0 } }
+        },
+        {
+            id: 'solitaire',
+            title: 'Solitaire',
+            icon: <img src={solitaireIcon} alt="Solitaire" style={{ width: '32px', height: '32px' }} />,
+            content: <Solitaire />,
+            x: 100,
+            y: 460,
+            options: { width: '620px', height: '540px', minWidth: '560px', minHeight: '420px', bodyStyle: { padding: 0 } }
         },
         {
             id: 'messenger',

@@ -6,6 +6,8 @@ import { tokenize, fsCommand, writeRedirect, promptFor, applyOpsToNodes, FS_COMM
 import { filterCommand, FILTER_COMMANDS } from './shellFilters';
 import { splitLine } from './shellLine';
 import { formatHistory } from './terminalHistory';
+import { systemCommand, SYSTEM_COMMANDS, suggestCommand, sudoUsage } from './shellSystem';
+import { manPage } from './shellMan';
 import { appsLines, programCommand, startCommand, tasklistCommand, killCommand } from './shellApps';
 
 export { promptFor, appsLines };
@@ -63,6 +65,24 @@ const HELP = {
         "  paint      - Open Paint (paint picture.png)",
         "  tasklist   - List open windows",
         "  kill       - Close a window (kill notepad)",
+        "System:",
+        "  man        - Manual page of a command (also: help ls)",
+        "  whoami     - Who you are on this machine",
+        "  hostname   - The machine name",
+        "  uname      - System name (-a for details)",
+        "  ver        - gokalppoOS version",
+        "  uptime     - How long this desktop has been running",
+        "  ping       - Ping a host (a simulation)",
+        "  theme      - Terminal colors (theme amber)",
+        "  exit       - Close this Terminal",
+        "Just for fun:",
+        "  cowsay     - A cow says your text",
+        "  fortune    - A programmer's fortune",
+        "  weather    - A (simulated) weather report",
+        "  sl         - A steam locomotive",
+        "  hack       - Look busy",
+        "  fakeinstall - A fake installer",
+        "  sudo       - Try your luck",
         "Filters (work after a |, or on a file):",
         "  grep       - Keep matching lines (-i -v -c -n)",
         "  head       - First lines (-n 5)",
@@ -105,6 +125,24 @@ const HELP = {
         "  paint      - Paint'i aç (paint resim.png)",
         "  tasklist   - Açık pencereleri listele",
         "  kill       - Pencereyi kapat (kill notepad)",
+        "Sistem:",
+        "  man        - Bir komutun kılavuzu (help ls de olur)",
+        "  whoami     - Bu makinede kim olduğun",
+        "  hostname   - Makine adı",
+        "  uname      - Sistem adı (-a ayrıntı)",
+        "  ver        - gokalppoOS sürümü",
+        "  uptime     - Bu masaüstü ne zamandır açık",
+        "  ping       - Bir adrese ping at (simülasyon)",
+        "  theme      - Terminal renkleri (theme amber)",
+        "  exit       - Bu Terminal'i kapat",
+        "Eğlence:",
+        "  cowsay     - Bir inek metnini söyler",
+        "  fortune    - Yazılımcı falı",
+        "  weather    - (Simüle) hava durumu",
+        "  sl         - Buharlı lokomotif",
+        "  hack       - Meşgul görün",
+        "  fakeinstall - Sahte yükleyici",
+        "  sudo       - Şansını dene",
         "Filtreler (| sonrasında veya bir dosyada çalışır):",
         "  grep       - Eşleşen satırları tut (-i -v -c -n)",
         "  head       - İlk satırlar (-n 5)",
@@ -174,15 +212,15 @@ const projectLines = (lang) => {
 
 const MESSAGES = {
     en: {
-        sudo: "Nice try, but you don't have root privileges!",
         notFound: (cmd) => `Command not found: ${cmd}`,
         badRedirect: "Missing file name after '>'",
+        didYouMean: (c) => `Did you mean: ${c}?`,
         opening: (label) => `Opening ${label} ...`
     },
     tr: {
-        sudo: "İyi denemeydi ama root yetkin yok!",
         notFound: (cmd) => `Komut bulunamadı: ${cmd}`,
         badRedirect: "'>' işaretinden sonra dosya adı eksik",
+        didYouMean: (c) => `Şunu mu demek istedin: ${c}?`,
         opening: (label) => `${label} açılıyor ...`
     }
 };
@@ -199,27 +237,34 @@ const text = (lines) => ({ type: 'text', lines });
 // A text result may also carry `ops` (file-system changes), `cwd` (new folder), `appId` (program to open)
 // and `closeIds` (windows to close) for the Terminal to carry out.
 // env: { programs, nodes, cwd, windows, canStore } - everything the shell needs to know about the OS.
+// "Command not found", plus the closest real command when it looks like a typo.
+const unknownCommand = (name, normalized, m, env) => {
+    const candidates = [...COMMAND_NAMES, ...(env.programs || []).map((p) => p.id)];
+    const guess = suggestCommand(name, candidates);
+    return { type: 'text', lines: [m.notFound(normalized), ...(guess ? [m.didYouMean(guess)] : [])], error: true };
+};
+
 export const executeCommand = (raw, now = new Date(), lang = 'en', env = {}) => {
     const { normalized } = parseCommand(raw);
     const m = MESSAGES[lang] || MESSAGES.en;
     const open = (url, label) => ({ type: 'open', url, lines: [m.opening(label)] });
     const pick = (table) => table[lang] || table.en;
 
-    if (normalized.startsWith('sudo')) {
-        return text([m.sudo]);
-    }
-
     const { words, redirect, dangling } = tokenize(raw);
     const name = (words[0] || '').toLowerCase();
     const args = words.slice(1);
-    const ctx = { ...env, lang, cwd: env.cwd || 'root' };
+    const ctx = { ...env, lang, now, cwd: env.cwd || 'root' };
 
     if (dangling && name) return { type: 'text', lines: [m.badRedirect], error: true };
 
     const run = () => {
         switch (name) {
             case '': return { type: 'empty' };
-            case 'help': return text(pick(HELP));
+            case 'help': return args.length ? manPage(args[0], lang) : text(pick(HELP));
+            case 'man': return manPage(args[0], lang);
+            case 'sudo': return args.length
+                ? { type: 'sudo', command: args.join(' '), lines: [] }
+                : { type: 'text', lines: [sudoUsage(lang)], error: true };
             case 'about': return text(pick(ABOUT));
             case 'github': return open(GITHUB_URL, GITHUB_URL);
             case 'linkedin': return open(LINKEDIN_URL, LINKEDIN_URL);
@@ -246,8 +291,9 @@ export const executeCommand = (raw, now = new Date(), lang = 'en', env = {}) => 
             default:
                 return fsCommand(name, args, ctx)
                     || filterCommand(name, args, ctx)
+                    || systemCommand(name, args, ctx)
                     || programCommand(name, args, ctx)
-                    || { type: 'text', lines: [m.notFound(normalized)], error: true };
+                    || unknownCommand(name, normalized, m, env);
         }
     };
 
@@ -255,7 +301,7 @@ export const executeCommand = (raw, now = new Date(), lang = 'en', env = {}) => 
 
     // `command > file` / `command >> file` saves whatever a command printed.
     if (redirect && result.type === 'text' && !result.error && !(result.ops && result.ops.length)) {
-        return writeRedirect(result.lines, redirect, ctx);
+        return writeRedirect(result.lines.filter((l) => typeof l === 'string'), redirect, ctx);
     }
     return result;
 };
@@ -263,8 +309,8 @@ export const executeCommand = (raw, now = new Date(), lang = 'en', env = {}) => 
 // Command names for Tab completion (the hidden easter eggs are left out).
 export const COMMAND_NAMES = [
     'help', 'about', 'clear', 'cls', 'date', 'echo', 'history', 'matrix', 'neofetch', 'github', 'linkedin',
-    'projects', 'contact', 'resume', 'cv', 'apps', 'start', 'open', 'tasklist', 'kill', 'taskkill',
-    ...FS_COMMANDS, ...FILTER_COMMANDS
+    'projects', 'contact', 'resume', 'cv', 'apps', 'start', 'open', 'tasklist', 'kill', 'taskkill', 'man', 'sudo',
+    ...FS_COMMANDS, ...FILTER_COMMANDS, ...SYSTEM_COMMANDS
 ];
 
 // Runs a whole line: `a && b`, `a ; b` and `a | b | c`. Returns one result per segment so the Terminal
@@ -285,7 +331,7 @@ export const executeLine = (raw, now = new Date(), lang = 'en', env = {}) => {
             result = executeCommand(segment.stages[i], now, lang, { ...env, nodes, cwd, stdin: i > 0 ? stdin : undefined });
             if (!last) {
                 if (result.error) { aborted = true; break; }
-                stdin = result.type === 'text' ? result.lines : [];
+                stdin = result.type === 'text' ? result.lines.filter((l) => typeof l === 'string') : [];
             }
         }
 

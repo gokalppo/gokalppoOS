@@ -1,6 +1,6 @@
 .terminal-container {
     background-color: black;
-    color: #00FF00;
+    color: var(--term-fg, #00ff00);
     font-family: 'Courier New', Courier, monospace;
     font-size: 14px;
     height: 100%;
@@ -41,14 +41,14 @@
     margin-right: 8px;
     flex-shrink: 0;
     white-space: pre;
-    color: #00FF00;
+    color: var(--term-fg, #00ff00);
     font-weight: bold;
 }
 
 .terminal-input {
     background: transparent;
     border: none;
-    color: #00FF00;
+    color: var(--term-fg, #00ff00);
     font-family: inherit;
     font-size: inherit;
     flex: 1;
@@ -62,7 +62,7 @@
     display: inline-block;
     width: 10px;
     height: 18px;
-    background-color: #00FF00;
+    background-color: var(--term-fg, #00ff00);
     animation: blink 1s step-end infinite;
     vertical-align: text-bottom;
     margin-left: -1px;
@@ -79,6 +79,36 @@
     50% {
         opacity: 0;
     }
+}
+
+.terminal-input-line.busy {
+    opacity: 0;
+    height: 0;
+    overflow: hidden;
+}
+
+/* `sl`: the locomotive crosses the window once */
+.terminal-train-track {
+    overflow: hidden;
+    margin: 6px 0;
+}
+
+.terminal-train {
+    margin: 0;
+    font-size: 11px;
+    line-height: 1.1;
+    display: inline-block;
+    white-space: pre;
+    animation: train-ride 6s linear forwards;
+}
+
+@keyframes train-ride {
+    from { transform: translateX(110%); }
+    to { transform: translateX(-110%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .terminal-train { animation: none; }
 }
 
 /* Matrix Overlay */
@@ -101,8 +131,8 @@
 }
 
 .terminal-history::-webkit-scrollbar-thumb {
-    background: #003300;
-    border: 1px solid #00FF00;
+    background: var(--term-dim, #003300);
+    border: 1px solid var(--term-fg, #00ff00);
 }
 
 /* NEOFETCH STYLES */
@@ -114,7 +144,7 @@
 }
 
 .neofetch-ascii {
-    color: #00FF00;
+    color: var(--term-fg, #00ff00);
     line-height: 1.2;
     white-space: pre;
     font-weight: bold;
@@ -131,7 +161,7 @@
 }
 
 .neofetch-key {
-    color: #00FF00;
+    color: var(--term-fg, #00ff00);
     font-weight: bold;
 }
 

@@ -40,10 +40,10 @@ describe('executeCommand', () => {
         expect(executeCommand('Foo')).toMatchObject({ type: 'text', lines: ['Command not found: foo'] });
     });
 
-    it('refuses anything starting with sudo', () => {
-        const result = executeCommand('sudo rm -rf /');
-        expect(result.type).toBe('text');
-        expect(result.lines[0]).toMatch(/root privileges/);
+    it('hands sudo over to the Terminal as a password prompt', () => {
+        expect(executeCommand('sudo rm -rf /')).toMatchObject({ type: 'sudo', command: 'rm -rf /' });
+        expect(executeCommand('sudo')).toMatchObject({ type: 'text', error: true });
+        expect(executeCommand('sudoku').lines[0]).toMatch(/Command not found/);
     });
 
     it('every command listed by help is actually implemented', () => {

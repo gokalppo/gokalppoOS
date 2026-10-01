@@ -3,6 +3,8 @@ import './Terminal.css';
 import { executeLine, promptFor, COMMAND_NAMES } from './terminalCommands';
 import { completeInput } from './shellComplete';
 import { pushHistory, stepHistory } from './terminalHistory';
+import { sudoPrompt, sudoReply, describeBrowser, formatUptime, HOSTNAME, USER_NAME, OS_VERSION } from './shellSystem';
+import { THEMES, DEFAULT_THEME, isTheme } from './terminalThemes';
 import { getPrograms } from './programRegistry';
 import { getWindows } from '../windowRegistry';
 import { openApp, openFile, closeApp } from '../appBus';
@@ -110,7 +112,37 @@ const HeartAnim = () => {
     );
 };
 
+const TRAIN = [
+    '      ====        ________                ___________ ',
+    '  _D _|  |_______/        \\__I_I_____===__|_________| ',
+    '   |(_)---  |   H\\________/ |   |        =|___ ___| ',
+    '   /     |  |   H  |  |     |   |         ||_| |_|| ',
+    '  |      |  |   H  |__--------------------| [___] |  ',
+    '  | ________|___H__/__|_____/[][]~\\_______|       |  ',
+    '  |/ |   |-----------I_____I [][] []  D   |=======|__',
+    '__/ =| o |=-~~\\  /~~\\  /~~\\  /~~\\ ____Y___________|__',
+    ' |/-=|___|=    ||    ||    ||    |_____/~\\___/        ',
+    '  \\_/      \\_O=====O=====O=====O/      \\_/            '
+].join('\n');
+
+// A steam locomotive that chugs across the window (the `sl` command).
+const Train = () => (
+    <div className="terminal-train-track" aria-hidden="true">
+        <pre className="terminal-train">{TRAIN}</pre>
+    </div>
+);
+
+const THEME_KEY = 'gokalppoOS_terminalTheme';
 const HISTORY_KEY = 'gokalppoOS_terminalHistory';
+
+const loadTheme = () => {
+    try {
+        const saved = localStorage.getItem(THEME_KEY);
+        return isTheme(saved) ? saved : DEFAULT_THEME;
+    } catch {
+        return DEFAULT_THEME;
+    }
+};
 
 const loadHistory = () => {
     try {
@@ -121,6 +153,12 @@ const loadHistory = () => {
     }
 };
 
+const SESSION_START = typeof performance !== 'undefined' ? performance.timeOrigin : Date.now();
+const uptimeMs = () => Date.now() - SESSION_START;
+
+// Lines may be { live } objects (a progress bar that rewrites itself) as well as plain text.
+const lineText = (item) => (item && typeof item === 'object' && 'live' in item ? item.live : item);
+
 const Terminal = () => {
     const { lang } = useLanguage();
     const fs = useFileSystem();
@@ -128,10 +166,22 @@ const Terminal = () => {
     const [cwdId, setCwdId] = useState('root');
     const cwd = nodes[cwdId] ? cwdId : 'root';
     const prompt = promptFor(nodes, cwd);
-    const [history, setHistory] = useState([
+    const [theme, setTheme] = useState(loadTheme);
+
+    // The screen. historyRef mirrors the state so timers (streaming output) always append to the latest lines.
+    const initialScreen = [
         "gokalppoOS Kernel v1.0.4 loaded...",
         lang === 'tr' ? "Komutlar için 'help' yazın." : "Type 'help' for available commands."
-    ]);
+    ];
+    const [history, setHistory] = useState(initialScreen);
+    const historyRef = useRef(initialScreen);
+    const liveIndexRef = useRef(-1);
+    const commit = (next) => {
+        historyRef.current = next;
+        setHistory(next);
+    };
+    const print = (...lines) => commit([...historyRef.current, ...lines]);
+
     const [input, setInput] = useState('');
     // Up/Down recall: cmdHistory is what was typed before, histIndex === length means "the line being typed".
     const [cmdHistory, setCmdHistory] = useState(loadHistory);
@@ -139,15 +189,19 @@ const Terminal = () => {
     const draftRef = useRef('');
     const [matrixMode, setMatrixMode] = useState(false);
 
-    // Auto-scroll
+    // Slow output (ping, hack ...) plays from a queue; busy hides the prompt until it is done.
+    const queueRef = useRef([]);
+    const timerRef = useRef(null);
+    const [busy, setBusy] = useState(false);
+    // After `sudo`, the next lines typed are password attempts.
+    const [secret, setSecret] = useState(null);
+
     const historyEndRef = useRef(null);
     const inputRef = useRef(null);
 
-    const scrollToBottom = () => {
+    useEffect(() => {
         historyEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    };
-
-    useEffect(scrollToBottom, [history]);
+    }, [history, busy]);
 
     useEffect(() => {
         try {
@@ -157,62 +211,109 @@ const Terminal = () => {
         }
     }, [cmdHistory]);
 
-    // Keep focus
-    const focusInput = () => {
-        inputRef.current?.focus();
+    useEffect(() => {
+        try {
+            localStorage.setItem(THEME_KEY, theme);
+        } catch {
+            // the theme just will not survive a reload
+        }
+    }, [theme]);
+
+    useEffect(() => () => clearTimeout(timerRef.current), []);
+
+    const focusInput = () => inputRef.current?.focus();
+
+    // --- streaming ---------------------------------------------------------
+    const pump = () => {
+        const queue = queueRef.current;
+        if (!queue.length) {
+            timerRef.current = null;
+            liveIndexRef.current = -1;
+            setBusy(false);
+            return;
+        }
+        const item = queue.shift();
+        if (item.live !== undefined) {
+            const at = liveIndexRef.current;
+            if (at >= 0 && at < historyRef.current.length) {
+                const next = [...historyRef.current];
+                next[at] = item.live;
+                commit(next);
+            } else {
+                liveIndexRef.current = historyRef.current.length;
+                print(item.live);
+            }
+        } else {
+            liveIndexRef.current = -1;
+            print(item.text);
+        }
+        timerRef.current = setTimeout(pump, item.delay);
     };
 
-    // Start time for uptime
-    const [startTime] = useState(() => Date.now());
-
-    const getUptime = () => {
-        const now = Date.now();
-        const diff = Math.floor((now - startTime) / 1000); // seconds
-        const h = Math.floor(diff / 3600);
-        const m = Math.floor((diff % 3600) / 60);
-        const s = diff % 60;
-        return `${h}h ${m}m ${s}s`;
+    const stream = (lines, delay) => {
+        queueRef.current.push(...lines.map((l) => (
+            l && typeof l === 'object' && 'live' in l ? { live: l.live, delay } : { text: l, delay }
+        )));
+        if (!timerRef.current) {
+            setBusy(true);
+            pump();
+        }
     };
 
+    const cancelStream = () => {
+        clearTimeout(timerRef.current);
+        timerRef.current = null;
+        queueRef.current = [];
+        liveIndexRef.current = -1;
+        setBusy(false);
+    };
+
+    // --- neofetch ----------------------------------------------------------
     const renderNeofetch = () => {
-        const NeofetchComp = (
+        const { browser, os } = describeBrowser(navigator.userAgent);
+        const fileCount = Object.values(nodes).filter((n) => n.type === 'file').length;
+        const rows = [
+            ['User', `${USER_NAME}@${HOSTNAME}`],
+            ['OS', `GokalpOS v${OS_VERSION} (Retro Edition)`],
+            ['Host', `${browser} on ${os}`],
+            ['Kernel', 'React 19 / Vite 7'],
+            ['Uptime', formatUptime(uptimeMs(), lang).replace(/^[^:]+:\s*/, '')],
+            ['Shell', 'g-sh 3.0'],
+            ['Resolution', `${window.innerWidth}x${window.innerHeight}`],
+            ['Windows', String(getWindows().filter((w) => !w.isClosing).length)],
+            ['Files', String(fileCount)],
+            ['Theme', theme],
+            ['Education', 'Computer Engineering, 3rd Year']
+        ];
+        return (
             <div className="neofetch-container">
                 <div className="neofetch-ascii">{NEOFETCH_ASCII}</div>
                 <div className="neofetch-info">
-                    <div className="neofetch-row"><span className="neofetch-key">User:</span> <span className="neofetch-val">gokalppo</span></div>
-                    <div className="neofetch-row"><span className="neofetch-key">OS:</span> <span className="neofetch-val">GokalpOS v1.0 (Retro Edition)</span></div>
-                    <div className="neofetch-row"><span className="neofetch-key">Host:</span> <span className="neofetch-val">MacBook Pro (Intel Core i9/M Serisi)</span></div>
-                    <div className="neofetch-row"><span className="neofetch-key">Kernel:</span> <span className="neofetch-val">React.js / Vite</span></div>
-                    <div className="neofetch-row"><span className="neofetch-key">Uptime:</span> <span className="neofetch-val">{getUptime()}</span></div>
-                    <div className="neofetch-row"><span className="neofetch-key">Shell:</span> <span className="neofetch-val">g-sh 2.0</span></div>
-                    <div className="neofetch-row"><span className="neofetch-key">Resolution:</span> <span className="neofetch-val">{window.innerWidth}x{window.innerHeight}</span></div>
-                    <div className="neofetch-row"><span className="neofetch-key">Education:</span> <span className="neofetch-val">Computer Engineering, 3rd Year</span></div>
+                    {rows.map(([key, value]) => (
+                        <div className="neofetch-row" key={key}>
+                            <span className="neofetch-key">{key}:</span> <span className="neofetch-val">{value}</span>
+                        </div>
+                    ))}
                     <div className="neofetch-colors">
-                        <div className="color-block" style={{ background: 'black' }}></div>
-                        <div className="color-block" style={{ background: 'red' }}></div>
-                        <div className="color-block" style={{ background: 'green' }}></div>
-                        <div className="color-block" style={{ background: 'yellow' }}></div>
-                        <div className="color-block" style={{ background: 'blue' }}></div>
-                        <div className="color-block" style={{ background: 'magenta' }}></div>
-                        <div className="color-block" style={{ background: 'cyan' }}></div>
-                        <div className="color-block" style={{ background: 'white' }}></div>
+                        {['black', 'red', 'green', 'yellow', 'blue', 'magenta', 'cyan', 'white'].map((c) => (
+                            <div className="color-block" key={c} style={{ background: c }}></div>
+                        ))}
                     </div>
                 </div>
             </div>
         );
-        return NeofetchComp;
     };
 
+    // --- running commands --------------------------------------------------
     // Carries out the file-system changes a command asked for.
     const applyOps = (ops = []) => {
         ops.forEach((op) => {
             switch (op.op) {
                 case 'mkdir': fs.createFolder(op.parentId, op.name, op.id); break;
-                case 'create': {
+                case 'create':
                     fs.createFile(op.parentId, op.name, op.content || '', op.id);
                     if (op.open) openFile({ id: op.id, name: op.name });
                     break;
-                }
                 case 'write': fs.updateFileContent(op.id, op.content); break;
                 case 'recycle': fs.moveToRecycle(op.id); break;
                 case 'move': fs.moveNode(op.id, op.parentId); break;
@@ -239,9 +340,14 @@ const Terminal = () => {
             case 'neofetch': return [renderNeofetch()];
             case 'heart': return [<HeartAnim />];
             case 'crash': return [<Bomb />];
+            case 'train': return [<Train />];
+            case 'sudo':
+                setSecret({ attempts: 0 });
+                return [];
             default:
                 applyOps(result.ops);
                 if (result.cwd) setCwdId(result.cwd);
+                if (result.theme) setTheme(result.theme);
                 if (result.appId) openApp(result.appId);
                 (result.closeIds || []).forEach(closeApp);
                 return result.lines;
@@ -260,25 +366,40 @@ const Terminal = () => {
             nodes,
             cwd,
             canStore: fs.canStore,
-            history: nextHistory
+            history: nextHistory,
+            theme,
+            uptimeMs: uptimeMs()
         });
 
-        let output = [];
-        let cleared = false;
-        results.forEach((result) => {
+        // Instant output is printed now; streamed output (ping, hack ...) is queued behind it.
+        let screen = [...historyRef.current, `${prompt} ${cmd}`];
+        const queued = [];
+        for (const result of results) {
             const lines = showResult(result);
             if (lines === null) {
-                output = [];
-                cleared = true;
+                screen = [];
+            } else if (result.stream) {
+                queued.push({ lines, delay: result.stream.delay });
+            } else if (queued.length) {
+                queued.push({ lines, delay: 0 });
             } else {
-                output = [...output, ...lines];
+                screen = [...screen, ...lines];
             }
-        });
-
-        setHistory((prev) => (cleared ? output : [...prev, `${prompt} ${cmd}`, ...output]));
+            if (result.type === 'sudo') break;
+        }
+        liveIndexRef.current = -1;
+        commit(screen);
+        queued.forEach(({ lines, delay }) => stream(lines, delay));
     };
 
-    const clearScreen = () => setHistory([]);
+    const submitSecret = () => {
+        const attempt = secret.attempts + 1;
+        const reply = sudoReply(attempt, lang);
+        print(sudoPrompt(lang), ...reply.lines);
+        setSecret(reply.done ? null : { attempts: attempt });
+    };
+
+    const clearScreen = () => commit([]);
 
     const resetRecall = () => {
         setHistIndex(cmdHistory.length);
@@ -296,7 +417,7 @@ const Terminal = () => {
         if (completed !== input) {
             setInput(completed);
         } else if (options.length > 1) {
-            setHistory((prev) => [...prev, `${prompt} ${input}`, options.join('   ')]);
+            print(`${prompt} ${input}`, options.join('   '));
         }
     };
 
@@ -306,9 +427,27 @@ const Terminal = () => {
     useEffect(() => subscribeTerminal((command) => runRef.current(command)), []);
 
     const handleKeyDown = (e) => {
-        if (e.key === 'Enter') {
-            handleCommand(input);
+        const key = e.key.toLowerCase();
+        if (e.ctrlKey && !e.metaKey && !e.altKey && key === 'c' && (busy || secret || e.target.selectionStart === e.target.selectionEnd)) {
+            e.preventDefault();
+            cancelStream();
+            print(`${secret ? sudoPrompt(lang) : prompt} ${secret ? '' : input}^C`);
+            setSecret(null);
             setInput('');
+            resetRecall();
+            setMatrixMode(false);
+            return;
+        }
+        if (busy) {
+            if (e.key === 'Tab') e.preventDefault();
+            return;
+        }
+        if (e.key === 'Enter') {
+            if (secret) submitSecret();
+            else handleCommand(input);
+            setInput('');
+        } else if (secret) {
+            // no history or completion while typing a password
         } else if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
             e.preventDefault();
             const step = stepHistory({
@@ -325,15 +464,7 @@ const Terminal = () => {
             e.preventDefault();
             handleTab();
         } else if (e.ctrlKey && !e.metaKey && !e.altKey) {
-            const key = e.key.toLowerCase();
-            const hasSelection = e.target.selectionStart !== e.target.selectionEnd;
-            if (key === 'c' && !hasSelection) {
-                e.preventDefault();
-                setHistory((prev) => [...prev, `${prompt} ${input}^C`]);
-                setInput('');
-                resetRecall();
-                setMatrixMode(false);
-            } else if (key === 'l') {
+            if (key === 'l') {
                 e.preventDefault();
                 clearScreen();
             } else if (key === 'u') {
@@ -343,26 +474,34 @@ const Terminal = () => {
         }
     };
 
+    const themeColors = THEMES[theme] || THEMES[DEFAULT_THEME];
+
     return (
-        <div className="terminal-container" onClick={focusInput}>
+        <div
+            className="terminal-container"
+            onClick={focusInput}
+            style={{ '--term-fg': themeColors.fg, '--term-dim': themeColors.dim }}
+        >
             <MatrixRain active={matrixMode} />
 
             <div className="terminal-history">
                 {history.map((line, i) => (
-                    <div key={i} className="terminal-line">{line}</div>
+                    <div key={i} className="terminal-line">{lineText(line)}</div>
                 ))}
 
-                <div className="terminal-input-line">
-                    <span className="terminal-prompt">{prompt}</span>
+                <div className={`terminal-input-line${busy ? ' busy' : ''}`}>
+                    <span className="terminal-prompt">{secret ? sudoPrompt(lang) : prompt}</span>
                     <input
                         ref={inputRef}
-                        type="text"
+                        type={secret ? 'password' : 'text'}
                         className="terminal-input"
                         value={input}
                         onChange={(e) => { setInput(e.target.value); resetRecall(); }}
                         onKeyDown={handleKeyDown}
                         autoFocus
+                        autoComplete="off"
                         spellCheck="false"
+                        aria-label={secret ? sudoPrompt(lang) : 'Terminal'}
                     />
                     <span className="terminal-cursor">_</span>
                 </div>

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { render, fireEvent, cleanup } from '@testing-library/react';
+import { render, fireEvent, cleanup, act } from '@testing-library/react';
 import { FileSystemProvider } from '../../context/FileSystemContext';
 import { LanguageProvider } from '../../context/LanguageContext';
 import Terminal from './Terminal';
@@ -165,5 +165,99 @@ describe('Terminal keyboard', () => {
         run('history');
         expect(screenText()).toContain('1  mkdir box && cd box && echo hi > a.txt');
         expect(JSON.parse(localStorage.getItem(STORAGE_KEY)).root.children).toHaveLength(3);
+    });
+});
+
+describe('Terminal: streaming, sudo, themes', () => {
+    beforeEach(() => { vi.useFakeTimers(); });
+    afterEach(() => { vi.useRealTimers(); });
+
+    const key = (k, extra = {}) => fireEvent.keyDown(input(), { key: k, ...extra });
+    const tick = (ms) => act(() => { vi.advanceTimersByTime(ms); });
+
+    it('ping plays line by line, hides the prompt while it runs and Ctrl+C stops it', () => {
+        setup();
+        run('ping gokalppo.me');
+        expect(document.querySelector('.terminal-input-line').className).toContain('busy');
+        tick(0);
+        expect(screenText()).toContain('Pinging gokalppo.me');
+        expect(screenText()).not.toContain('Reply from');
+        tick(460);
+        expect(screenText()).toContain('Reply from');
+        key('c', { ctrlKey: true });
+        expect(document.querySelector('.terminal-input-line').className).not.toContain('busy');
+        const before = screenText();
+        tick(5000);
+        expect(screenText()).toBe(before);
+    });
+
+    it('a finished stream gives the prompt back', () => {
+        setup();
+        run('ping gokalppo.me');
+        tick(10000);
+        expect(screenText()).toContain('simulation');
+        expect(document.querySelector('.terminal-input-line').className).not.toContain('busy');
+    });
+
+    it('progress lines rewrite themselves instead of piling up', () => {
+        setup();
+        run('hack');
+        tick(5000);
+        const text = screenText();
+        expect(text).toContain('[##########] 100%');
+        expect(text).not.toContain('[#####.....] 50%');
+        expect(text).toContain('Access granted');
+    });
+
+    it('sudo asks for a hidden password, refuses three times, then explains', () => {
+        setup();
+        run('sudo make me a sandwich');
+        expect(input().type).toBe('password');
+        expect(document.querySelector('.terminal-prompt').textContent).toContain('[sudo] password for guest');
+        run('hunter2');
+        expect(screenText()).toContain('Sorry, try again.');
+        expect(screenText()).not.toContain('hunter2');
+        run('letmein');
+        expect(input().type).toBe('password');
+        run('please');
+        expect(input().type).toBe('text');
+        expect(screenText()).toContain('3 incorrect password attempts');
+        expect(screenText()).toContain('root privileges');
+    });
+
+    it('Ctrl+C leaves the sudo prompt', () => {
+        setup();
+        run('sudo ls');
+        key('c', { ctrlKey: true });
+        expect(input().type).toBe('text');
+    });
+
+    it('theme recolours the terminal and is remembered', () => {
+        const first = setup();
+        run('theme amber');
+        expect(document.querySelector('.terminal-container').style.getPropertyValue('--term-fg')).toBe('#ffb000');
+        first.unmount();
+        setup();
+        expect(document.querySelector('.terminal-container').style.getPropertyValue('--term-fg')).toBe('#ffb000');
+    });
+
+    it('sl shows the train and exit closes the window', () => {
+        const { seen, stop } = capture(CLOSE_APP_EVENT);
+        setup();
+        run('sl');
+        expect(document.querySelector('.terminal-train')).not.toBeNull();
+        run('exit');
+        stop();
+        expect(seen).toEqual([{ id: 'terminal' }]);
+    });
+
+    it('neofetch reports real facts about this desktop', () => {
+        setup();
+        run('neofetch');
+        const text = document.querySelector('.neofetch-container').textContent;
+        expect(text).toContain('guest@gokalppo-pc');
+        expect(text).toContain('Windows:');
+        expect(text).toContain('Files:');
+        expect(text).toMatch(/Theme:\s*green/);
     });
 });

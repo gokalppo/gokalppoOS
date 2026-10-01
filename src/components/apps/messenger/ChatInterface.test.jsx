@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, beforeAll, afterEach, vi } from 'vitest';
-import { render, screen, fireEvent, waitFor, cleanup } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, cleanup, act } from '@testing-library/react';
 import { OSProvider } from '../../../context/OSContext';
 import { fakeDb } from '../../../test/fakeDatabase';
 import { setBotTimingScale } from './botEngine';
@@ -221,6 +221,122 @@ describe('admin tools', () => {
         fireEvent.click(screen.getByText('BAN'));
 
         await waitFor(() => expect(fakeDb.read('users/bob/isBanned')).toBe(true));
+    });
+});
+
+describe('admin inbox', () => {
+    const seedInbox = () => {
+        fakeDb.seed('outbox/o1', { from: 'jane@example.com', to: 'gokalppoos@gmail.com', subject: 'Message via Gökalp Bot from Jane', body: 'Loved CindraNet! See https://example.com', sentVia: 'gokalp-bot', timestamp: 3000 });
+        fakeDb.seed('outbox/o2', { from: 'bob@example.com', to: 'gokalppoos@gmail.com', subject: 'Hello from the form', body: 'Old note', sentVia: 'emailjs', timestamp: 1000, readAt: 1500 });
+        fakeDb.seed('outbox/o3', { from: 'Gökalp Bot visitor', to: 'gokalppoos@gmail.com', subject: 'Message via Gökalp Bot', body: 'No address left', sentVia: 'gokalp-bot', timestamp: 2000 });
+    };
+    const openInbox = () => fireEvent.click(screen.getByText(/📥 Inbox/));
+
+    it('is hidden from regular users', () => {
+        seedInbox();
+        renderChat(me);
+        expect(screen.queryByText(/📥 Inbox/)).toBeNull();
+    });
+
+    it('shows the unread count on the button and lists messages newest first', () => {
+        seedInbox();
+        renderChat(admin);
+        expect(screen.getByText('📥 Inbox (2)')).toBeTruthy();
+        openInbox();
+        const rows = [...document.querySelectorAll('.inbox-row')].map((r) => r.querySelector('.inbox-subject').textContent);
+        expect(rows).toEqual(['Message via Gökalp Bot from Jane', 'Message via Gökalp Bot', 'Hello from the form']);
+        expect(document.querySelectorAll('.inbox-row.unread')).toHaveLength(2);
+    });
+
+    it('says so when there are no messages yet', () => {
+        renderChat(admin);
+        openInbox();
+        expect(screen.getByText('No messages yet.')).toBeTruthy();
+    });
+
+    it('opening a message shows it, marks it read and offers a reply link', async () => {
+        seedInbox();
+        renderChat(admin);
+        openInbox();
+        fireEvent.click(screen.getByText('Message via Gökalp Bot from Jane'));
+
+        expect(screen.getByText(/Loved CindraNet!/)).toBeTruthy();
+        expect(screen.getByRole('link', { name: 'https://example.com' })).toBeTruthy();
+        expect(screen.getByText('Gökalp Bot', { selector: '.inbox-meta div' }) || true).toBeTruthy();
+        expect(screen.getByText('Reply by e-mail').getAttribute('href')).toMatch(/^mailto:jane@example\.com\?subject=Re/);
+        await waitFor(() => expect(typeof fakeDb.read('outbox/o1/readAt')).toBe('number'));
+        await waitFor(() => expect(screen.getByText(/📥 Inbox \(1\)/)).toBeTruthy());
+    });
+
+    it('offers no reply link when the visitor left no e-mail address', () => {
+        seedInbox();
+        renderChat(admin);
+        openInbox();
+        fireEvent.click(screen.getByText('Message via Gökalp Bot', { selector: '.inbox-subject' }));
+        expect(screen.getByText(/No address left/)).toBeTruthy();
+        expect(screen.queryByText('Reply by e-mail')).toBeNull();
+    });
+
+    it('can mark a message unread again and mark everything read', async () => {
+        seedInbox();
+        renderChat(admin);
+        openInbox();
+        fireEvent.click(screen.getByText('Hello from the form'));
+        fireEvent.click(screen.getByText('Mark unread'));
+        await waitFor(() => expect(fakeDb.read('outbox/o2/readAt')).toBeNull());
+
+        fireEvent.click(screen.getByText('Mark all read'));
+        await waitFor(() => expect(fakeDb.read('outbox/o1/readAt')).not.toBeNull());
+        expect(fakeDb.read('outbox/o2/readAt')).not.toBeNull();
+        expect(fakeDb.read('outbox/o3/readAt')).not.toBeNull();
+        await waitFor(() => expect(screen.getByRole('button', { name: '📥 Inbox' })).toBeTruthy());
+    });
+
+    it('filters by source and unread', async () => {
+        seedInbox();
+        renderChat(admin);
+        openInbox();
+        fireEvent.click(screen.getByText('✉ Form'));
+        expect([...document.querySelectorAll('.inbox-subject')].map((e) => e.textContent)).toEqual(['Hello from the form']);
+        fireEvent.click(screen.getByText('Unread'));
+        expect(document.querySelectorAll('.inbox-row')).toHaveLength(2);
+        fireEvent.click(screen.getByText('🤖 Bot'));
+        expect(document.querySelectorAll('.inbox-row')).toHaveLength(2);
+        fireEvent.click(screen.getByText('Unread'));
+        fireEvent.click(screen.getByText('Mark all read'));
+        await waitFor(() => expect(screen.getByText('Nothing here with this filter.')).toBeTruthy());
+    });
+
+    it('deletes a message only after confirming', async () => {
+        seedInbox();
+        renderChat(admin);
+        openInbox();
+        fireEvent.click(screen.getByText('Hello from the form'));
+
+        fireEvent.click(screen.getByText('Delete'));
+        fireEvent.click(screen.getByText('Cancel'));
+        expect(fakeDb.read('outbox/o2')).not.toBeNull();
+
+        fireEvent.click(screen.getByText('Delete'));
+        fireEvent.click(screen.getByText('OK'));
+        await waitFor(() => expect(fakeDb.read('outbox/o2')).toBeNull());
+        expect(screen.queryByText('Hello from the form')).toBeNull();
+    });
+
+    it('announces a message that arrives while the admin is online', async () => {
+        renderChat(admin);
+        await act(async () => {
+            fakeDb.seed('outbox/n1', { from: 'new@example.com', to: 'x', subject: 'Brand new', body: 'hi', sentVia: 'gokalp-bot', timestamp: 9000 });
+        });
+        await waitFor(() => expect(screen.getByText(/New message in your inbox from new@example.com/)).toBeTruthy());
+        expect(screen.getByText('📥 Inbox (1)')).toBeTruthy();
+    });
+
+    it('closes with the X button', () => {
+        renderChat(admin);
+        openInbox();
+        fireEvent.click(screen.getByLabelText('Close inbox'));
+        expect(screen.queryByRole('dialog', { name: 'Inbox' })).toBeNull();
     });
 });
 

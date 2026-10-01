@@ -5,7 +5,7 @@ import FriendRequests from './FriendRequests';
 import { GUEST_FRIENDS_MESSAGE } from '../chatUtils';
 
 const ContactSidebar = ({
-    user, status, onStatusChange, onSignOut, onOpenAdmin,
+    user, status, onStatusChange, onSignOut, onOpenAdmin, onOpenInbox, inboxUnread = 0,
     contacts, friendStatuses, nudgedContacts, currentRoom, activeContactId,
     onContactClick, onRemoveContact,
     friendRequests, onAcceptRequest, onDeclineRequest, showNotification,
@@ -34,6 +34,15 @@ const ContactSidebar = ({
                         onClick={onOpenAdmin}
                     >
                         🚫 Admin Tools
+                    </button>
+                )}
+                {user.role === 'admin' && (
+                    <button
+                        className="tool-btn"
+                        style={{ width: '100%', marginTop: '5px', fontWeight: 'bold' }}
+                        onClick={onOpenInbox}
+                    >
+                        📥 Inbox{inboxUnread > 0 ? ` (${inboxUnread})` : ''}
                     </button>
                 )}
                 <select

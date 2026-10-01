@@ -1,14 +1,7 @@
 import { useRef, useLayoutEffect } from 'react';
 import starIcon from '../../../../assets/images/star.png';
 import { formatTime, messageStatus } from '../chatUtils';
-import { linkify } from '../linkify';
-
-// Message text with links and e-mail addresses made clickable (only http(s) and mailto: ever are).
-const MessageText = ({ text }) => linkify(text).map((part, i) => (
-    part.type === 'text'
-        ? <span key={i}>{part.value}</span>
-        : <a key={i} href={part.href} target="_blank" rel="noopener noreferrer" className="msg-link">{part.value}</a>
-));
+import LinkedText from './LinkedText';
 
 const MessageList = ({
     messages, user, contacts, isTyping, activeContact, scrollKey,
@@ -73,7 +66,7 @@ const MessageList = ({
                                     </span>
                                 ) : (
                                     <>
-                                        <MessageText text={msg.text} />
+                                        <LinkedText text={msg.text} />
                                         {user.role === 'admin' && (
                                             <span
                                                 className="admin-del-btn"

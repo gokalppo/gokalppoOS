@@ -16,6 +16,7 @@ import { useTypingIndicator } from './hooks/useTypingIndicator';
 import { useNudge } from './hooks/useNudge';
 import { useFriendActions } from './hooks/useFriendActions';
 import { useAdminTools } from './hooks/useAdminTools';
+import { useInbox } from './hooks/useInbox';
 import { useReadReceipts } from './hooks/useReadReceipts';
 import { useBotChat } from './hooks/useBotChat';
 import BotPanel from './components/BotPanel';
@@ -26,6 +27,7 @@ import Composer from './components/Composer';
 import NotificationBar from './components/NotificationBar';
 import UserContextMenu from './components/UserContextMenu';
 import AdminPanel from './components/AdminPanel';
+import InboxPanel from './components/InboxPanel';
 import BanOverlay from './components/BanOverlay';
 
 const ChatInterface = ({ user, onLogout }) => {
@@ -64,6 +66,8 @@ const ChatInterface = ({ user, onLogout }) => {
         user, contacts, status, showNotification
     });
     const admin = useAdminTools({ user, currentRoom, activeContactId, showNotification });
+    const inbox = useInbox({ user, showNotification });
+    const [showInbox, setShowInbox] = useState(false);
 
     // Self-healing: make sure my public profile has a username, and keep my
     // email in the private (non-public) node.
@@ -203,6 +207,8 @@ const ChatInterface = ({ user, onLogout }) => {
                 onStatusChange={handleStatusChange}
                 onSignOut={handleSignOut}
                 onOpenAdmin={admin.openAdminPanel}
+                onOpenInbox={() => setShowInbox(true)}
+                inboxUnread={inbox.unread}
                 contacts={contacts}
                 friendStatuses={friendStatuses}
                 nudgedContacts={nudgedContacts}
@@ -270,6 +276,8 @@ const ChatInterface = ({ user, onLogout }) => {
                     onToggleBan={admin.toggleBan}
                 />
             )}
+
+            {showInbox && <InboxPanel inbox={inbox} onClose={() => setShowInbox(false)} />}
 
             {admin.msgToDelete && (
                 <MessageBox

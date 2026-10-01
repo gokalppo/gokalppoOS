@@ -1,4 +1,4 @@
-import { describe, it, beforeAll, afterAll, beforeEach } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import { setupEnv, seed, sendMessage, dbAs, anonDb, assertSucceeds, assertFails, NOW } from './helpers';
 
 let env;
@@ -116,7 +116,40 @@ describe('outbox', () => {
         await assertSucceeds(anonDb(env).ref('outbox/o1').set(entry()));
         await assertFails(anonDb(env).ref('outbox/o1').get());
         await assertFails(anonDb(env).ref('outbox/o1').set(entry({ body: 'tampered' })));
-        await assertFails(dbAs(env, 'root').ref('outbox').get());
+        await assertFails(anonDb(env).ref('outbox/o1').remove());
+    });
+
+    it('only an admin can read the whole inbox', async () => {
+        await seed(env, { 'outbox/o1': entry() });
+        await assertSucceeds(dbAs(env, 'root').ref('outbox').get());
+        await assertFails(dbAs(env, 'alice').ref('outbox').get());
+        await assertFails(dbAs(env, 'alice').ref('outbox/o1').get());
+        await assertFails(anonDb(env).ref('outbox').get());
+    });
+
+    it('lets an admin read it newest first (the timestamp is indexed)', async () => {
+        await seed(env, { 'outbox/o1': entry({ timestamp: 1 }), 'outbox/o2': entry({ timestamp: 2 }) });
+        const snap = await assertSucceeds(dbAs(env, 'root').ref('outbox').orderByChild('timestamp').limitToLast(1).get());
+        expect(Object.keys(snap.val())).toEqual(['o2']);
+    });
+
+    it('lets an admin mark messages read and delete them, but nobody else', async () => {
+        await seed(env, { 'outbox/o1': entry() });
+        await assertFails(dbAs(env, 'alice').ref('outbox/o1/readAt').set(5));
+        await assertFails(dbAs(env, 'alice').ref('outbox/o1').remove());
+        await assertSucceeds(dbAs(env, 'root').ref('outbox/o1/readAt').set(5));
+        await assertSucceeds(dbAs(env, 'root').ref('outbox/o1/readAt').remove());
+        await assertSucceeds(dbAs(env, 'root').ref('outbox/o1').remove());
+    });
+
+    it('does not let a visitor create an entry that is already marked read', async () => {
+        await assertFails(anonDb(env).ref('outbox/o9').set(entry({ readAt: 5 })));
+        await assertFails(dbAs(env, 'alice').ref('outbox/o9').set(entry({ readAt: 5 })));
+        await assertFails(dbAs(env, 'root').ref('outbox/o9/readAt').set('yes'));
+    });
+
+    it('still accepts what Gökalp Bot sends', async () => {
+        await assertSucceeds(anonDb(env).ref('outbox/b1').set(entry({ sentVia: 'gokalp-bot', from: 'Gökalp Bot visitor' })));
     });
 
     it('rejects missing fields, oversized fields and unknown fields', async () => {

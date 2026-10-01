@@ -500,3 +500,96 @@
     border-color: #fff #404040 #404040 #fff;
     cursor: pointer;
 }
+
+/* Admin inbox */
+.inbox-panel {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: min(560px, 94vw);
+    height: min(400px, 90vh);
+    display: flex;
+    flex-direction: column;
+    background: var(--win-gray);
+    border: 2px solid;
+    border-color: #fff #404040 #404040 #fff;
+    box-shadow: 5px 5px 10px rgba(0, 0, 0, 0.5);
+    z-index: 9999;
+    padding: 3px;
+    font-size: 11px;
+}
+
+.inbox-title {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: darkblue;
+    color: #fff;
+    font-weight: bold;
+    padding: 2px 4px;
+}
+
+.inbox-close {
+    background: var(--win-gray);
+    border: 1px outset #fff;
+    cursor: pointer;
+    font-family: inherit;
+}
+
+.inbox-toolbar { display: flex; gap: 3px; padding: 4px 0; flex-wrap: wrap; }
+
+.inbox-filter, .inbox-btn {
+    font-family: inherit;
+    font-size: 11px;
+    padding: 2px 8px;
+    background: var(--win-gray);
+    border: 2px solid;
+    border-color: #fff #404040 #404040 #fff;
+    cursor: pointer;
+    color: #000;
+    text-decoration: none;
+}
+
+.inbox-filter.active { border-color: #404040 #fff #fff #404040; font-weight: bold; }
+.inbox-filter:disabled { color: #808080; cursor: default; }
+.inbox-markall { margin-left: auto; }
+.inbox-btn.danger { color: #a00000; }
+
+.inbox-body-wrap { flex: 1; display: flex; min-height: 0; gap: 3px; }
+
+.inbox-list, .inbox-detail {
+    background: #fff;
+    border: 2px inset #fff;
+    overflow-y: auto;
+    color: #000;
+}
+
+.inbox-list { width: 40%; display: flex; flex-direction: column; }
+.inbox-detail { flex: 1; display: flex; flex-direction: column; padding: 6px; }
+
+.inbox-row {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    text-align: left;
+    padding: 4px 6px;
+    border: none;
+    border-bottom: 1px solid #ddd;
+    background: #fff;
+    font-family: inherit;
+    font-size: 11px;
+    cursor: pointer;
+    color: #000;
+}
+
+.inbox-row.unread { font-weight: bold; }
+.inbox-row.selected { background: var(--win-highlight); color: #fff; }
+.inbox-row-top { display: flex; justify-content: space-between; gap: 6px; }
+.inbox-from, .inbox-subject { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.inbox-date { color: #808080; font-weight: normal; white-space: nowrap; }
+.inbox-row.selected .inbox-date { color: #ddd; }
+.inbox-empty { color: #808080; padding: 10px; text-align: center; }
+.inbox-meta { border-bottom: 1px solid #ccc; padding-bottom: 4px; margin-bottom: 4px; line-height: 1.5; }
+.inbox-message { flex: 1; white-space: pre-wrap; overflow-wrap: anywhere; overflow-y: auto; }
+.inbox-actions { display: flex; gap: 4px; padding-top: 6px; border-top: 1px solid #ccc; }

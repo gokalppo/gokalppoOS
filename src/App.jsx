@@ -9,6 +9,7 @@ import ScreenSaver from './components/ScreenSaver';
 import BSOD from './components/BSOD';
 import Clippy from './components/Clippy';
 import TaskSwitcher from './components/TaskSwitcher';
+import { trackAppOpen } from './analytics/appUsage';
 import { nextFocusAfterMinimize, switcherOrder, nextSwitcherIndex } from './components/windowUtils';
 import './App.css';
 import shutdownSound from './assets/windows98shutdown.mp3';
@@ -68,6 +69,7 @@ function App() {
     const newZ = getNextZIndex();
     setFocusedWindowId(id);
     playSound('open');
+    trackAppOpen(id);
 
     const newWindow = {
       id,

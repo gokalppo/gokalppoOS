@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import { db } from '../../../../firebase';
 import { ref, get, update } from 'firebase/database';
 import { getMessagesPath, mergeUsersWithPrivate } from '../chatUtils';
+import { sortUsage } from '../../../../analytics/appUsage';
 
 // Admin-only actions: user list / bans, email migration, message removal.
 // The database rules enforce the role; this only drives the UI.
@@ -10,6 +11,7 @@ export const useAdminTools = ({ user, currentRoom, activeContactId, showNotifica
     const [showAdminPanel, setShowAdminPanel] = useState(false);
     const [allUsers, setAllUsers] = useState([]);
     const [msgToDelete, setMsgToDelete] = useState(null);
+    const [appUsage, setAppUsage] = useState([]);
 
     const loadAllUsers = useCallback(async () => {
         if (!isAdmin) return;
@@ -24,10 +26,19 @@ export const useAdminTools = ({ user, currentRoom, activeContactId, showNotifica
         } catch (e) { console.error(e); }
     }, [isAdmin]);
 
+    const loadAppUsage = useCallback(async () => {
+        if (!isAdmin) return;
+        try {
+            const snap = await get(ref(db, 'analytics/appOpens'));
+            setAppUsage(sortUsage(snap.val()));
+        } catch (e) { console.error(e); }
+    }, [isAdmin]);
+
     const openAdminPanel = useCallback(() => {
         setShowAdminPanel(true);
         loadAllUsers();
-    }, [loadAllUsers]);
+        loadAppUsage();
+    }, [loadAllUsers, loadAppUsage]);
 
     const closeAdminPanel = useCallback(() => setShowAdminPanel(false), []);
 
@@ -78,7 +89,7 @@ export const useAdminTools = ({ user, currentRoom, activeContactId, showNotifica
     }, [msgToDelete, currentRoom, activeContactId, user.uid, showNotification]);
 
     return {
-        isAdmin, showAdminPanel, openAdminPanel, closeAdminPanel, allUsers,
+        isAdmin, showAdminPanel, openAdminPanel, closeAdminPanel, allUsers, appUsage,
         migrateEmails, toggleBan,
         msgToDelete, requestDeleteMessage, cancelDeleteMessage, confirmDeleteMessage
     };

@@ -1,4 +1,4 @@
-const AdminPanel = ({ currentUid, allUsers, onClose, onMigrateEmails, onToggleBan }) => (
+const AdminPanel = ({ currentUid, allUsers, appUsage = [], onClose, onMigrateEmails, onToggleBan }) => (
     <div style={{
         position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
         width: '300px', height: '400px', background: '#c0c0c0', border: '2px outset white',
@@ -15,6 +15,23 @@ const AdminPanel = ({ currentUid, allUsers, onClose, onMigrateEmails, onToggleBa
         >
             🔒 Migrate legacy emails to userPrivate
         </button>
+        <div style={{ background: 'white', border: '2px inset white', marginTop: '5px', padding: '5px', fontSize: '11px', maxHeight: '110px', overflowY: 'auto' }}>
+            <strong>App usage (opens)</strong>
+            {appUsage.length === 0 ? (
+                <div style={{ color: 'gray' }}>No data yet.</div>
+            ) : (
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                    <tbody>
+                        {appUsage.map(({ app, opens }) => (
+                            <tr key={app} style={{ borderBottom: '1px solid #eee' }}>
+                                <td>{app}</td>
+                                <td style={{ textAlign: 'right' }}>{opens}</td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            )}
+        </div>
         <div style={{ flex: 1, overflowY: 'auto', background: 'white', border: '2px inset white', marginTop: '5px', padding: '5px' }}>
             <table style={{ width: '100%', fontSize: '11px', borderCollapse: 'collapse' }}>
                 <thead>

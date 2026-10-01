@@ -199,6 +199,16 @@ describe('admin tools', () => {
         expect(fakeDb.read('messages/global-1/m1/isDeleted')).toBeNull();
     });
 
+    it('shows anonymous app-usage totals to admins, most-opened first', async () => {
+        fakeDb.seed('analytics/appOpens', { paint: 3, terminal: 9 });
+        renderChat(admin);
+
+        fireEvent.click(screen.getByText(/Admin Tools/));
+        await waitFor(() => expect(screen.getByText('terminal')).toBeTruthy());
+        const rows = [...document.querySelectorAll('table')[0].querySelectorAll('tr')].map((tr) => tr.textContent);
+        expect(rows).toEqual(['terminal9', 'paint3']);
+    });
+
     it('lists users in the admin panel and bans one', async () => {
         fakeDb.seed('users/bob', { username: 'bob', role: 'user' });
         fakeDb.seed('userPrivate/bob', { email: 'bob@example.com' });

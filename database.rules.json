@@ -1,7 +1,9 @@
 {
   "rules": {
     "users": {
-      ".indexOn": ["username"],
+      ".indexOn": [
+        "username"
+      ],
       ".read": "auth != null",
       "$uid": {
         ".write": "auth != null && (auth.uid === $uid || root.child('users').child(auth.uid).child('role').val() === 'admin')",
@@ -24,7 +26,6 @@
         }
       }
     },
-
     "messages": {
       "$room": {
         ".read": "auth != null",
@@ -33,7 +34,6 @@
         }
       }
     },
-
     "privateMessages": {
       "$roomId": {
         ".read": "auth != null && $roomId.contains(auth.uid)",
@@ -42,7 +42,6 @@
         }
       }
     },
-
     "typing": {
       "$roomId": {
         ".read": "auth != null && $roomId.contains(auth.uid)",
@@ -52,7 +51,6 @@
         }
       }
     },
-
     "friendRequests": {
       "$targetUid": {
         ".read": "auth != null && auth.uid === $targetUid",
@@ -62,7 +60,6 @@
         }
       }
     },
-
     "declinedHistory": {
       "$deciderUid": {
         "$otherUid": {
@@ -71,7 +68,6 @@
         }
       }
     },
-
     "userPrivate": {
       ".read": "auth != null && root.child('users').child(auth.uid).child('role').val() === 'admin'",
       "$uid": {
@@ -79,12 +75,10 @@
         ".write": "auth != null && (auth.uid === $uid || root.child('users').child(auth.uid).child('role').val() === 'admin')"
       }
     },
-
     "outbox": {
       ".read": false,
       ".write": "auth != null"
     },
-
     "siteStats": {
       "visitorCount": {
         ".read": true,
@@ -92,7 +86,15 @@
         ".validate": "newData.isNumber() && newData.val() === (data.exists() ? data.val() : 0) + 1"
       }
     },
-
+    "analytics": {
+      "appOpens": {
+        ".read": "auth != null && root.child('users').child(auth.uid).child('role').val() === 'admin'",
+        "$app": {
+          ".write": "$app.matches(/^[a-z0-9_-]{1,40}$/)",
+          ".validate": "newData.isNumber() && newData.val() === (data.exists() ? data.val() : 0) + 1"
+        }
+      }
+    },
     ".read": false,
     ".write": false
   }

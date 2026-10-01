@@ -222,6 +222,7 @@ const ChatInterface = ({ user, onLogout }) => {
                 <AdminPanel
                     currentUid={user.uid}
                     allUsers={admin.allUsers}
+                    appUsage={admin.appUsage}
                     onClose={admin.closeAdminPanel}
                     onMigrateEmails={admin.migrateEmails}
                     onToggleBan={admin.toggleBan}

@@ -2,9 +2,10 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useOS } from '../../../context/OSContext';
 import './Messenger.css';
 import { db } from '../../../firebase';
-import { ref, push, get, set, remove, update, increment } from 'firebase/database';
+import { ref, push, get, set, remove, update, increment, serverTimestamp } from 'firebase/database';
 import MessageBox from '../../MessageBox';
-import { censorText, getMessagesPath, nowMs } from './chatUtils';
+import { censorText, getMessagesPath, nowMs, BOT_ROOM, SEND_COOLDOWN_MS } from './chatUtils';
+import { useLanguage } from '../../../context/LanguageContext';
 import { useNotification } from './hooks/useNotification';
 import { useSounds } from './hooks/useSounds';
 import { useBanWatcher } from './hooks/useBanWatcher';
@@ -15,6 +16,9 @@ import { useTypingIndicator } from './hooks/useTypingIndicator';
 import { useNudge } from './hooks/useNudge';
 import { useFriendActions } from './hooks/useFriendActions';
 import { useAdminTools } from './hooks/useAdminTools';
+import { useReadReceipts } from './hooks/useReadReceipts';
+import { useBotChat } from './hooks/useBotChat';
+import BotPanel from './components/BotPanel';
 import ContactSidebar from './components/ContactSidebar';
 import ChatHeader from './components/ChatHeader';
 import MessageList from './components/MessageList';
@@ -26,7 +30,9 @@ import BanOverlay from './components/BanOverlay';
 
 const ChatInterface = ({ user, onLogout }) => {
     const { volume } = useOS();
+    const { lang } = useLanguage();
     const containerRef = useRef(null);
+    const lastSentRef = useRef(0);
 
     const [currentRoom, setCurrentRoom] = useState('global-1');
     const [activeContactId, setActiveContactId] = useState(null);
@@ -37,8 +43,16 @@ const ChatInterface = ({ user, onLogout }) => {
     const banTriggered = useBanWatcher({ uid: user.uid, volume, onLogout });
     const { contacts, friendRequests } = useFriendData(user.uid);
     const { status, friendStatuses, handleStatusChange } = usePresence({ uid: user.uid, contacts });
-    const messages = useMessages({ currentRoom, activeContactId, uid: user.uid });
+    const { messages, hasMore, loadingOlder, loadOlder } = useMessages({ currentRoom, activeContactId, uid: user.uid });
     const activeContact = contacts.find((c) => c.uid === activeContactId);
+    const inBotRoom = currentRoom === BOT_ROOM;
+    const bot = useBotChat(lang);
+    const peerReadAt = useReadReceipts({
+        uid: user.uid,
+        peerId: activeContactId,
+        enabled: currentRoom === 'private' && Boolean(activeContact),
+        messages
+    });
 
     const { isTyping, notifyTyping, stopTyping } = useTypingIndicator({
         uid: user.uid, currentRoom, activeContactId
@@ -60,12 +74,12 @@ const ChatInterface = ({ user, onLogout }) => {
             if (!data || !data.username) {
                 update(myRef, {
                     uid: user.uid,
-                    username: user.username || user.email.split('@')[0],
+                    username: user.username || user.email?.split('@')[0] || 'Guest',
                     status: 'online'
                 }).catch((err) => console.error('Backfill failed', err));
             }
         });
-        update(ref(db, `userPrivate/${user.uid}`), { email: user.email }).catch(() => { });
+        if (user.email) update(ref(db, `userPrivate/${user.uid}`), { email: user.email }).catch(() => { });
     }, [user.uid, user.username, user.email]);
 
     useEffect(() => { playDing(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -99,6 +113,13 @@ const ChatInterface = ({ user, onLogout }) => {
         const path = getMessagesPath(currentRoom, activeContactId, user.uid);
         if (!path) return false;
 
+        // The database rules allow roughly one message per second per person; tell the user
+        // instead of letting the write fail.
+        if (nowMs() - lastSentRef.current < SEND_COOLDOWN_MS) {
+            showNotification('Slow down a little: one message per second.', 'warning');
+            return false;
+        }
+
         try {
             const updates = {};
             if (currentRoom === 'private') {
@@ -109,14 +130,18 @@ const ChatInterface = ({ user, onLogout }) => {
                 senderName: user.username,
                 senderUid: user.uid,
                 text: censorText(rawText),
-                timestamp: nowMs()
+                timestamp: serverTimestamp()
             };
+            // Stamping lastMessageAt in the same atomic update is what the rate-limit rule checks.
+            updates[`users/${user.uid}/lastMessageAt`] = serverTimestamp();
+            lastSentRef.current = nowMs();
             await update(ref(db), updates);
 
             stopTyping();
             playDing();
             return true;
         } catch (error) {
+            lastSentRef.current = 0;
             console.error('Send Error:', error);
             showNotification('Failed to send: ' + error.message, 'error');
             return false;
@@ -125,6 +150,11 @@ const ChatInterface = ({ user, onLogout }) => {
 
     const handleSelectGlobalRoom = (room) => {
         setCurrentRoom(room);
+        setActiveContactId(null);
+    };
+
+    const handleBotClick = () => {
+        setCurrentRoom(BOT_ROOM);
         setActiveContactId(null);
     };
 
@@ -178,6 +208,8 @@ const ChatInterface = ({ user, onLogout }) => {
                 nudgedContacts={nudgedContacts}
                 currentRoom={currentRoom}
                 activeContactId={activeContactId}
+                botActive={inBotRoom}
+                onBotClick={handleBotClick}
                 onContactClick={handleContactClick}
                 onRemoveContact={handleRemoveContact}
                 friendRequests={friendRequests}
@@ -192,30 +224,40 @@ const ChatInterface = ({ user, onLogout }) => {
                     activeContact={activeContact}
                     onSelectGlobalRoom={handleSelectGlobalRoom}
                 />
-                <MessageList
-                    messages={messages}
-                    user={user}
-                    contacts={contacts}
-                    isTyping={isTyping}
-                    activeContact={activeContact}
-                    scrollKey={`${currentRoom}:${activeContactId}`}
-                    onUserContextMenu={handleUserContextMenu}
-                    onDeleteMessage={admin.requestDeleteMessage}
-                />
-                <NotificationBar notification={notification} />
-                <UserContextMenu
-                    menu={contextMenu}
-                    currentUid={user.uid}
-                    contacts={contacts}
-                    onAddFriend={(target) => { setContextMenu(null); sendFriendRequest(target); }}
-                />
-                <Composer
-                    disabled={currentRoom === 'private' && !activeContact}
-                    onSend={handleSend}
-                    onNudge={handleNudge}
-                    onTyping={notifyTyping}
-                    onStopTyping={stopTyping}
-                />
+                {inBotRoom ? (
+                    <BotPanel bot={bot} />
+                ) : (
+                    <>
+                        <MessageList
+                            messages={messages}
+                            user={user}
+                            contacts={contacts}
+                            isTyping={isTyping}
+                            activeContact={activeContact}
+                            scrollKey={`${currentRoom}:${activeContactId}`}
+                            onUserContextMenu={handleUserContextMenu}
+                            onDeleteMessage={admin.requestDeleteMessage}
+                            hasMore={hasMore}
+                            loadingOlder={loadingOlder}
+                            onLoadOlder={loadOlder}
+                            peerReadAt={currentRoom === 'private' ? peerReadAt : undefined}
+                        />
+                        <NotificationBar notification={notification} />
+                        <UserContextMenu
+                            menu={contextMenu}
+                            currentUid={user.uid}
+                            contacts={contacts}
+                            onAddFriend={(target) => { setContextMenu(null); sendFriendRequest(target); }}
+                        />
+                        <Composer
+                            disabled={currentRoom === 'private' && !activeContact}
+                            onSend={handleSend}
+                            onNudge={handleNudge}
+                            onTyping={notifyTyping}
+                            onStopTyping={stopTyping}
+                        />
+                    </>
+                )}
             </div>
 
             {admin.showAdminPanel && (

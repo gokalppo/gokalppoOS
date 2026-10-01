@@ -2,11 +2,12 @@ import React, { useState } from 'react';
 import './Messenger.css';
 import messengerIcon from '../../../assets/images/msn.png';
 
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signInAnonymously, updateProfile } from "firebase/auth";
 import { auth, db } from "../../../firebase";
 import { ref, set, get } from "firebase/database";
+import { makeGuestName } from './chatUtils';
 
-const LoginScreen = ({ onLogin }) => {
+const LoginScreen = ({ onLogin, onBot }) => {
     const [isSignUp, setIsSignUp] = useState(false);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -65,6 +66,39 @@ const LoginScreen = ({ onLogin }) => {
                 setErrorMessage(error.message); // Custom Ban Message
             } else {
                 setErrorMessage("Login Failed: " + error.message);
+            }
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    // Guest sign-in: no email or password. Needs the "Anonymous" provider enabled in Firebase Auth.
+    const handleGuest = async () => {
+        setIsLoading(true);
+        setErrorMessage('');
+        try {
+            const { user } = await signInAnonymously(auth);
+            const existing = (await get(ref(db, `users/${user.uid}`))).val();
+
+            if (existing && existing.isBanned) {
+                await auth.signOut();
+                throw new Error('You are banned from gokalppoOS.');
+            }
+
+            const username = (existing && existing.username) || makeGuestName();
+            if (!existing) {
+                await set(ref(db, `users/${user.uid}`), {
+                    uid: user.uid, username, status: 'online', avatar: 'default', isGuest: true
+                });
+            }
+            onLogin({ email: null, username, uid: user.uid, role: 'user', isGuest: true });
+        } catch (error) {
+            if (error.code === 'auth/admin-restricted-operation' || error.code === 'auth/operation-not-allowed') {
+                setErrorMessage('Guest sign-in is not available right now.');
+            } else if (error.message && error.message.includes('banned')) {
+                setErrorMessage(error.message);
+            } else {
+                setErrorMessage('Guest sign-in failed: ' + error.message);
             }
         } finally {
             setIsLoading(false);
@@ -201,6 +235,15 @@ const LoginScreen = ({ onLogin }) => {
                     {isLoading ? 'Processing...' : (isSignUp ? 'Sign Up' : 'Sign In')}
                 </button>
             </form>
+
+            <div className="login-alt">
+                <button type="button" className="login-btn" onClick={handleGuest} disabled={isLoading}>
+                    👤 Continue as guest
+                </button>
+                <button type="button" className="login-btn" onClick={onBot} disabled={isLoading}>
+                    🤖 Chat with Gökalp Bot (no sign-in)
+                </button>
+            </div>
 
             <div className="login-footer">
                 {isSignUp ? (

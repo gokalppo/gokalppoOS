@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { db } from '../../../../firebase';
-import { ref, onValue, set, update, push } from 'firebase/database';
+import { ref, onValue, set, update, push, serverTimestamp } from 'firebase/database';
 import { getMessagesPath, nowMs } from '../chatUtils';
 
 const COOLDOWN_MS = 5000;
@@ -79,11 +79,13 @@ export const useNudge = ({ user, containerRef, currentRoom, activeContactId, act
         }
 
         try {
-            await push(ref(db, getMessagesPath(currentRoom, activeContactId, uid)), {
-                type: 'nudge',
-                senderName: user.username,
-                senderUid: uid,
-                timestamp: nowMs()
+            // Same atomic shape as a normal message: the database rules require the sender's
+            // lastMessageAt to be stamped together with the message (that is the rate limit).
+            const path = getMessagesPath(currentRoom, activeContactId, uid);
+            const key = push(ref(db, path)).key;
+            await update(ref(db), {
+                [`${path}/${key}`]: { type: 'nudge', senderName: user.username, senderUid: uid, timestamp: serverTimestamp() },
+                [`users/${uid}/lastMessageAt`]: serverTimestamp()
             });
         } catch (error) {
             console.error('Nudge Error:', error);

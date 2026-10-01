@@ -39,6 +39,30 @@ const valueAt = (path) => {
     return result;
 };
 
+// Applies query constraints (orderByChild / equalTo / limitToFirst / limitToLast) to a node.
+const applyConstraints = (value, constraints = []) => {
+    if (!constraints.length || !value || typeof value !== 'object') return value;
+    let rows = Object.entries(value);
+    const order = constraints.find((c) => c.type === 'orderByChild');
+    const sortKey = ([key, v]) => (order ? (v && typeof v === 'object' ? v[order.key] : undefined) : key);
+    rows.sort((a, b) => {
+        const ka = sortKey(a);
+        const kb = sortKey(b);
+        if (ka < kb) return -1;
+        if (ka > kb) return 1;
+        return a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0;
+    });
+    const equal = constraints.find((c) => c.type === 'equalTo');
+    if (equal) rows = rows.filter((row) => sortKey(row) === equal.value);
+    const first = constraints.find((c) => c.type === 'limitToFirst');
+    const last = constraints.find((c) => c.type === 'limitToLast');
+    if (first) rows = rows.slice(0, first.n);
+    if (last) rows = rows.slice(-last.n);
+    return rows.length ? Object.fromEntries(rows) : null;
+};
+
+const readQuery = (r) => applyConstraints(valueAt(r.path), r.constraints);
+
 const snapshot = (value) => ({
     val: () => value,
     exists: () => value !== null && value !== undefined
@@ -47,7 +71,7 @@ const snapshot = (value) => ({
 // Like Firebase, only fire a listener when the data at its path actually changed.
 const notify = () => {
     for (const l of [...listeners]) {
-        const value = valueAt(l.path);
+        const value = readQuery(l);
         const serialized = JSON.stringify(value);
         if (serialized === l.last) continue;
         l.last = serialized;
@@ -69,22 +93,22 @@ export const fakeDb = {
 
 export const databaseMock = {
     ref: (_db, path = '') => ({ path: norm(path) }),
-    query: (r) => r,
-    orderByChild: () => null,
-    equalTo: () => null,
-    limitToLast: () => null,
-    limitToFirst: () => null,
+    query: (r, ...constraints) => ({ ...r, constraints: [...(r.constraints || []), ...constraints.filter(Boolean)] }),
+    orderByChild: (key) => ({ type: 'orderByChild', key }),
+    equalTo: (value) => ({ type: 'equalTo', value }),
+    limitToLast: (n) => ({ type: 'limitToLast', n }),
+    limitToFirst: (n) => ({ type: 'limitToFirst', n }),
     serverTimestamp: () => Date.now(),
     increment: (n) => ({ __increment: n }),
     onValue: (r, cb) => {
-        const value = valueAt(r.path);
-        const listener = { path: r.path, cb, last: JSON.stringify(value) };
+        const value = readQuery(r);
+        const listener = { path: r.path, constraints: r.constraints, cb, last: JSON.stringify(value) };
         listeners.add(listener);
         cb(snapshot(value));
         return () => listeners.delete(listener);
     },
     off: () => { },
-    get: (r) => Promise.resolve(snapshot(valueAt(r.path))),
+    get: (r) => Promise.resolve(snapshot(readQuery(r))),
     set: (r, value) => { setValue(r.path, value); return Promise.resolve(); },
     remove: (r) => { setValue(r.path, null); return Promise.resolve(); },
     update: (r, updates) => {

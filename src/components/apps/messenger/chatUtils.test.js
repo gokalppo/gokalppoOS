@@ -9,7 +9,11 @@ import {
     mergeUsersWithPrivate,
     buildUsernameCandidates,
     declineCooldownMinutesLeft,
-    DECLINE_COOLDOWN_MS
+    DECLINE_COOLDOWN_MS,
+    messageStatus,
+    newestIncomingTimestamp,
+    makeGuestName,
+    PAGE_SIZE
 } from './chatUtils';
 
 describe('getPrivateRoomId', () => {
@@ -116,5 +120,50 @@ describe('declineCooldownMinutesLeft', () => {
     it('is 0 once the cooldown has passed', () => {
         expect(declineCooldownMinutesLeft(0, DECLINE_COOLDOWN_MS)).toBe(0);
         expect(declineCooldownMinutesLeft(0, DECLINE_COOLDOWN_MS + 5000)).toBe(0);
+    });
+});
+
+describe('bot room', () => {
+    it('has no database path (the bot chat is local)', () => {
+        expect(getMessagesPath('bot', null, 'me')).toBeNull();
+    });
+});
+
+describe('messageStatus', () => {
+    it('is "sent" until the other person has read up to that message', () => {
+        expect(messageStatus({ timestamp: 100 }, null)).toBe('sent');
+        expect(messageStatus({ timestamp: 100 }, 50)).toBe('sent');
+        expect(messageStatus({ timestamp: 100 }, 100)).toBe('read');
+        expect(messageStatus({ timestamp: 100 }, 500)).toBe('read');
+    });
+
+    it('stays "sent" for messages without a usable timestamp', () => {
+        expect(messageStatus({}, 500)).toBe('sent');
+        expect(messageStatus({ timestamp: null }, 500)).toBe('sent');
+    });
+});
+
+describe('newestIncomingTimestamp', () => {
+    it('only looks at messages from other people', () => {
+        const messages = [
+            { senderUid: 'me', timestamp: 900 },
+            { senderUid: 'bob', timestamp: 100 },
+            { senderUid: 'bob', timestamp: 300 },
+            { senderUid: 'bob' }
+        ];
+        expect(newestIncomingTimestamp(messages, 'me')).toBe(300);
+        expect(newestIncomingTimestamp([], 'me')).toBe(0);
+    });
+});
+
+describe('makeGuestName / paging', () => {
+    it('makes "Guest-" plus four digits', () => {
+        expect(makeGuestName(() => 0)).toBe('Guest-1000');
+        expect(makeGuestName(() => 0.999999)).toBe('Guest-9999');
+        expect(makeGuestName()).toMatch(/^Guest-\d{4}$/);
+    });
+
+    it('loads history in pages', () => {
+        expect(PAGE_SIZE).toBe(50);
     });
 });

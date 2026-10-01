@@ -5,6 +5,25 @@
 export const nowMs = () => Date.now();
 
 export const GLOBAL_ROOMS = ['global-1', 'global-2'];
+export const BOT_ROOM = 'bot';
+
+// Messages are loaded newest-first in pages; "Load older" fetches another page.
+export const PAGE_SIZE = 50;
+
+// Minimum gap between two messages from the same person (the database rules enforce ~1s too).
+export const SEND_COOLDOWN_MS = 1100;
+
+// Delivery state of one of MY messages in a private chat: 'sent' or 'read'.
+// `peerReadAt` is when the other person last opened the chat (null if never / unknown).
+export const messageStatus = (message, peerReadAt) =>
+    peerReadAt && Number.isFinite(message.timestamp) && message.timestamp <= peerReadAt ? 'read' : 'sent';
+
+// Newest timestamp among the messages someone else sent me.
+export const newestIncomingTimestamp = (messages, myUid) =>
+    messages.reduce((max, m) => (m.senderUid !== myUid && Number.isFinite(m.timestamp) ? Math.max(max, m.timestamp) : max), 0);
+
+// A friendly random guest name, e.g. "Guest-4821". `rng` returns 0..1 (injectable for tests).
+export const makeGuestName = (rng = Math.random) => `Guest-${String(Math.floor(rng() * 9000) + 1000)}`;
 
 export const EMOJIS = [
     { char: '😊', text: ':)' },
@@ -22,6 +41,7 @@ export const getPrivateRoomId = (uidA, uidB) => [uidA, uidB].sort().join('_');
 // Database path of the message list for the current view, or null when no
 // conversation is selected (private tab without a contact).
 export const getMessagesPath = (currentRoom, activeContactId, uid) => {
+    if (currentRoom === BOT_ROOM) return null; // the bot chat is local, nothing is stored
     if (currentRoom === 'private') {
         return activeContactId ? `privateMessages/${getPrivateRoomId(uid, activeContactId)}` : null;
     }

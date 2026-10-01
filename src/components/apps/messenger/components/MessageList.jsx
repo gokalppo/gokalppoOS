@@ -1,16 +1,41 @@
-import { useRef, useEffect } from 'react';
+import { useRef, useLayoutEffect } from 'react';
 import starIcon from '../../../../assets/images/star.png';
-import { formatTime } from '../chatUtils';
+import { formatTime, messageStatus } from '../chatUtils';
 
-const MessageList = ({ messages, user, contacts, isTyping, activeContact, scrollKey, onUserContextMenu, onDeleteMessage }) => {
+const MessageList = ({
+    messages, user, contacts, isTyping, activeContact, scrollKey,
+    onUserContextMenu, onDeleteMessage,
+    hasMore = false, loadingOlder = false, onLoadOlder,
+    peerReadAt // number | null in a private chat (enables ✓ / ✓✓ ticks); undefined elsewhere
+}) => {
     const endRef = useRef(null);
+    const listRef = useRef(null);
+    const trackRef = useRef({ scrollKey: null, newest: null, oldest: null, height: 0 });
 
-    useEffect(() => {
-        endRef.current?.scrollIntoView({ behavior: 'smooth' });
+    // New messages scroll to the bottom; older messages loaded above keep the view where it was.
+    useLayoutEffect(() => {
+        const el = listRef.current;
+        const track = trackRef.current;
+        const newest = messages[messages.length - 1]?.key ?? null;
+        const oldest = messages[0]?.key ?? null;
+
+        const prepended = track.scrollKey === scrollKey && track.oldest && oldest !== track.oldest && newest === track.newest;
+        if (prepended && el) {
+            el.scrollTop += el.scrollHeight - track.height;
+        } else if (track.scrollKey !== scrollKey || newest !== track.newest) {
+            endRef.current?.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        trackRef.current = { scrollKey, newest, oldest, height: el ? el.scrollHeight : 0 };
     }, [messages, scrollKey]);
 
     return (
-        <div className="chat-history">
+        <div className="chat-history" ref={listRef}>
+            {hasMore && (
+                <button className="load-older-btn" onClick={onLoadOlder} disabled={loadingOlder}>
+                    {loadingOlder ? 'Loading...' : 'Load older messages'}
+                </button>
+            )}
             {messages.map((msg) => (
                 <div key={msg.key} className="msg-entry">
                     {msg.type === 'nudge' ? (
@@ -53,7 +78,11 @@ const MessageList = ({ messages, user, contacts, isTyping, activeContact, scroll
                                         )}
                                     </>
                                 )}
-                                {!msg.isDeleted && msg.senderUid === user.uid && msg.read && <span className="msg-tick-read">✓</span>}
+                                {!msg.isDeleted && msg.senderUid === user.uid && peerReadAt !== undefined && (
+                                    messageStatus(msg, peerReadAt) === 'read'
+                                        ? <span className="msg-tick-read" title="Read" aria-label="Read">✓✓</span>
+                                        : <span className="msg-tick-sent" title="Sent" aria-label="Sent">✓</span>
+                                )}
                             </span>
                         </div>
                     )}

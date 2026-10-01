@@ -229,3 +229,157 @@ describe('ban kill-switch', () => {
         await waitFor(() => expect(screen.getByText('SYSTEM ERROR: ACCESS_DENIED')).toBeTruthy());
     });
 });
+
+describe('message history paging', () => {
+    const seedMessages = (count) => {
+        const data = {};
+        for (let i = 1; i <= count; i++) {
+            data[`m${String(i).padStart(4, '0')}`] = { senderUid: 'bob', senderName: 'Bob', text: `msg-${i}`, timestamp: i };
+        }
+        fakeDb.seed('messages/global-1', data);
+    };
+    const shown = () => document.querySelectorAll('.msg-entry').length;
+
+    it('shows only the newest page and offers to load older messages', () => {
+        seedMessages(120);
+        renderChat();
+        expect(shown()).toBe(50);
+        expect(screen.getByText('msg-120')).toBeTruthy();
+        expect(screen.queryByText('msg-70')).toBeNull();
+        expect(screen.getByText('Load older messages')).toBeTruthy();
+    });
+
+    it('loads another page each time until the whole history is shown', async () => {
+        seedMessages(120);
+        renderChat();
+        fireEvent.click(screen.getByText('Load older messages'));
+        await waitFor(() => expect(shown()).toBe(100));
+        fireEvent.click(screen.getByText('Load older messages'));
+        await waitFor(() => expect(shown()).toBe(120));
+        expect(screen.queryByText('Load older messages')).toBeNull();
+        expect(screen.getByText('msg-1')).toBeTruthy();
+    });
+
+    it('does not show the button for a short history', () => {
+        seedMessages(10);
+        renderChat();
+        expect(shown()).toBe(10);
+        expect(screen.queryByText('Load older messages')).toBeNull();
+    });
+
+    it('a new message does not hide the older ones that were loaded', async () => {
+        seedMessages(60);
+        renderChat();
+        fireEvent.click(screen.getByText('Load older messages'));
+        await waitFor(() => expect(shown()).toBe(60));
+        fakeDb.seed('messages/global-1/m9999', { senderUid: 'bob', senderName: 'Bob', text: 'brand new', timestamp: 9999 });
+        await waitFor(() => expect(screen.getByText('brand new')).toBeTruthy());
+        expect(shown()).toBeGreaterThanOrEqual(60);
+    });
+});
+
+describe('send stamps and cooldown', () => {
+    it('writes a numeric server timestamp and stamps lastMessageAt in the same update', async () => {
+        renderChat();
+        typeAndSend('hello');
+        await waitFor(() => expect(fakeDb.read('messages/global-1')).not.toBeNull());
+        const [msg] = Object.values(fakeDb.read('messages/global-1'));
+        expect(typeof msg.timestamp).toBe('number');
+        expect(typeof fakeDb.read('users/me/lastMessageAt')).toBe('number');
+    });
+
+    it('blocks a second message sent within the cooldown and explains why', async () => {
+        renderChat();
+        typeAndSend('first');
+        await waitFor(() => expect(Object.keys(fakeDb.read('messages/global-1') || {})).toHaveLength(1));
+        typeAndSend('second');
+        await waitFor(() => expect(screen.getByText(/Slow down a little/)).toBeTruthy());
+        expect(Object.keys(fakeDb.read('messages/global-1'))).toHaveLength(1);
+        expect(document.querySelector('.msn-textarea').value).toBe('second'); // draft is kept
+    });
+});
+
+describe('read receipts', () => {
+    beforeEach(() => {
+        fakeDb.seed('users/me/friends/bob', bob);
+        fakeDb.seed('users/bob/friends/me', { uid: 'me', name: 'Gokalp' });
+        fakeDb.seed('privateMessages/bob_me', {
+            a1: { senderUid: 'me', senderName: 'Gokalp', text: 'my question', timestamp: 100 }
+        });
+    });
+
+    it('shows a single tick until the friend has read it, then a double tick', async () => {
+        renderChat();
+        fireEvent.click(screen.getByText('Bob'));
+        await waitFor(() => expect(screen.getByText('my question')).toBeTruthy());
+        expect(screen.getByLabelText('Sent')).toBeTruthy();
+        expect(screen.queryByLabelText('Read')).toBeNull();
+
+        fakeDb.seed('users/bob/friends/me/lastReadAt', 500);
+        await waitFor(() => expect(screen.getByLabelText('Read')).toBeTruthy());
+    });
+
+    it('marks incoming messages as read while their chat is open', async () => {
+        fakeDb.seed('privateMessages/bob_me/a2', { senderUid: 'bob', senderName: 'Bob', text: 'hey', timestamp: 200 });
+        renderChat();
+        fireEvent.click(screen.getByText('Bob'));
+        await waitFor(() => expect(typeof fakeDb.read('users/me/friends/bob/lastReadAt')).toBe('number'));
+    });
+
+    it('does not show ticks in public rooms', () => {
+        fakeDb.seed('messages/global-1/g1', { senderUid: 'me', senderName: 'Gokalp', text: 'public', timestamp: 1 });
+        renderChat();
+        expect(screen.getByText('public')).toBeTruthy();
+        expect(screen.queryByLabelText('Sent')).toBeNull();
+    });
+});
+
+describe('Gökalp Bot inside the Messenger', () => {
+    it('is pinned in the contact list and answers questions', async () => {
+        renderChat();
+        fireEvent.click(screen.getByText(/Gökalp Bot/));
+        expect(screen.getByText('Chatting with Gökalp Bot')).toBeTruthy();
+        expect(screen.getByText(/automated assistant/)).toBeTruthy();
+
+        typeAndSend('what projects do you have?');
+        await waitFor(() => expect(screen.getByText(/Here are the projects/)).toBeTruthy(), { timeout: 4000 });
+        expect(screen.getByText(/CindraNet/)).toBeTruthy();
+    });
+
+    it('never touches the database for the bot chat', async () => {
+        renderChat();
+        fireEvent.click(screen.getByText(/Gökalp Bot/));
+        typeAndSend('hello');
+        await waitFor(() => expect(screen.getAllByText(/automated assistant/).length).toBeGreaterThan(1), { timeout: 4000 });
+        expect(fakeDb.read('messages/bot')).toBeNull();
+        expect(fakeDb.read('users/me/lastMessageAt')).toBeNull();
+    });
+
+    it('quick-reply buttons send their text', async () => {
+        renderChat();
+        fireEvent.click(screen.getByText(/Gökalp Bot/));
+        fireEvent.click(screen.getByText('Contact', { selector: '.bot-chip' }));
+        await waitFor(() => expect(screen.getByText(/ekergokalp@gmail.com/)).toBeTruthy(), { timeout: 4000 });
+    });
+
+    it('keeps the conversation when you switch to another room and back', async () => {
+        renderChat();
+        fireEvent.click(screen.getByText(/Gökalp Bot/));
+        typeAndSend('resume');
+        await waitFor(() => expect(screen.getByText(/My Resume/)).toBeTruthy(), { timeout: 4000 });
+        fireEvent.click(screen.getByText('Global-2'));
+        fireEvent.click(screen.getByText(/Gökalp Bot/));
+        expect(screen.getByText(/My Resume/)).toBeTruthy();
+    });
+});
+
+describe('guest accounts', () => {
+    it('can use the Messenger without an email address', async () => {
+        const guest = { uid: 'g1', username: 'Guest-1234', email: null, role: 'user', isGuest: true };
+        renderChat(guest);
+        expect(screen.getByText('Guest-1234')).toBeTruthy();
+        typeAndSend('hi from a guest');
+        await waitFor(() => expect(fakeDb.read('messages/global-1')).not.toBeNull());
+        expect(fakeDb.read('userPrivate/g1')).toBeNull(); // no email to store
+    });
+});

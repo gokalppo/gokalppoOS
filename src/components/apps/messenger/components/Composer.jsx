@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { EMOJIS } from '../chatUtils';
 
 // Message input row. Owns the draft text; the parent decides what "send" means.
-const Composer = ({ disabled, onSend, onNudge, onTyping, onStopTyping }) => {
+const Composer = ({ disabled, onSend, onNudge, onTyping, onStopTyping, showNudge = true }) => {
     const [input, setInput] = useState('');
     const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 
@@ -25,7 +25,7 @@ const Composer = ({ disabled, onSend, onNudge, onTyping, onStopTyping }) => {
     return (
         <div className="msn-input-row">
             <div className="msn-toolbar" style={{ position: 'relative' }}>
-                <button className="tool-btn" onClick={onNudge} title="Send Nudge">📳 Nudge</button>
+                {showNudge && <button className="tool-btn" onClick={onNudge} title="Send Nudge">📳 Nudge</button>}
                 <button className="tool-btn" title="Emoticons" onClick={() => setShowEmojiPicker(!showEmojiPicker)}>
                     😊
                 </button>

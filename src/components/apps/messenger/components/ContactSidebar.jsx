@@ -7,7 +7,8 @@ const ContactSidebar = ({
     user, status, onStatusChange, onSignOut, onOpenAdmin,
     contacts, friendStatuses, nudgedContacts, currentRoom, activeContactId,
     onContactClick, onRemoveContact,
-    friendRequests, onAcceptRequest, onDeclineRequest, showNotification
+    friendRequests, onAcceptRequest, onDeclineRequest, showNotification,
+    botActive, onBotClick
 }) => {
     const [showAddContact, setShowAddContact] = useState(false);
     const [musicTrack, setMusicTrack] = useState('');
@@ -22,7 +23,7 @@ const ContactSidebar = ({
         <div className="msn-sidebar">
             <div className="user-card">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <strong>{user.username || user.email.split('@')[0]}</strong>
+                    <strong>{user.username || user.email?.split('@')[0] || 'Guest'}</strong>
                     <button className="tool-btn" onClick={onSignOut} title="Sign Out" style={{ fontSize: '10px', color: 'red' }}>[X]</button>
                 </div>
                 {user.role === 'admin' && (
@@ -52,6 +53,18 @@ const ContactSidebar = ({
             </div>
 
             <div className="msn-contact-list">
+                <div
+                    className={`msn-contact bot-contact ${botActive ? 'active' : ''}`}
+                    role="button"
+                    tabIndex={0}
+                    onClick={onBotClick}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onBotClick(); } }}
+                >
+                    <div className="contact-item-container" style={{ display: 'flex', alignItems: 'center', flex: 1 }}>
+                        <div className="status-dot online"></div>
+                        <span style={{ marginLeft: '6px' }}>🤖 Gökalp Bot</span>
+                    </div>
+                </div>
                 {contacts.map((c) => (
                     <div
                         key={c.uid}

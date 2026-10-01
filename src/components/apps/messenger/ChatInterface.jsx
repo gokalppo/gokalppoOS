@@ -600,6 +600,47 @@ const ChatInterface = ({ user, onLogout }) => {
 
     const activeContact = contacts.find(c => c.uid === activeContactId);
 
+    // TYPING INDICATOR: typing/{roomId}/{uid} = true while I am typing in a private chat.
+    const typingRoomId = currentRoom === 'private' && activeContactId
+        ? [user.uid, activeContactId].sort().join('_')
+        : null;
+    const typingActiveRef = useRef(null);
+    const typingTimerRef = useRef(null);
+
+    const stopTyping = React.useCallback(() => {
+        clearTimeout(typingTimerRef.current);
+        const roomId = typingActiveRef.current;
+        if (roomId) {
+            typingActiveRef.current = null;
+            remove(ref(db, `typing/${roomId}/${user.uid}`)).catch(() => { });
+        }
+    }, [user.uid]);
+
+    const notifyTyping = () => {
+        if (!typingRoomId) return;
+        if (typingActiveRef.current !== typingRoomId) {
+            stopTyping();
+            typingActiveRef.current = typingRoomId;
+            const myTypingRef = ref(db, `typing/${typingRoomId}/${user.uid}`);
+            onDisconnect(myTypingRef).remove().catch(() => { });
+            set(myTypingRef, true).catch(() => { });
+        }
+        clearTimeout(typingTimerRef.current);
+        typingTimerRef.current = setTimeout(stopTyping, 2500);
+    };
+
+    // Stop broadcasting when switching chats or closing the window.
+    useEffect(() => stopTyping, [typingRoomId, stopTyping]);
+
+    // Watch whether the active contact is typing to me.
+    useEffect(() => {
+        setIsTyping(false);
+        if (!typingRoomId) return;
+        const theirRef = ref(db, `typing/${typingRoomId}/${activeContactId}`);
+        const unsub = onValue(theirRef, (snap) => setIsTyping(snap.val() === true));
+        return () => { unsub(); setIsTyping(false); };
+    }, [typingRoomId, activeContactId]);
+
     const handleSend = async () => {
         if (!input.trim()) return;
 
@@ -632,6 +673,7 @@ const ChatInterface = ({ user, onLogout }) => {
 
             await update(ref(db), updates);
 
+            stopTyping();
             setInput('');
             playDing();
         } catch (error) {
@@ -1201,7 +1243,7 @@ const ChatInterface = ({ user, onLogout }) => {
                         <textarea
                             className="msn-textarea"
                             value={input}
-                            onChange={(e) => setInput(e.target.value)}
+                            onChange={(e) => { setInput(e.target.value); if (e.target.value) notifyTyping(); else stopTyping(); }}
                             onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handleSend())}
                             disabled={currentRoom === 'private' && !activeContact}
                         />

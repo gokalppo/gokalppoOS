@@ -261,9 +261,10 @@ const Taskbar = ({
                     Start
                 </button>
                 <button className="show-desktop-btn" onClick={(e) => { e.stopPropagation(); onShowDesktop && onShowDesktop(); }} title={t('taskbar.showDesktop')}>
-                    <svg width="16" height="14" viewBox="0 0 16 14" style={{ display: 'block' }}>
-                        <rect x="1" y="1" width="14" height="9" fill="#008080" stroke="#000" />
-                        <rect x="5" y="11" width="6" height="2" fill="#808080" />
+                    <svg width="18" height="16" viewBox="0 0 18 16" style={{ display: 'block' }} aria-hidden="true">
+                        <rect x="1" y="2" width="16" height="11" fill="#008080" stroke="#000" />
+                        <rect x="1" y="2" width="16" height="3" fill="#000080" stroke="#000" />
+                        <path d="M6 13 L12 7 L14 9 L8 15 L5.5 15.5Z" fill="#f3c623" stroke="#000" strokeWidth="0.8" />
                     </svg>
                 </button>
                 <div className="task-area">

@@ -1,7 +1,15 @@
 import { createContext, useState, useContext, useCallback } from 'react';
 import { loadSoundsEnabled, saveSoundsEnabled, playSystemSound } from '../audio/systemSounds';
 
-const OSContext = createContext();
+// Inert defaults so components also render in isolation (tests) without the provider.
+const OSContext = createContext({
+    closeWindow: () => { },
+    volume: 0.5,
+    setGlobalVolume: () => { },
+    soundsEnabled: false,
+    setSoundsEnabled: () => { },
+    playSound: () => { }
+});
 
 export const useOS = () => useContext(OSContext);
 

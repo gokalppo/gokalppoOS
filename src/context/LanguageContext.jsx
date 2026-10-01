@@ -2,11 +2,12 @@ import { createContext, useContext, useState, useCallback, useEffect, useMemo } 
 import { translations } from '../i18n/translations';
 import { translate, detectLanguage, LANGUAGE_STORAGE_KEY } from '../i18n/translate';
 
+// Without a provider (e.g. isolated component tests) fall back to English.
 const LanguageContext = createContext({
     lang: 'en',
     setLang: () => { },
     toggleLang: () => { },
-    t: (key) => key
+    t: (key, params) => translate(translations, 'en', key, params)
 });
 
 export const useLanguage = () => useContext(LanguageContext);

@@ -25,6 +25,7 @@ Instead of a static page of cards, my portfolio is a tiny operating system runni
 - **Warp-speed screensaver** after two minutes of inactivity
 - **Crash-proof windows**: each app runs inside an error boundary, so a crashing program shows a Win98-style "illegal operation" dialog instead of taking the desktop down (hidden `crash` terminal command to see it)
 - **Hidden easter egg**: try the Konami Code
+- **Turkish / English**: a TR/EN switch in the tray (follows the browser language by default). The shell, Clippy, Terminal, Gallery, Contact, Guestbook, Internet Explorer, Solitaire, Minesweeper and System Properties are translated; program names stay as proper names
 
 ### Apps
 | App | What it does |
@@ -35,7 +36,10 @@ Instead of a static page of cards, my portfolio is a tiny operating system runni
 | **Messenger** | MSN-style real-time chat (details below) |
 | **Notepad** | Text editor with New / Open / Save / Save As and `.txt` download, backed by the virtual file system |
 | **Paint** | Pencil, eraser, line, rectangle and ellipse (outlined or filled), bucket fill, color palette, undo, and PNG export |
-| **Minesweeper** | The classic, with flags and a timer |
+| **Minesweeper** | The classic, with flags, a timer and a global **Best Times** board (Firebase) |
+| **Solitaire** | Klondike (draw-one): drag and drop or click-to-move, double-click to send a card to its foundation, undo, timer and move counter |
+| **Internet Explorer** | A tiny browser with an address bar, history, a Favorites menu and internal pages (home, about, every project, links). Real sites open in a new tab |
+| **Guestbook** | Visitors leave a message that stays on the site (Firebase), with validation, a posting cooldown and a honeypot against bots |
 | **Music Player** | Playlist player |
 | **My Computer / Recycle Bin** | File Explorer over the virtual file system |
 | **Contact** | Contact card with copy-to-clipboard email |
@@ -83,6 +87,7 @@ A few design decisions worth mentioning:
 - **State kept out of stale closures.** Rapid-fire interactions (double-clicks, fast window focus changes, multi-icon drags) read from refs that are updated synchronously next to React state, which fixed several race conditions with `z-index` and drag selection.
 - **Tested where it matters.** Vitest covers the virtual file system, the Terminal command parser, the Messenger helpers, and the whole chat UI against an in-memory Firebase fake (send/censor, private rooms and unread counts, typing, friend requests, admin delete/ban, the ban kill-switch).
 - **Messenger is split into small pieces.** `ChatInterface` is a thin orchestrator over focused hooks (`usePresence`, `useMessages`, `useTypingIndicator`, `useNudge`, `useFriendActions`, `useAdminTools`, ...) and presentational components, with pure logic in `chatUtils.js`.
+- **Privacy-friendly analytics.** The only analytics are anonymous app-open counters (`analytics/appOpens/{app}`): no cookies, no IDs, no personal data. Do Not Track is respected, local development is excluded, and only an admin can read the totals (Messenger > Admin Tools).
 - **Security lives in the database rules.** The client is never trusted: `role` and `isBanned` can only be changed by admins, private messages and typing state are readable only by the two participants, friend lists cannot be forged, and email addresses are kept in a separate `userPrivate` node. Rules are in [`database.rules.json`](database.rules.json).
 
 ## Running it locally
@@ -103,7 +108,7 @@ Open <http://localhost:5173>, wait for the BIOS text, and press **Enter**.
 | `npm run dev` | Start the Vite dev server |
 | `npm run build` | Production build into `dist/` |
 | `npm run preview` | Serve the production build locally |
-| `npm test` | Run the Vitest suite (92 tests) |
+| `npm test` | Run the Vitest suite (185 tests) |
 | `npm run lint` | Run ESLint |
 
 ### Using your own Firebase project
@@ -125,7 +130,8 @@ The app talks to my Firebase project by default. The Firebase web config in [`sr
 ## Roadmap
 
 - Mobile / touch-friendly layout
-- Welcome window and an About Me app
+- Welcome window
+- A blog section in Internet Explorer
 - Messenger demo bot for visitors who are not signed in
 - Keyboard navigation and screen reader support
 

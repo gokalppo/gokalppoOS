@@ -1,5 +1,20 @@
 import React, { useState, useEffect, useRef } from 'react';
 import './Terminal.css';
+import { executeCommand } from './terminalCommands';
+
+const NEOFETCH_ASCII = `
+       .---. 
+      /     \\ 
+      |  ()  |
+      \\     / 
+       '---'  
+      /  |  \\ 
+     /   |   \\ 
+    /    |    \\ 
+   '--'  |  '--'
+      |  |  |   
+      '--'--'
+`;
 
 const Bomb = () => {
     throw new Error('Illegal operation: user typed the forbidden command.');
@@ -111,7 +126,7 @@ const Terminal = () => {
     };
 
     // Start time for uptime
-    const [startTime] = useState(Date.now());
+    const [startTime] = useState(() => Date.now());
 
     const getUptime = () => {
         const now = Date.now();
@@ -122,173 +137,68 @@ const Terminal = () => {
         return `${h}h ${m}m ${s}s`;
     };
 
+    const renderNeofetch = () => {
+        const NeofetchComp = (
+            <div className="neofetch-container">
+                <div className="neofetch-ascii">{NEOFETCH_ASCII}</div>
+                <div className="neofetch-info">
+                    <div className="neofetch-row"><span className="neofetch-key">User:</span> <span className="neofetch-val">gokalppo</span></div>
+                    <div className="neofetch-row"><span className="neofetch-key">OS:</span> <span className="neofetch-val">GokalpOS v1.0 (Retro Edition)</span></div>
+                    <div className="neofetch-row"><span className="neofetch-key">Host:</span> <span className="neofetch-val">MacBook Pro (Intel Core i9/M Serisi)</span></div>
+                    <div className="neofetch-row"><span className="neofetch-key">Kernel:</span> <span className="neofetch-val">React.js / Vite</span></div>
+                    <div className="neofetch-row"><span className="neofetch-key">Uptime:</span> <span className="neofetch-val">{getUptime()}</span></div>
+                    <div className="neofetch-row"><span className="neofetch-key">Shell:</span> <span className="neofetch-val">g-sh 2.0</span></div>
+                    <div className="neofetch-row"><span className="neofetch-key">Resolution:</span> <span className="neofetch-val">{window.innerWidth}x{window.innerHeight}</span></div>
+                    <div className="neofetch-row"><span className="neofetch-key">Education:</span> <span className="neofetch-val">Computer Engineering, 3rd Year</span></div>
+                    <div className="neofetch-colors">
+                        <div className="color-block" style={{ background: 'black' }}></div>
+                        <div className="color-block" style={{ background: 'red' }}></div>
+                        <div className="color-block" style={{ background: 'green' }}></div>
+                        <div className="color-block" style={{ background: 'yellow' }}></div>
+                        <div className="color-block" style={{ background: 'blue' }}></div>
+                        <div className="color-block" style={{ background: 'magenta' }}></div>
+                        <div className="color-block" style={{ background: 'cyan' }}></div>
+                        <div className="color-block" style={{ background: 'white' }}></div>
+                    </div>
+                </div>
+            </div>
+        );
+        return NeofetchComp;
+    };
+
     const handleCommand = (cmd) => {
-        const command = cmd.trim().toLowerCase();
+        const result = executeCommand(cmd);
+        const echo = `C:\\Users\\Guest> ${cmd}`;
         let output = [];
 
-        // SUDO CHECK
-        if (command.startsWith('sudo')) {
-            output = [
-                `Nice try, but you don't have root privileges!`
-            ];
-            setHistory(prev => [...prev, `C:\\Users\\Guest> ${cmd}`, ...output]);
-            return;
-        }
-
-        switch (command) {
-            case 'ece':
-                output = [<HeartAnim />];
-                break;
-            case 'help':
-                output = [
-                    "Available Commands:",
-                    "  help     - Show this list",
-                    "  about    - Who made this?",
-                    "  clear    - Clear the terminal",
-                    "  date     - Show current date/time",
-                    "  ls       - List desktop apps",
-                    "  matrix   - Enter the matrix",
-                    "  neofetch - System Information",
-                    "  github   - Open my GitHub profile",
-                    "  linkedin - Open my LinkedIn profile",
-                    "  projects - List my projects",
-                    "  contact  - Show contact info",
-                    "  resume   - Open my resume"
-                ];
-                break;
-            case 'about':
-                output = [
-                    "-----------------------------",
-                    " GOKALPPO - RETRO OS CREATOR ",
-                    "-----------------------------",
-                    "A passionate developer bringing",
-                    "nostalgia back to the web.",
-                    "Type 'github' or 'linkedin' to",
-                    "see the real thing."
-                ];
-                break;
-            case 'github':
-                window.open('https://github.com/gokalppo', '_blank', 'noopener,noreferrer');
-                output = ["Opening https://github.com/gokalppo ..."];
-                break;
-            case 'linkedin':
-                window.open('https://www.linkedin.com/in/gokalp-eker/', '_blank', 'noopener,noreferrer');
-                output = ["Opening https://www.linkedin.com/in/gokalp-eker/ ..."];
-                break;
-            case 'resume':
-            case 'cv':
-                window.open('/resume.pdf', '_blank', 'noopener,noreferrer');
-                output = ["Opening resume.pdf ..."];
-                break;
-            case 'contact':
-                output = [
-                    "-----------------------------",
-                    " CONTACT",
-                    "-----------------------------",
-                    "Email:     ekergokalp@gmail.com",
-                    "GitHub:    github.com/gokalppo",
-                    "LinkedIn:  linkedin.com/in/gokalp-eker",
-                    "Instagram: instagram.com/_gokalpeker"
-                ];
-                break;
-            case 'projects':
-                output = [
-                    "-----------------------------",
-                    " PROJECTS (see also: Gallery)",
-                    "-----------------------------",
-                    "1. IoT Smart Air Quality",
-                    "   ESP32, MQ-135, DHT22 — real-time air",
-                    "   quality + temp/humidity monitoring,",
-                    "   WebSocket streaming, retro LCD UI.",
-                    "",
-                    "2. Hardware TOTP Token",
-                    "   Physical 2FA device from scratch —",
-                    "   OLED display, secure key storage,",
-                    "   battery powered.",
-                    "",
-                    "3. Document Scanner",
-                    "   C++ / OpenCV — corner detection,",
-                    "   perspective correction, OCR.",
-                    "",
-                    "4. AI Image Detector",
-                    "   ResNet18 model detecting AI-generated",
-                    "   images at 97.2% accuracy, Gradio UI."
-                ];
-                break;
-            case 'crash':
-                output = [<Bomb />];
-                break;
+        switch (result.type) {
             case 'clear':
                 setHistory([]);
                 return;
-            case 'date':
-                output = [new Date().toLocaleString()];
+            case 'empty':
                 break;
-            case 'ls':
-                output = [
-                    "Desktop/",
-                    "  My Computer",
-                    "  Recycle Bin",
-                    "  Notepad.exe",
-                    "  MusicPlayer.exe",
-                    "  Minesweeper.exe",
-                    "  Terminal.exe",
-                    "  resume.pdf"
-                ];
+            case 'open':
+                window.open(result.url, '_blank', 'noopener,noreferrer');
+                output = result.lines;
                 break;
             case 'matrix':
                 setMatrixMode(prev => !prev);
                 output = [!matrixMode ? "Entering the Matrix..." : "Matrix disabled."];
                 break;
             case 'neofetch':
-                const ascii = `
-       .---. 
-      /     \\ 
-      |  ()  |
-      \\     / 
-       '---'  
-      /  |  \\ 
-     /   |   \\ 
-    /    |    \\ 
-   '--'  |  '--'
-      |  |  |   
-      '--'--'
-`;
-                // Neofetch Component
-                const NeofetchComp = (
-                    <div className="neofetch-container">
-                        <div className="neofetch-ascii">{ascii}</div>
-                        <div className="neofetch-info">
-                            <div className="neofetch-row"><span className="neofetch-key">User:</span> <span className="neofetch-val">gokalppo</span></div>
-                            <div className="neofetch-row"><span className="neofetch-key">OS:</span> <span className="neofetch-val">GokalpOS v1.0 (Retro Edition)</span></div>
-                            <div className="neofetch-row"><span className="neofetch-key">Host:</span> <span className="neofetch-val">MacBook Pro (Intel Core i9/M Serisi)</span></div>
-                            <div className="neofetch-row"><span className="neofetch-key">Kernel:</span> <span className="neofetch-val">React.js / Vite</span></div>
-                            <div className="neofetch-row"><span className="neofetch-key">Uptime:</span> <span className="neofetch-val">{getUptime()}</span></div>
-                            <div className="neofetch-row"><span className="neofetch-key">Shell:</span> <span className="neofetch-val">g-sh 2.0</span></div>
-                            <div className="neofetch-row"><span className="neofetch-key">Resolution:</span> <span className="neofetch-val">{window.innerWidth}x{window.innerHeight}</span></div>
-                            <div className="neofetch-row"><span className="neofetch-key">Education:</span> <span className="neofetch-val">Computer Engineering, 3rd Year</span></div>
-                            <div className="neofetch-colors">
-                                <div className="color-block" style={{ background: 'black' }}></div>
-                                <div className="color-block" style={{ background: 'red' }}></div>
-                                <div className="color-block" style={{ background: 'green' }}></div>
-                                <div className="color-block" style={{ background: 'yellow' }}></div>
-                                <div className="color-block" style={{ background: 'blue' }}></div>
-                                <div className="color-block" style={{ background: 'magenta' }}></div>
-                                <div className="color-block" style={{ background: 'cyan' }}></div>
-                                <div className="color-block" style={{ background: 'white' }}></div>
-                            </div>
-                        </div>
-                    </div>
-                );
-                output = [NeofetchComp];
+                output = [renderNeofetch()];
                 break;
-            case '':
+            case 'heart':
+                output = [<HeartAnim />];
+                break;
+            case 'crash':
+                output = [<Bomb />];
                 break;
             default:
-                output = [`Command not found: ${command}`];
+                output = result.lines;
         }
 
-        setHistory(prev => [...prev, `C:\\Users\\Guest> ${cmd}`, ...output]);
+        setHistory(prev => [...prev, echo, ...output]);
     };
 
     const handleKeyDown = (e) => {

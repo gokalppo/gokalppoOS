@@ -1,0 +1,90 @@
+import { describe, it, expect } from 'vitest';
+import {
+    parseCommand,
+    executeCommand,
+    HELP_LINES,
+    GITHUB_URL,
+    LINKEDIN_URL,
+    RESUME_URL
+} from './terminalCommands';
+
+describe('parseCommand', () => {
+    it('trims and lowercases the input', () => {
+        expect(parseCommand('  HeLp  ').name).toBe('help');
+    });
+
+    it('splits the command name from its arguments', () => {
+        const { name, args } = parseCommand('ls   -la  docs');
+        expect(name).toBe('ls');
+        expect(args).toEqual(['-la', 'docs']);
+    });
+
+    it('returns an empty name for blank or nullish input', () => {
+        expect(parseCommand('   ').name).toBe('');
+        expect(parseCommand(undefined).name).toBe('');
+    });
+});
+
+describe('executeCommand', () => {
+    it('treats blank input as a no-op', () => {
+        expect(executeCommand('')).toEqual({ type: 'empty' });
+        expect(executeCommand('    ')).toEqual({ type: 'empty' });
+    });
+
+    it('is case-insensitive', () => {
+        expect(executeCommand('HELP')).toEqual(executeCommand('help'));
+    });
+
+    it('reports unknown commands, echoing the normalized input', () => {
+        expect(executeCommand('Foo')).toEqual({ type: 'text', lines: ['Command not found: foo'] });
+    });
+
+    it('refuses anything starting with sudo', () => {
+        const result = executeCommand('sudo rm -rf /');
+        expect(result.type).toBe('text');
+        expect(result.lines[0]).toMatch(/root privileges/);
+    });
+
+    it('every command listed by help is actually implemented', () => {
+        const listed = HELP_LINES.slice(1).map((line) => line.trim().split(/\s+/)[0]);
+        expect(listed.length).toBeGreaterThan(0);
+        for (const name of listed) {
+            const result = executeCommand(name);
+            const isMissing = result.type === 'text' && result.lines[0].startsWith('Command not found');
+            expect(isMissing, `"${name}" is in help but not implemented`).toBe(false);
+        }
+    });
+
+    it('opens the real profile and resume URLs', () => {
+        expect(executeCommand('github')).toMatchObject({ type: 'open', url: GITHUB_URL });
+        expect(executeCommand('linkedin')).toMatchObject({ type: 'open', url: LINKEDIN_URL });
+        expect(executeCommand('resume')).toMatchObject({ type: 'open', url: RESUME_URL });
+    });
+
+    it('treats cv as an alias of resume', () => {
+        expect(executeCommand('cv')).toEqual(executeCommand('resume'));
+    });
+
+    it('returns UI-level descriptors for commands that need component state', () => {
+        expect(executeCommand('clear')).toEqual({ type: 'clear' });
+        expect(executeCommand('matrix')).toEqual({ type: 'matrix' });
+        expect(executeCommand('neofetch')).toEqual({ type: 'neofetch' });
+        expect(executeCommand('ece')).toEqual({ type: 'heart' });
+        expect(executeCommand('crash')).toEqual({ type: 'crash' });
+    });
+
+    it('formats the date from the injected clock', () => {
+        const now = new Date(2024, 0, 15, 9, 30, 0);
+        expect(executeCommand('date', now).lines).toEqual([now.toLocaleString()]);
+    });
+
+    it('keeps the AI detector accuracy consistent with the Gallery (97.2%)', () => {
+        const projects = executeCommand('projects').lines.join('\n');
+        expect(projects).toContain('97.2%');
+        expect(projects).not.toContain('99.97');
+    });
+
+    it('prints the contact email', () => {
+        expect(executeCommand('contact').lines.join('\n')).toContain('ekergokalp@gmail.com');
+    });
+});

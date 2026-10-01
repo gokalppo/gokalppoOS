@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import './Terminal.css';
 import { executeCommand } from './terminalCommands';
+import { useLanguage } from '../../context/LanguageContext';
 
 const NEOFETCH_ASCII = `
        .---. 
@@ -103,9 +104,10 @@ const HeartAnim = () => {
 };
 
 const Terminal = () => {
+    const { lang } = useLanguage();
     const [history, setHistory] = useState([
         "gokalppoOS Kernel v1.0.4 loaded...",
-        "Type 'help' for available commands."
+        lang === 'tr' ? "Komutlar için 'help' yazın." : "Type 'help' for available commands."
     ]);
     const [input, setInput] = useState('');
     const [matrixMode, setMatrixMode] = useState(false);
@@ -167,7 +169,7 @@ const Terminal = () => {
     };
 
     const handleCommand = (cmd) => {
-        const result = executeCommand(cmd);
+        const result = executeCommand(cmd, new Date(), lang);
         const echo = `C:\\Users\\Guest> ${cmd}`;
         let output = [];
 
@@ -183,7 +185,9 @@ const Terminal = () => {
                 break;
             case 'matrix':
                 setMatrixMode(prev => !prev);
-                output = [!matrixMode ? "Entering the Matrix..." : "Matrix disabled."];
+                output = [!matrixMode
+                    ? (lang === 'tr' ? "Matrix'e giriliyor..." : "Entering the Matrix...")
+                    : (lang === 'tr' ? "Matrix kapatıldı." : "Matrix disabled.")];
                 break;
             case 'neofetch':
                 output = [renderNeofetch()];

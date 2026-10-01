@@ -1,10 +1,12 @@
 // Pure calendar helpers for the taskbar clock popup.
 
-export const WEEKDAYS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
-export const MONTHS = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December'
-];
+// Localized names (Sunday-first weekdays, like the grid).
+export const monthName = (lang, month) =>
+    new Intl.DateTimeFormat(lang, { month: 'long' }).format(new Date(2000, month, 1));
+
+export const weekdayNames = (lang) =>
+    Array.from({ length: 7 }, (_, i) =>
+        new Intl.DateTimeFormat(lang, { weekday: 'short' }).format(new Date(2000, 0, 2 + i)));
 
 export const daysInMonth = (year, month) => new Date(year, month + 1, 0).getDate();
 

@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useOS } from './context/OSContext';
+import { useLanguage } from './context/LanguageContext';
 import Desktop from './components/Desktop';
 import Window from './components/Window'; // Eksik olan buydu!
 import BootScreen from './components/BootScreen';
@@ -28,6 +29,7 @@ function App() {
     return zIndexCounterRef.current;
   };
   const [isStartOpen, setIsStartOpen] = useState(false);
+  const { t } = useLanguage();
   const { volume, playSound } = useOS(); // Use Global Volume from Context
   const [switcher, setSwitcher] = useState(null); // { ids, index } while Alt+` is held
   const closingIdsRef = useRef(new Set());
@@ -52,7 +54,7 @@ function App() {
 
   const handleIconClick = (title, content, options = {}) => {
     // Aynı pencereden birden fazla açılmasın diye kontrol
-    const id = title.toLowerCase().replace(/\s/g, '');
+    const id = options.id || title.toLowerCase().replace(/\s/g, '');
     const existing = openWindows.find(w => w.id === id);
 
     if (existing) {
@@ -245,7 +247,7 @@ function App() {
               fontFamily: 'gokalppoOS'
             }}>
               <img src={windowsLogo} alt="Logo" style={{ width: '100px', marginBottom: '20px' }} />
-              <h2 style={{ fontSize: '24px' }}>Windows is shutting down...</h2>
+              <h2 style={{ fontSize: '24px' }}>{t('shutdown.message')}</h2>
             </div>
           )}
 

@@ -75,7 +75,7 @@ describe('executeCommand', () => {
 
     it('formats the date from the injected clock', () => {
         const now = new Date(2024, 0, 15, 9, 30, 0);
-        expect(executeCommand('date', now).lines).toEqual([now.toLocaleString()]);
+        expect(executeCommand('date', now).lines).toEqual([now.toLocaleString('en')]);
     });
 
     it('keeps the AI detector accuracy consistent with the Gallery (97.2%)', () => {
@@ -86,5 +86,19 @@ describe('executeCommand', () => {
 
     it('prints the contact email', () => {
         expect(executeCommand('contact').lines.join('\n')).toContain('ekergokalp@gmail.com');
+    });
+
+    it('answers in Turkish when asked to', () => {
+        expect(executeCommand('Foo', new Date(), 'tr').lines[0]).toBe('Komut bulunamadı: foo');
+        expect(executeCommand('help', new Date(), 'tr').lines[0]).toMatch(/Komutlar/);
+        expect(executeCommand('projects', new Date(), 'tr').lines.join('\n')).toContain('97,2');
+        expect(executeCommand('about', new Date(), 'tr').lines.join('\n')).toMatch(/geliştirici/);
+    });
+
+    it('builds the project list from the shared project data', () => {
+        const lines = executeCommand('projects').lines.join('\n');
+        for (const title of ['IoT Smart Air Quality', 'Hardware TOTP Token', 'Document Scanner', 'AI Image Detector', 'CindraNet']) {
+            expect(lines).toContain(title);
+        }
     });
 });

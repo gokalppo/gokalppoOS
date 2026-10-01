@@ -1,24 +1,26 @@
 import { useState } from 'react';
-import { WEEKDAYS, MONTHS, buildMonthGrid, shiftMonth, isSameDay } from './calendar';
+import { monthName, weekdayNames, buildMonthGrid, shiftMonth, isSameDay } from './calendar';
+import { useLanguage } from '../context/LanguageContext';
 import './CalendarPopup.css';
 
 // Win98 "Date/Time Properties"-style calendar opened from the taskbar clock.
 const CalendarPopup = ({ now }) => {
+    const { t, lang } = useLanguage();
     const [view, setView] = useState({ year: now.getFullYear(), month: now.getMonth() });
     const grid = buildMonthGrid(view.year, view.month);
     const go = (delta) => setView((v) => shiftMonth(v.year, v.month, delta));
 
     return (
         <div className="calendar-popup" onClick={(e) => e.stopPropagation()}>
-            <div className="calendar-title">Date/Time</div>
+            <div className="calendar-title">{t('calendar.title')}</div>
             <div className="calendar-nav">
-                <button className="calendar-btn" onClick={() => go(-1)} title="Previous month">◀</button>
-                <span className="calendar-month">{MONTHS[view.month]} {view.year}</span>
-                <button className="calendar-btn" onClick={() => go(1)} title="Next month">▶</button>
+                <button className="calendar-btn" onClick={() => go(-1)} title={t('calendar.prev')}>◀</button>
+                <span className="calendar-month">{monthName(lang, view.month)} {view.year}</span>
+                <button className="calendar-btn" onClick={() => go(1)} title={t('calendar.next')}>▶</button>
             </div>
             <table className="calendar-grid">
                 <thead>
-                    <tr>{WEEKDAYS.map((d) => <th key={d}>{d}</th>)}</tr>
+                    <tr>{weekdayNames(lang).map((d) => <th key={d}>{d}</th>)}</tr>
                 </thead>
                 <tbody>
                     {grid.map((week, wi) => (
@@ -39,8 +41,8 @@ const CalendarPopup = ({ now }) => {
                 </tbody>
             </table>
             <div className="calendar-time">
-                {now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-                <span className="calendar-date">{now.toLocaleDateString([], { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</span>
+                {now.toLocaleTimeString(lang, { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                <span className="calendar-date">{now.toLocaleDateString(lang, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</span>
             </div>
         </div>
     );

@@ -4,13 +4,16 @@ import './index.css'
 import App from './App.jsx'
 import { OSProvider } from './context/OSContext';
 import { FileSystemProvider } from './context/FileSystemContext';
+import { LanguageProvider } from './context/LanguageContext';
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <OSProvider>
-      <FileSystemProvider>
-        <App />
-      </FileSystemProvider>
-    </OSProvider>
+    <LanguageProvider>
+      <OSProvider>
+        <FileSystemProvider>
+          <App />
+        </FileSystemProvider>
+      </OSProvider>
+    </LanguageProvider>
   </StrictMode>,
 )

@@ -1,7 +1,9 @@
 import React, { useState, useRef } from 'react';
 import './Contact.css';
+import { useLanguage } from '../../context/LanguageContext';
 
 const Contact = () => {
+    const { t } = useLanguage();
     const [copyState, setCopyState] = useState('idle'); // 'idle' | 'copied' | 'manual'
     const copyTimer = useRef(null);
     const emailInputRef = useRef(null);
@@ -23,7 +25,7 @@ const Contact = () => {
         <div className="contact-container">
             {/* Email Section */}
             <div className="contact-section top-section">
-                <label className="contact-label">Email Address:</label>
+                <label className="contact-label">{t('contact.emailLabel')}</label>
                 <div className="email-row-integrated">
                     <input
                         type="text"
@@ -32,8 +34,8 @@ const Contact = () => {
                         ref={emailInputRef}
                         className="email-input-integrated"
                     />
-                    <button className="copy-btn-integrated" onClick={copyEmail} title="Copy Email">
-                        {copyState === 'copied' ? 'Copied!' : copyState === 'manual' ? 'Ctrl+C' : 'Copy'}
+                    <button className="copy-btn-integrated" onClick={copyEmail} title={t('contact.copyTitle')}>
+                        {copyState === 'copied' ? t('contact.copied') : copyState === 'manual' ? t('contact.ctrlC') : t('contact.copy')}
                     </button>
                 </div>
 
@@ -41,14 +43,14 @@ const Contact = () => {
 
             {/* Social Links Section */}
             <fieldset className="contact-section bottom-section">
-                <legend style={{ padding: '0 4px' }}>Socials</legend>
+                <legend style={{ padding: '0 4px' }}>{t('contact.socials')}</legend>
                 <div className="social-icons">
                     <a
                         href="https://github.com/gokalppo"
                         target="_blank"
                         rel="noopener noreferrer"
                         className="social-link github"
-                        title="Follow me on GitHub"
+                        title={t('contact.github')}
                     >
                         {/* GitHub Icon SVG */}
                         <svg viewBox="0 0 24 24" width="48" height="48">
@@ -61,7 +63,7 @@ const Contact = () => {
                         target="_blank"
                         rel="noopener noreferrer"
                         className="social-link linkedin"
-                        title="Connect on LinkedIn"
+                        title={t('contact.linkedin')}
                     >
                         {/* LinkedIn Icon SVG - Retro Blue */}
                         <svg viewBox="0 0 24 24" width="48" height="48">
@@ -74,7 +76,7 @@ const Contact = () => {
                         target="_blank"
                         rel="noopener noreferrer"
                         className="social-link instagram"
-                        title="Check my Instagram"
+                        title={t('contact.instagram')}
                     >
                         {/* Instagram Icon SVG - Minimalist/Retro Version */}
                         <svg viewBox="0 0 24 24" width="48" height="48">

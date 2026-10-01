@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useOS } from '../context/OSContext';
+import { useLanguage } from '../context/LanguageContext';
 import StartMenu from './StartMenu';
 import { playSystemSound } from '../audio/systemSounds';
 import CalendarPopup from './CalendarPopup';
@@ -20,6 +21,7 @@ const Taskbar = ({
     onShutdown // Add this prop
 }) => {
     const { volume, setGlobalVolume, soundsEnabled, setSoundsEnabled, playSound } = useOS(); // Use Audio Driver
+    const { t, lang, toggleLang } = useLanguage();
     const [time, setTime] = useState(new Date());
     const [contextMenu, setContextMenu] = useState(null); // { x, y, windowId }
     const [isVolumeOpen, setIsVolumeOpen] = useState(false);
@@ -120,7 +122,7 @@ const Taskbar = ({
     };
 
     const formatTime = (date) => {
-        return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        return date.toLocaleTimeString(lang, { hour: '2-digit', minute: '2-digit' });
     };
 
     const toggleFullScreen = (e) => {
@@ -190,14 +192,14 @@ const Taskbar = ({
                     style={{ left: contextMenu.x, top: contextMenu.y }}
                     onClick={(e) => e.stopPropagation()}
                 >
-                    <div className="taskbar-context-item" onClick={handleCloseFromMenu}>Close</div>
+                    <div className="taskbar-context-item" onClick={handleCloseFromMenu}>{t('window.close')}</div>
                 </div>
             )}
 
             {/* Volume Panel */}
             {isVolumeOpen && (
                 <div className="volume-panel" onClick={(e) => e.stopPropagation()}>
-                    <div className="volume-title">Volume</div>
+                    <div className="volume-title">{t('taskbar.volume')}</div>
                     <div className="volume-content-row">
                         {/* Volume Ramp Graphic */}
                         <div className="volume-ramp">
@@ -228,7 +230,7 @@ const Taskbar = ({
                             checked={volume === 0}
                             onChange={handleMuteChange}
                         />
-                        <label htmlFor="mute-check">Mute</label>
+                        <label htmlFor="mute-check">{t('volume.mute')}</label>
                     </div>
                     <div className="volume-mute-container">
                         <input
@@ -237,7 +239,7 @@ const Taskbar = ({
                             checked={soundsEnabled}
                             onChange={handleSoundsToggle}
                         />
-                        <label htmlFor="system-sounds-check">System sounds</label>
+                        <label htmlFor="system-sounds-check">{t('volume.systemSounds')}</label>
                     </div>
                 </div>
             )}
@@ -258,7 +260,7 @@ const Taskbar = ({
                     />
                     Start
                 </button>
-                <button className="show-desktop-btn" onClick={(e) => { e.stopPropagation(); onShowDesktop && onShowDesktop(); }} title="Show Desktop">
+                <button className="show-desktop-btn" onClick={(e) => { e.stopPropagation(); onShowDesktop && onShowDesktop(); }} title={t('taskbar.showDesktop')}>
                     <svg width="16" height="14" viewBox="0 0 16 14" style={{ display: 'block' }}>
                         <rect x="1" y="1" width="14" height="9" fill="#008080" stroke="#000" />
                         <rect x="5" y="11" width="6" height="2" fill="#808080" />
@@ -278,21 +280,24 @@ const Taskbar = ({
                     ))}
                 </div>
                 <div className="tray-area">
-                    <div className="tray-icon" title={isOnline ? 'Connected to the network' : 'No network connection'}>
+                    <div className="tray-icon tray-lang" onClick={(e) => { e.stopPropagation(); toggleLang(); }} title={t('taskbar.language')}>
+                        {lang.toUpperCase()}
+                    </div>
+                    <div className="tray-icon" title={isOnline ? t('taskbar.networkOn') : t('taskbar.networkOff')}>
                         <span className={`tray-network ${isOnline ? '' : 'offline'}`}>{isOnline ? '🌐' : '⛔'}</span>
                     </div>
                     {visitorCount !== null && (
-                        <div className="tray-icon" title={`Site visitors: ${visitorCount}`}>👥</div>
+                        <div className="tray-icon" title={t('taskbar.visitors', { count: visitorCount })}>👥</div>
                     )}
-                    <div className={`tray-icon ${isVolumeOpen ? 'active' : ''}`} onClick={toggleVolume} title="Volume">
+                    <div className={`tray-icon ${isVolumeOpen ? 'active' : ''}`} onClick={toggleVolume} title={t('taskbar.volume')}>
                         <img
                             src={volumePercent === 0 ? mutedIcon : loudIcon}
                             alt="Volume"
                             style={{ width: '16px', height: '16px' }}
                         />
                     </div>
-                    <div className="tray-icon" onClick={toggleFullScreen} title="Full Screen">🖥️</div>
-                    <div className="tray-clock" onClick={toggleCalendar} title={time.toLocaleDateString([], { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}>
+                    <div className="tray-icon" onClick={toggleFullScreen} title={t('taskbar.fullScreen')}>🖥️</div>
+                    <div className="tray-clock" onClick={toggleCalendar} title={time.toLocaleDateString(lang, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}>
                         {formatTime(time)}
                     </div>
                 </div>

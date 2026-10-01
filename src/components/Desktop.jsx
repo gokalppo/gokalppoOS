@@ -3,6 +3,7 @@ import Draggable from 'react-draggable';
 import Taskbar from './Taskbar';
 import Window from './Window';
 import ErrorBoundary from './ErrorBoundary';
+import { useLanguage } from '../context/LanguageContext';
 import PlaceholderApp from './apps/PlaceholderApp';
 import Contact from './apps/Contact';
 import MyResume from './apps/MyResume';
@@ -41,16 +42,19 @@ const Messenger = lazy(() => import('./apps/messenger/MessengerContainer'));
 // before the desktop can even render.
 const VisitorCounter = lazy(() => import('./VisitorCounter'));
 
-const AppLoadingFallback = () => (
+const AppLoadingFallback = () => {
+    const { t } = useLanguage();
+    return (
     <div style={{
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         height: '100%', width: '100%', fontFamily: 'gokalppoOS, sans-serif',
         fontSize: '13px', color: '#404040', gap: '8px'
     }}>
         <span className="app-loading-spinner" />
-        Loading...
+        {t('window.loading')}
     </div>
-);
+    );
+};
 
 const ICON_POSITIONS_KEY = 'gokalppoOS_iconPositions';
 const RESET_ANIMATION_MS = 350;
@@ -112,6 +116,7 @@ const Desktop = ({
     toggleStart,
     onShutdown // Receive here
 }) => {
+    const { t } = useLanguage();
     // Initial App Data
     // Opens a .txt file from the file system in its own Notepad window.
     const handleOpenFile = (node) => {
@@ -447,7 +452,7 @@ const Desktop = ({
                     onMouseDown={(e) => e.stopPropagation()}
                 >
                     <div className="desktop-context-item" onClick={handleResetIconPositions}>
-                        Arrange Icons (Reset Positions)
+                        {t('desktop.arrangeIcons')}
                     </div>
                 </div>
             )}
@@ -501,7 +506,7 @@ const Desktop = ({
                     {/* SAFELY RENDER CONTENT — lazy-loaded apps resolve inside this boundary */}
                     <ErrorBoundary title={win.title} onClose={() => onCloseWindow(win.id)}>
                         <Suspense fallback={<AppLoadingFallback />}>
-                            {win.content ? win.content : <div style={{ padding: '20px' }}>Content Loading Error...</div>}
+                            {win.content ? win.content : <div style={{ padding: '20px' }}>{t('window.contentError')}</div>}
                         </Suspense>
                     </ErrorBoundary>
                 </Window>

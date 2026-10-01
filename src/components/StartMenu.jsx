@@ -1,5 +1,6 @@
 import { lazy } from 'react';
 import './StartMenu.css';
+import { useLanguage } from '../context/LanguageContext';
 import documentsIcon from '../assets/images/documents.png';
 import helpIcon from '../assets/images/help.png';
 import computerIcon from '../assets/images/This_PC_1995.svg';
@@ -10,6 +11,7 @@ const OutlookExpress = lazy(() => import('./apps/OutlookExpress'));
 const SystemProperties = lazy(() => import('./apps/SystemProperties'));
 
 const StartMenu = ({ isOpen, onClose, onLaunch, onShutdown }) => {
+  const { t } = useLanguage();
 
   if (!isOpen) return null;
 
@@ -27,26 +29,26 @@ const StartMenu = ({ isOpen, onClose, onLaunch, onShutdown }) => {
         <span className="os-version">gokalppoOS</span>
       </div>
       <div className="start-content">
-        <div className="start-item" onClick={() => handleLaunch("System Properties", <SystemProperties />, {
-          width: '430px', height: '470px', minWidth: '430px', minHeight: '470px', resizable: false,
+        <div className="start-item" onClick={() => handleLaunch(t('start.systemProperties'), <SystemProperties />, {
+          id: 'systemproperties', width: '430px', height: '470px', minWidth: '430px', minHeight: '470px', resizable: false,
           bodyStyle: { padding: 0 }, icon: <img src={computerIcon} alt="System Properties" />
         })}>
           <span className="icon"><img src={computerIcon} alt="" style={{ width: '24px' }} /></span>
-          <span className="label">System Properties</span>
+          <span className="label">{t('start.systemProperties')}</span>
         </div>
-        <div className="start-item" onClick={() => handleLaunch("Documents", <div>My Documents folder...</div>)}>
+        <div className="start-item" onClick={() => handleLaunch(t('start.documents'), <div>{t('start.documentsStub')}</div>, { id: 'documents' })}>
           <span className="icon"><img src={documentsIcon} alt="" style={{ width: '24px' }} /></span>
-          <span className="label">Documents</span>
+          <span className="label">{t('start.documents')}</span>
           <span className="arrow">▶</span>
         </div>
         <div className="start-item" onClick={() => handleLaunch("New Message", <OutlookExpress />, { width: '500px', height: '400px', icon: <img src={helpIcon} alt="Help" /> })}>
           <span className="icon"><img src={helpIcon} alt="" style={{ width: '24px' }} /></span>
-          <span className="label">Help</span>
+          <span className="label">{t('start.help')}</span>
         </div>
         <div className="divider"></div>
         <div className="start-item" onClick={() => onShutdown && onShutdown('shutdown')}>
           <span className="icon">🛑</span>
-          <span className="label">Shut Down...</span>
+          <span className="label">{t('start.shutdown')}</span>
         </div>
       </div>
     </div>

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildMonthGrid, daysInMonth, shiftMonth, isSameDay } from './calendar';
+import { buildMonthGrid, daysInMonth, shiftMonth, isSameDay, monthName, weekdayNames } from './calendar';
 
 describe('daysInMonth', () => {
     it('handles regular, 30-day and leap-year months', () => {
@@ -52,5 +52,19 @@ describe('isSameDay', () => {
     it('compares calendar days, ignoring time', () => {
         expect(isSameDay(new Date(2026, 9, 1, 3), new Date(2026, 9, 1, 22))).toBe(true);
         expect(isSameDay(new Date(2026, 9, 1), new Date(2026, 9, 2))).toBe(false);
+    });
+});
+
+describe('localized names', () => {
+    it('gives English and Turkish month names', () => {
+        expect(monthName('en', 9)).toBe('October');
+        expect(monthName('tr', 9)).toBe('Ekim');
+    });
+
+    it('lists seven weekdays, Sunday first', () => {
+        const en = weekdayNames('en');
+        expect(en).toHaveLength(7);
+        expect(en[0].toLowerCase()).toContain('sun');
+        expect(weekdayNames('tr')[0].toLowerCase()).toContain('paz');
     });
 });

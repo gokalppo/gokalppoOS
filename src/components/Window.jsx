@@ -1,6 +1,7 @@
 import React, { useRef, useState, useLayoutEffect } from 'react';
 import Draggable from 'react-draggable';
 import { useOS } from '../context/OSContext';
+import { useLanguage } from '../context/LanguageContext';
 import {
     TASKBAR_HEIGHT,
     RESIZE_HANDLES,
@@ -46,6 +47,7 @@ const Window = ({
     minHeight
 }) => {
     const { playSound } = useOS();
+    const { t } = useLanguage();
     const nodeRef = useRef(null);
     const resizeRef = useRef(null);
     const minimizeAnimRef = useRef(null);
@@ -207,7 +209,7 @@ const Window = ({
                     <div className="title-bar-text">{title}</div>
                     <div className="title-bar-controls">
                         <button
-                            title="Minimize"
+                            title={t('window.minimize')}
                             onClick={(e) => { e.stopPropagation(); onMinimize && onMinimize(id); }}
                             onMouseDown={(e) => e.stopPropagation()}
                             className="minimize-button"
@@ -217,7 +219,7 @@ const Window = ({
                             </svg>
                         </button>
                         <button
-                            title={maximized ? 'Restore' : 'Maximize'}
+                            title={maximized ? t('window.restore') : t('window.maximize')}
                             onClick={toggleMaximize}
                             onMouseDown={(e) => e.stopPropagation()}
                             className={`maximize-button ${!resizable ? 'disabled' : ''}`}
@@ -244,7 +246,7 @@ const Window = ({
                             )}
                         </button>
                         <button
-                            title="Close"
+                            title={t('window.close')}
                             onClick={(e) => { e.stopPropagation(); onClose && onClose(id); }}
                             onMouseDown={(e) => e.stopPropagation()}
                             className="close-button"

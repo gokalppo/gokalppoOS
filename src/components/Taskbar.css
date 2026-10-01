@@ -267,4 +267,5 @@
 .show-desktop-btn:active { border-color: #404040 #fff #fff #404040; }
 
 .tray-clock { cursor: pointer; }
+.tray-lang { font-family: 'Pixel', sans-serif; font-size: 11px; font-weight: bold; min-width: 18px; text-align: center; }
 .tray-network.offline { filter: grayscale(1); }

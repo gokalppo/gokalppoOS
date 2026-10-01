@@ -1,0 +1,135 @@
+// UI strings. Keep `en` and `tr` in sync — translations.test.js enforces it.
+// Program names (Paint, Terminal, Minesweeper, ...) are proper names and stay untranslated.
+
+export const translations = {
+    en: {
+        'window.minimize': 'Minimize',
+        'window.maximize': 'Maximize',
+        'window.restore': 'Restore',
+        'window.close': 'Close',
+        'window.loading': 'Loading...',
+        'window.contentError': 'Content Loading Error...',
+
+        'start.systemProperties': 'System Properties',
+        'start.documents': 'Documents',
+        'start.help': 'Help',
+        'start.shutdown': 'Shut Down...',
+        'start.documentsStub': 'My Documents folder...',
+
+        'desktop.arrangeIcons': 'Arrange Icons (Reset Positions)',
+        'shutdown.message': 'Windows is shutting down...',
+
+        'taskbar.showDesktop': 'Show Desktop',
+        'taskbar.volume': 'Volume',
+        'taskbar.fullScreen': 'Full Screen',
+        'taskbar.networkOn': 'Connected to the network',
+        'taskbar.networkOff': 'No network connection',
+        'taskbar.visitors': 'Site visitors: {count}',
+        'taskbar.language': 'Language: English (click for Türkçe)',
+        'volume.mute': 'Mute',
+        'volume.systemSounds': 'System sounds',
+        'calendar.title': 'Date/Time',
+        'calendar.prev': 'Previous month',
+        'calendar.next': 'Next month',
+
+        'crash.message': '{title} has performed an illegal operation and will be shut down.',
+        'crash.vendor': 'If the problem persists, contact the program vendor.',
+        'crash.close': 'Close',
+        'crash.tryAgain': 'Try Again',
+        'crash.details': 'Details >>',
+        'crash.hideDetails': 'Hide Details',
+
+        'contact.copy': 'Copy',
+        'contact.copied': 'Copied!',
+        'contact.ctrlC': 'Ctrl+C',
+        'contact.copyTitle': 'Copy Email',
+        'contact.emailLabel': 'Email Address:',
+        'contact.socials': 'Socials',
+        'contact.github': 'Follow me on GitHub',
+        'contact.linkedin': 'Connect on LinkedIn',
+        'contact.instagram': 'Check my Instagram',
+
+        'gallery.viewer': 'Image Viewer',
+
+        'sp.tab.general': 'General',
+        'sp.tab.deviceManager': 'Device Manager',
+        'sp.system': 'System:',
+        'sp.registeredTo': 'Registered to:',
+        'sp.computer': 'Computer:',
+        'sp.deviceType': 'Device type:',
+        'sp.usedIn': 'Used in:',
+        'sp.status': 'Device status: This device is working properly.',
+        'sp.hint': 'Select a device to see where it is used.',
+        'sp.ok': 'OK',
+        'sp.cancel': 'Cancel',
+
+        'clippy.close': 'Close',
+        'clippy.click': 'Click me',
+        'clippy.hide': 'Hide the assistant'
+    },
+    tr: {
+        'window.minimize': 'Küçült',
+        'window.maximize': 'Büyüt',
+        'window.restore': 'Eski Boyut',
+        'window.close': 'Kapat',
+        'window.loading': 'Yükleniyor...',
+        'window.contentError': 'İçerik yüklenemedi...',
+
+        'start.systemProperties': 'Sistem Özellikleri',
+        'start.documents': 'Belgeler',
+        'start.help': 'Yardım',
+        'start.shutdown': 'Bilgisayarı Kapat...',
+        'start.documentsStub': 'Belgelerim klasörü...',
+
+        'desktop.arrangeIcons': 'Simgeleri Düzenle (Konumları Sıfırla)',
+        'shutdown.message': 'Windows kapatılıyor...',
+
+        'taskbar.showDesktop': 'Masaüstünü Göster',
+        'taskbar.volume': 'Ses',
+        'taskbar.fullScreen': 'Tam Ekran',
+        'taskbar.networkOn': 'Ağa bağlı',
+        'taskbar.networkOff': 'Ağ bağlantısı yok',
+        'taskbar.visitors': 'Site ziyaretçisi: {count}',
+        'taskbar.language': 'Dil: Türkçe (English için tıklayın)',
+        'volume.mute': 'Sessiz',
+        'volume.systemSounds': 'Sistem sesleri',
+        'calendar.title': 'Tarih/Saat',
+        'calendar.prev': 'Önceki ay',
+        'calendar.next': 'Sonraki ay',
+
+        'crash.message': '{title} geçersiz bir işlem gerçekleştirdi ve kapatılacak.',
+        'crash.vendor': 'Sorun devam ederse program üreticisiyle iletişime geçin.',
+        'crash.close': 'Kapat',
+        'crash.tryAgain': 'Yeniden Dene',
+        'crash.details': 'Ayrıntılar >>',
+        'crash.hideDetails': 'Ayrıntıları Gizle',
+
+        'contact.copy': 'Kopyala',
+        'contact.copied': 'Kopyalandı!',
+        'contact.ctrlC': 'Ctrl+C',
+        'contact.copyTitle': 'E-postayı Kopyala',
+        'contact.emailLabel': 'E-posta Adresi:',
+        'contact.socials': 'Sosyal Medya',
+        'contact.github': 'GitHub\'da takip edin',
+        'contact.linkedin': 'LinkedIn\'de bağlanın',
+        'contact.instagram': 'Instagram\'ıma göz atın',
+
+        'gallery.viewer': 'Görüntü Görüntüleyici',
+
+        'sp.tab.general': 'Genel',
+        'sp.tab.deviceManager': 'Aygıt Yöneticisi',
+        'sp.system': 'Sistem:',
+        'sp.registeredTo': 'Kayıtlı kullanıcı:',
+        'sp.computer': 'Bilgisayar:',
+        'sp.deviceType': 'Aygıt türü:',
+        'sp.usedIn': 'Kullanıldığı yer:',
+        'sp.status': 'Aygıt durumu: Bu aygıt düzgün çalışıyor.',
+        'sp.hint': 'Nerede kullanıldığını görmek için bir aygıt seçin.',
+        'sp.ok': 'Tamam',
+        'sp.cancel': 'İptal',
+
+        'clippy.close': 'Kapat',
+        'clippy.click': 'Bana tıklayın',
+        'clippy.hide': 'Asistanı gizle'
+    }
+};

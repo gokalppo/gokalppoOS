@@ -1,74 +1,9 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import './Clippy.css';
+import { useLanguage } from '../context/LanguageContext';
+import { getClippyTips } from '../i18n/clippyTips';
 
-const TIPS = {
-    notepad: [
-        "Görünüşe göre bir şeyler yazıyorsunuz. Yardımcı olmamı ister misiniz?",
-        "İpucu: File > Save As... ile dosyalarınızı My Documents'e kaydedebilirsiniz.",
-        "Yazdıklarınızı unutmayın — düzenli kaydetmek iyi bir alışkanlıktır!"
-    ],
-    paint: [
-        "Sanatçı ruhunuz depreşti galiba! Kova aracını denediniz mi?",
-        "İpucu: Şekil çizerken Undo ile son hamlenizi geri alabilirsiniz.",
-        "Tuvalin köşelerine kadar özgürce çizebilirsiniz."
-    ],
-    terminal: [
-        "Hacker modundasınız galiba! 'help' yazarak komutları görebilirsiniz.",
-        "Gizli bir komut var: 'neofetch' deneyin.",
-        "'sudo' yazmayı deneyen çok oldu, sizden önce de denediler..."
-    ],
-    messenger: [
-        "Birileriyle mi sohbet ediyorsunuz? 'Nudge' özelliğini deneyin!",
-        "İpucu: Sağ tık ile bir kullanıcıyı arkadaş olarak ekleyebilirsiniz.",
-        "MSN günlerini özleyenlere selam olsun."
-    ],
-    minesweeper: [
-        "Dikkatli olun, mayınlara basmayın!",
-        "İpucu: Sağ tık ile bayrak koyabilirsiniz.",
-        "Rekor süreniz kaç saniye?"
-    ],
-    gallery: [
-        "Projelerimi mi inceliyorsunuz? Favori hangisi?",
-        "CindraNet'e bakmayı unutmayın, en çok emek verdiğim proje.",
-        "Her projenin altında kullandığım teknolojiler de yazıyor."
-    ],
-    mycomputer: [
-        "Dosyalarınızı düzenli tutmayı unutmayın!",
-        "İpucu: Sağ tıklayarak yeni klasör veya dosya oluşturabilirsiniz.",
-        "Yanlışlıkla bir şey mi sildiniz? Recycle Bin'e bakın."
-    ],
-    recyclebin: [
-        "Sildiğiniz dosyalar burada bekliyor, geri yükleyebilirsiniz.",
-        "İpucu: Bir dosyaya sağ tıklayıp 'Restore' diyebilirsiniz."
-    ],
-    contact: [
-        "Benimle iletişime geçmek mi istiyorsunuz? Harika, çekinmeyin!",
-        "E-postamı kopyalamak için butona tıklamanız yeterli."
-    ],
-    myresume: [
-        "CV'mi mi inceliyorsunuz? Umarım beğenirsiniz!",
-        "Terminal'den 'resume' yazarak da açabilirsiniz."
-    ],
-    systemproperties: [
-        "Hangi teknolojiyi hangi projede kullandığımı görmek için Device Manager sekmesine bakın.",
-        "Bir cihaza (teknolojiye) tıklayın, nerede kullanıldığı altta yazıyor."
-    ],
-    musicplayer: [
-        "Müzik mi dinliyorsunuz? İyi seçim.",
-        "İpucu: Ses seviyesini taskbar'daki hoparlör ikonundan da ayarlayabilirsiniz."
-    ],
-    default: [
-        "Merhaba! Ben gokalppoOS'un asistanıyım. Bir simgeye çift tıklayarak başlayabilirsiniz.",
-        "İpucu: Masaüstüne sağ tıklayıp ikonları düzenleyebilirsiniz.",
-        "Gizli bir kod var: yön tuşları + B + A. Denemekten zarar gelmez.",
-        "Terminal'i açıp 'help' yazarsanız neler yapabileceğinizi görürsünüz.",
-        "Pencereleri kenarlarından boyutlandırabilir, Alt + ` ile pencereler arasında geçebilirsiniz.",
-        "Hoparlör ikonuna tıklayıp 'System sounds' kutusunu işaretlerseniz sistem sesleri açılır.",
-        "Saate tıklarsanız takvim açılır."
-    ]
-};
-
-const resolveCategory = (openWindows, focusedWindowId) => {
+const resolveCategory = (TIPS, openWindows, focusedWindowId) => {
     const win = openWindows.find((w) => w.id === focusedWindowId);
     if (!win) return 'default';
     if (win.id === 'computer') return 'mycomputer';
@@ -79,6 +14,8 @@ const resolveCategory = (openWindows, focusedWindowId) => {
 };
 
 const Clippy = ({ openWindows, focusedWindowId }) => {
+    const { lang, t } = useLanguage();
+    const TIPS = getClippyTips(lang);
     const [visible, setVisible] = useState(false);
     const [bubbleOpen, setBubbleOpen] = useState(false);
     const [message, setMessage] = useState('');
@@ -92,7 +29,7 @@ const Clippy = ({ openWindows, focusedWindowId }) => {
         const text = pool[Math.floor(Math.random() * pool.length)];
         setMessage(text);
         setBubbleOpen(true);
-    }, []);
+    }, [TIPS]);
 
     // Appear shortly after boot, with a friendly greeting.
     useEffect(() => {
@@ -107,12 +44,12 @@ const Clippy = ({ openWindows, focusedWindowId }) => {
     // React to the user opening a different app (not every refocus of the same one).
     useEffect(() => {
         if (!visible) return;
-        const category = resolveCategory(openWindows, focusedWindowId);
+        const category = resolveCategory(TIPS, openWindows, focusedWindowId);
         if (category !== lastCategoryRef.current) {
             lastCategoryRef.current = category;
             if (focusedWindowId) showTipForCategory(category);
         }
-    }, [openWindows, focusedWindowId, visible, showTipForCategory]);
+    }, [TIPS, openWindows, focusedWindowId, visible, showTipForCategory]);
 
     // Idle blink animation.
     useEffect(() => {
@@ -142,25 +79,25 @@ const Clippy = ({ openWindows, focusedWindowId }) => {
 
     if (!visible) return null;
 
-    const category = resolveCategory(openWindows, focusedWindowId);
+    const category = resolveCategory(TIPS, openWindows, focusedWindowId);
 
     return (
         <div className="clippy-root">
             {bubbleOpen && (
                 <div className="clippy-bubble">
-                    <button className="clippy-bubble-close" onClick={() => setBubbleOpen(false)} title="Kapat">×</button>
+                    <button className="clippy-bubble-close" onClick={() => setBubbleOpen(false)} title={t('clippy.close')}>×</button>
                     <div className="clippy-bubble-text">{message}</div>
                 </div>
             )}
             <div
                 className="clippy-character"
                 onClick={() => showTipForCategory(category)}
-                title="Bana tıklayın"
+                title={t('clippy.click')}
             >
                 <button
                     className="clippy-dismiss"
                     onClick={(e) => { e.stopPropagation(); setVisible(false); }}
-                    title="Asistanı gizle"
+                    title={t('clippy.hide')}
                 >×</button>
                 <svg viewBox="0 0 110 160" width="66" height="96" className="clippy-svg">
                     <defs>

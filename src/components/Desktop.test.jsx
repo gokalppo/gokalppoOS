@@ -115,7 +115,7 @@ describe('Desktop file opening', () => {
         setup();
         const ids = getPrograms().map((p) => p.id);
         expect(ids).toEqual(expect.arrayContaining(['notepad', 'paint', 'solitaire', 'internetexplorer', 'messenger']));
-        const { lines } = executeCommand('ls', new Date(), 'en', getPrograms());
+        const { lines } = executeCommand('apps', new Date(), 'en', { programs: getPrograms() });
         expect(lines).toContain('  My Computer');
         expect(lines).toContain('  Recycle Bin');
         expect(lines).toContain('  Paint.exe');

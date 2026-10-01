@@ -12,6 +12,8 @@ import TaskSwitcher from './components/TaskSwitcher';
 import { trackAppOpen } from './analytics/appUsage';
 import { prefersReducedMotion } from './display/motion';
 import { useStartActions } from './components/startActions';
+import { CLOSE_APP_EVENT } from './components/appBus';
+import { setWindows } from './components/windowRegistry';
 import { isWelcomeHidden } from './components/apps/welcomeStorage';
 import { nextFocusAfterMinimize, switcherOrder, nextSwitcherIndex } from './components/windowUtils';
 import './App.css';
@@ -143,6 +145,18 @@ function App() {
       setTimeout(remove, 140);
     }
   };
+
+  // The Terminal's tasklist/kill look at the open windows and can close one.
+  const closeWindowRef = useRef(closeWindow);
+  useEffect(() => {
+    closeWindowRef.current = closeWindow;
+    setWindows(openWindows);
+  });
+  useEffect(() => {
+    const handleCloseApp = (e) => closeWindowRef.current(e.detail.id);
+    window.addEventListener(CLOSE_APP_EVENT, handleCloseApp);
+    return () => window.removeEventListener(CLOSE_APP_EVENT, handleCloseApp);
+  }, []);
 
   // Alt+` (or Alt+Tab where the browser lets it through) cycles windows; releasing Alt picks one.
   const switcherRef = useRef(null);

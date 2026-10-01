@@ -35,7 +35,7 @@ Instead of a static page of cards, my portfolio is a tiny operating system runni
 | --- | --- |
 | **My Resume** | Embedded PDF resume |
 | **Gallery** | Project showcase with tech-stack badges |
-| **Terminal** | Real commands: `help`, `about`, `projects`, `github`, `linkedin`, `resume`, `contact`, `neofetch`, `matrix`, `ls`, `date`, `clear` |
+| **Terminal** | A small shell wired into the OS: `cd`, `ls`, `pwd`, `tree`, `cat`, `mkdir`, `touch`, `cp`, `mv`, `rm` work on the same files as My Computer (`rm` sends to the Recycle Bin, `echo hi > a.txt` and `ls >> list.txt` redirect). `start`/`open`, `notepad file.txt`, `paint pic.png` launch programs, `apps` lists them, `tasklist`/`kill` manage open windows. Plus `help`, `about`, `projects`, `github`, `linkedin`, `resume`, `contact`, `neofetch`, `matrix`, `date`, `clear` |
 | **Messenger** | MSN-style real-time chat (details below) |
 | **Notepad** | Text editor with working Edit and Search menus: Undo/Cut/Copy/Paste, Select All, Time/Date (F5), Word Wrap, and **Find (Ctrl+F), Find Next (F3) and Replace (Ctrl+H)** with match case, a live match count and Replace All. Opens and saves `.txt` files in My Documents (saving under an existing name replaces it) |
 | **Paint** | Pencil, eraser, line, rectangle and ellipse (outlined or filled), bucket fill, **text tool** (font, size, bold, multi-line), color palette and undo. **File > Save / Save As / Open** keep pictures in My Documents (they reopen from My Computer), plus a PNG download |

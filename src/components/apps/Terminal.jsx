@@ -1,7 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import './Terminal.css';
-import { executeCommand } from './terminalCommands';
+import { executeCommand, promptFor } from './terminalCommands';
 import { getPrograms } from './programRegistry';
+import { getWindows } from '../windowRegistry';
+import { openApp, openFile, closeApp } from '../appBus';
+import { useFileSystem } from '../../context/FileSystemContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { subscribeTerminal } from './terminalBus';
 
@@ -107,6 +110,11 @@ const HeartAnim = () => {
 
 const Terminal = () => {
     const { lang } = useLanguage();
+    const fs = useFileSystem();
+    const { nodes } = fs;
+    const [cwdId, setCwdId] = useState('root');
+    const cwd = nodes[cwdId] ? cwdId : 'root';
+    const prompt = promptFor(nodes, cwd);
     const [history, setHistory] = useState([
         "gokalppoOS Kernel v1.0.4 loaded...",
         lang === 'tr' ? "Komutlar için 'help' yazın." : "Type 'help' for available commands."
@@ -170,9 +178,35 @@ const Terminal = () => {
         return NeofetchComp;
     };
 
+    // Carries out the file-system changes a command asked for.
+    const applyOps = (ops = []) => {
+        ops.forEach((op) => {
+            switch (op.op) {
+                case 'mkdir': fs.createFolder(op.parentId, op.name); break;
+                case 'create': {
+                    const id = fs.createFile(op.parentId, op.name, op.content || '');
+                    if (op.open) openFile({ id, name: op.name });
+                    break;
+                }
+                case 'write': fs.updateFileContent(op.id, op.content); break;
+                case 'recycle': fs.moveToRecycle(op.id); break;
+                case 'move': fs.moveNode(op.id, op.parentId); break;
+                case 'rename': fs.renameNode(op.id, op.name); break;
+                case 'open': openFile({ id: op.id, name: op.name }); break;
+                default: break;
+            }
+        });
+    };
+
     const handleCommand = (cmd) => {
-        const result = executeCommand(cmd, new Date(), lang, getPrograms());
-        const echo = `C:\\Users\\Guest> ${cmd}`;
+        const result = executeCommand(cmd, new Date(), lang, {
+            programs: getPrograms(),
+            windows: getWindows(),
+            nodes,
+            cwd,
+            canStore: fs.canStore
+        });
+        const echo = `${prompt} ${cmd}`;
         let output = [];
 
         switch (result.type) {
@@ -202,6 +236,10 @@ const Terminal = () => {
                 break;
             default:
                 output = result.lines;
+                applyOps(result.ops);
+                if (result.cwd) setCwdId(result.cwd);
+                if (result.appId) openApp(result.appId);
+                (result.closeIds || []).forEach(closeApp);
         }
 
         setHistory(prev => [...prev, echo, ...output]);
@@ -229,7 +267,7 @@ const Terminal = () => {
                 ))}
 
                 <div className="terminal-input-line">
-                    <span className="terminal-prompt">C:\Users\Guest&gt;</span>
+                    <span className="terminal-prompt">{prompt}</span>
                     <input
                         ref={inputRef}
                         type="text"

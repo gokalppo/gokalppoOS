@@ -27,7 +27,7 @@ import { useDisplay } from '../context/DisplayContext';
 import minesweeperIcon from '../assets/images/minesweeper.png';
 import ieIcon from '../assets/images/ie.webp';
 import aboutIcon from '../assets/images/about.svg';
-import { OPEN_APP_EVENT } from './appBus';
+import { OPEN_APP_EVENT, OPEN_FILE_EVENT } from './appBus';
 import { setPrograms } from './apps/programRegistry';
 import { fileKind } from './apps/fileTypes';
 import guestbookIcon from '../assets/images/guestbook.svg';
@@ -280,9 +280,11 @@ const Desktop = ({
     // Windows can ask the desktop to open an app by window id (e.g. Welcome > "Open resume").
     const programsRef = useRef(programs);
     const openWindowRef = useRef(onOpenWindow);
+    const openFileRef = useRef(handleOpenFile);
     useEffect(() => {
         setPrograms(programs);
         programsRef.current = programs;
+        openFileRef.current = handleOpenFile;
         openWindowRef.current = onOpenWindow;
     });
     useEffect(() => {
@@ -290,8 +292,13 @@ const Desktop = ({
             const app = programsRef.current.find((p) => p.id === e.detail.id);
             if (app) openWindowRef.current(app.title, app.content, { icon: app.icon, ...app.options });
         };
+        const handleOpenFileEvent = (e) => openFileRef.current(e.detail);
         window.addEventListener(OPEN_APP_EVENT, handleOpenApp);
-        return () => window.removeEventListener(OPEN_APP_EVENT, handleOpenApp);
+        window.addEventListener(OPEN_FILE_EVENT, handleOpenFileEvent);
+        return () => {
+            window.removeEventListener(OPEN_APP_EVENT, handleOpenApp);
+            window.removeEventListener(OPEN_FILE_EVENT, handleOpenFileEvent);
+        };
     }, []);
 
     const [icons, setIcons] = useState(() => {

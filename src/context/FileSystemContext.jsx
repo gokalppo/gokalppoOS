@@ -81,6 +81,22 @@ export const FileSystemProvider = ({ children }) => {
         setNodes((prev) => ({ ...prev, [id]: { ...prev[id], name: newName } }));
     }, []);
 
+    // Move a node into another folder (used by the Terminal's mv).
+    const moveNode = useCallback((id, newParentId) => {
+        setNodes((prev) => {
+            const node = prev[id];
+            const target = prev[newParentId];
+            if (!node || !target || target.type !== 'folder' || node.parentId === newParentId) return prev;
+            const oldParent = prev[node.parentId];
+            return {
+                ...prev,
+                ...(oldParent ? { [oldParent.id]: { ...oldParent, children: oldParent.children.filter((cid) => cid !== id) } } : {}),
+                [newParentId]: { ...target, children: [...target.children, id] },
+                [id]: { ...node, parentId: newParentId }
+            };
+        });
+    }, []);
+
     const updateFileContent = useCallback((id, content) => {
         setNodes((prev) => ({ ...prev, [id]: { ...prev[id], content, modifiedAt: Date.now() } }));
     }, []);
@@ -195,6 +211,7 @@ export const FileSystemProvider = ({ children }) => {
                 createFile,
                 renameNode,
                 updateFileContent,
+                moveNode,
                 moveToRecycle,
                 restoreNode,
                 permanentlyDelete,

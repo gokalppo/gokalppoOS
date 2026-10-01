@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
     parseCommand,
     executeCommand,
-    lsLines,
+    appsLines,
     HELP_LINES,
     GITHUB_URL,
     LINKEDIN_URL,
@@ -37,7 +37,7 @@ describe('executeCommand', () => {
     });
 
     it('reports unknown commands, echoing the normalized input', () => {
-        expect(executeCommand('Foo')).toEqual({ type: 'text', lines: ['Command not found: foo'] });
+        expect(executeCommand('Foo')).toMatchObject({ type: 'text', lines: ['Command not found: foo'] });
     });
 
     it('refuses anything starting with sudo', () => {
@@ -47,10 +47,10 @@ describe('executeCommand', () => {
     });
 
     it('every command listed by help is actually implemented', () => {
-        const listed = HELP_LINES.slice(1).map((line) => line.trim().split(/\s+/)[0]);
+        const listed = HELP_LINES.filter((line) => line.startsWith('  ')).map((line) => line.trim().split(/\s+/)[0]);
         expect(listed.length).toBeGreaterThan(0);
         for (const name of listed) {
-            const result = executeCommand(name);
+            const result = executeCommand(name, new Date(), 'en', { programs: [{ id: 'notepad', title: 'Notepad' }, { id: 'paint', title: 'Paint' }] });
             const isMissing = result.type === 'text' && result.lines[0].startsWith('Command not found');
             expect(isMissing, `"${name}" is in help but not implemented`).toBe(false);
         }
@@ -104,7 +104,7 @@ describe('executeCommand', () => {
     });
 });
 
-describe('ls', () => {
+describe('apps', () => {
     const programs = [
         { id: 'mycomputer', title: 'My Computer' },
         { id: 'internetexplorer', title: 'Internet Explorer' },
@@ -112,17 +112,16 @@ describe('ls', () => {
     ];
 
     it('lists the programs it is given, not a hard-coded copy', () => {
-        const { lines } = executeCommand('ls', new Date(), 'en', programs);
+        const { lines } = executeCommand('apps', new Date(), 'en', { programs });
         expect(lines).toEqual([
-            'Desktop/',
+            'Installed programs:',
             '  My Computer',
             '  InternetExplorer.exe',
-            '  Solitaire.exe',
-            '  resume.pdf'
+            '  Solitaire.exe'
         ]);
     });
 
-    it('still prints the resume when no programs are known yet', () => {
-        expect(lsLines()).toEqual(['Desktop/', '  resume.pdf']);
+    it('prints just the heading when no programs are known yet', () => {
+        expect(appsLines()).toEqual(['Installed programs:']);
     });
 });

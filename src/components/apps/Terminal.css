@@ -39,6 +39,8 @@
 
 .terminal-prompt {
     margin-right: 8px;
+    flex-shrink: 0;
+    white-space: pre;
     color: #00FF00;
     font-weight: bold;
 }
@@ -50,6 +52,7 @@
     font-family: inherit;
     font-size: inherit;
     flex: 1;
+    min-width: 0;
     outline: none;
     caret-color: transparent;
     /* custom cursor */

@@ -1,10 +1,10 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { db } from '../firebase';
 import { ref, onValue, increment, update } from 'firebase/database';
+import { shouldCountVisit } from './visitorSession';
 import './VisitorCounter.css';
 
 const DIGITS = 6;
-
 const VisitorCounter = () => {
     const [count, setCount] = useState(null);
     const hasIncremented = useRef(false);
@@ -14,9 +14,11 @@ const VisitorCounter = () => {
 
         if (!hasIncremented.current) {
             hasIncremented.current = true;
-            update(ref(db, 'siteStats'), { visitorCount: increment(1) }).catch((e) =>
-                console.error('Visitor counter increment failed', e)
-            );
+            if (shouldCountVisit()) {
+                update(ref(db, 'siteStats'), { visitorCount: increment(1) }).catch((e) =>
+                    console.error('Visitor counter increment failed', e)
+                );
+            }
         }
 
         const unsubscribe = onValue(counterRef, (snap) => {

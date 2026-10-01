@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useOS } from './context/OSContext';
 import Desktop from './components/Desktop';
 import Window from './components/Window'; // Eksik olan buydu!
@@ -7,6 +7,8 @@ import AssetLoader from './components/AssetLoader';
 import ScreenSaver from './components/ScreenSaver';
 import BSOD from './components/BSOD';
 import Clippy from './components/Clippy';
+import TaskSwitcher from './components/TaskSwitcher';
+import { nextFocusAfterMinimize, switcherOrder, nextSwitcherIndex } from './components/windowUtils';
 import './App.css';
 import shutdownSound from './assets/windows98shutdown.mp3';
 import windowsLogo from './assets/images/windows.png';
@@ -26,7 +28,9 @@ function App() {
     return zIndexCounterRef.current;
   };
   const [isStartOpen, setIsStartOpen] = useState(false);
-  const { volume } = useOS(); // Use Global Volume from Context
+  const { volume, playSound } = useOS(); // Use Global Volume from Context
+  const [switcher, setSwitcher] = useState(null); // { ids, index } while Alt+` is held
+  const closingIdsRef = useRef(new Set());
 
   /* REMOVED: Local Volume State & Persistence (Moved to OSContext) */
 
@@ -52,12 +56,16 @@ function App() {
     const existing = openWindows.find(w => w.id === id);
 
     if (existing) {
-      handleWindowFocus(id);
+      if (!existing.isClosing) {
+        if (existing.isMinimized) playSound('restore');
+        handleWindowFocus(id);
+      }
       return;
     }
 
     const newZ = getNextZIndex();
     setFocusedWindowId(id);
+    playSound('open');
 
     const newWindow = {
       id,
@@ -72,10 +80,106 @@ function App() {
     setOpenWindows((prev) => [...prev, newWindow]);
   };
 
-  const closeWindow = (id) => {
-    setOpenWindows((prev) => prev.filter((win) => win.id !== id));
-    if (focusedWindowId === id) setFocusedWindowId(null);
+  const handleWindowMinimize = (id) => {
+    playSound('minimize');
+    setFocusedWindowId(nextFocusAfterMinimize(openWindows, id));
+    setOpenWindows((prev) => prev.map((win) => (win.id === id ? { ...win, isMinimized: true } : win)));
   };
+
+  // Taskbar button: minimize the active window, otherwise restore/focus it.
+  const handleTaskbarToggle = (id) => {
+    const win = openWindows.find((w) => w.id === id);
+    if (!win) return;
+    if (focusedWindowId === id && !win.isMinimized) {
+      handleWindowMinimize(id);
+    } else {
+      if (win.isMinimized) playSound('restore');
+      handleWindowFocus(id);
+    }
+  };
+
+  // "Show Desktop": minimize everything, or bring the windows back if already minimized.
+  const handleShowDesktop = () => {
+    const visible = openWindows.filter((w) => !w.isClosing);
+    if (visible.length === 0) return;
+    const allMinimized = visible.every((w) => w.isMinimized);
+    playSound(allMinimized ? 'restore' : 'minimize');
+    setOpenWindows((prev) => prev.map((w) => ({ ...w, isMinimized: !allMinimized })));
+    setFocusedWindowId(allMinimized ? nextFocusAfterMinimize(openWindows.map((w) => ({ ...w, isMinimized: false })), null) : null);
+  };
+
+  const closeWindow = (id) => {
+    if (closingIdsRef.current.has(id)) return;
+    closingIdsRef.current.add(id);
+    playSound('close');
+
+    if (focusedWindowId === id) setFocusedWindowId(nextFocusAfterMinimize(openWindows, id));
+
+    const reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const remove = () => {
+      closingIdsRef.current.delete(id);
+      setOpenWindows((prev) => prev.filter((win) => win.id !== id));
+    };
+
+    if (reducedMotion) {
+      remove();
+    } else {
+      setOpenWindows((prev) => prev.map((win) => (win.id === id ? { ...win, isClosing: true } : win)));
+      setTimeout(remove, 140);
+    }
+  };
+
+  // Alt+` (or Alt+Tab where the browser lets it through) cycles windows; releasing Alt picks one.
+  const switcherRef = useRef(null);
+  const openWindowsRef = useRef(openWindows);
+  useEffect(() => {
+    switcherRef.current = switcher;
+    openWindowsRef.current = openWindows;
+  }, [switcher, openWindows]);
+
+  useEffect(() => {
+    const onKeyDown = (e) => {
+      const isSwitchKey = e.altKey && (e.code === 'Backquote' || e.key === 'Tab');
+      if (isSwitchKey) {
+        e.preventDefault();
+        const current = switcherRef.current;
+        const direction = e.shiftKey ? -1 : 1;
+        if (!current) {
+          const ids = switcherOrder(openWindowsRef.current).map((w) => w.id);
+          if (ids.length === 0) return;
+          setSwitcher({ ids, index: nextSwitcherIndex(0, ids.length, direction) });
+        } else {
+          setSwitcher({ ...current, index: nextSwitcherIndex(current.index, current.ids.length, direction) });
+        }
+      } else if (e.key === 'Escape' && switcherRef.current) {
+        setSwitcher(null);
+      }
+    };
+
+    const onKeyUp = (e) => {
+      const current = switcherRef.current;
+      if (e.key === 'Alt' && current) {
+        const target = current.ids[current.index];
+        setSwitcher(null);
+        if (target && openWindowsRef.current.some((w) => w.id === target)) {
+          setFocusedWindowId(target);
+          const newZ = getNextZIndex();
+          setOpenWindows((prev) => prev.map((w) => (w.id === target ? { ...w, zIndex: newZ, isMinimized: false } : w)));
+        }
+      }
+    };
+
+    const onBlur = () => setSwitcher(null);
+
+    window.addEventListener('keydown', onKeyDown);
+    window.addEventListener('keyup', onKeyUp);
+    window.addEventListener('blur', onBlur);
+    return () => {
+      window.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('keyup', onKeyUp);
+      window.removeEventListener('blur', onBlur);
+    };
+  }, []);
 
   const handleShutdown = () => {
     // 1. Audio Fix (User requested specific log)
@@ -105,6 +209,9 @@ function App() {
             onOpenWindow={handleIconClick}
             onWindowFocus={handleWindowFocus}
             onCloseWindow={closeWindow}
+            onMinimizeWindow={handleWindowMinimize}
+            onTaskbarToggle={handleTaskbarToggle}
+            onShowDesktop={handleShowDesktop}
             isStartOpen={isStartOpen}
             toggleStart={toggleStart}
             onShutdown={handleShutdown}
@@ -113,6 +220,12 @@ function App() {
           <ScreenSaver />
           <BSOD />
           <Clippy openWindows={openWindows} focusedWindowId={focusedWindowId} />
+          {switcher && (
+            <TaskSwitcher
+              windows={switcher.ids.map((id) => openWindows.find((w) => w.id === id)).filter(Boolean)}
+              selectedIndex={switcher.index}
+            />
+          )}
 
           {/* BACKGROUND SHUTDOWN SCREEN */}
           {isShuttingDown && (

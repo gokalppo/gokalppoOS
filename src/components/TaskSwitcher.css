@@ -1,0 +1,52 @@
+.task-switcher-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 20000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+}
+
+.task-switcher {
+    background: #c0c0c0;
+    border: 2px solid;
+    border-color: #fff #404040 #404040 #fff;
+    box-shadow: 2px 2px 0 #000;
+    padding: 10px 12px;
+    max-width: 90vw;
+    font-family: 'gokalppoOS', sans-serif;
+}
+
+.task-switcher-tiles {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    justify-content: center;
+}
+
+.task-switcher-tile {
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid transparent;
+}
+
+.task-switcher-tile.selected {
+    border-color: #000080;
+    background: #d4d0c8;
+    outline: 1px dotted #000;
+    outline-offset: -4px;
+}
+
+.task-switcher-fallback { font-size: 24px; }
+
+.task-switcher-title {
+    margin-top: 8px;
+    font-size: 12px;
+    text-align: center;
+    color: #000;
+    min-height: 14px;
+}

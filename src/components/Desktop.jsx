@@ -104,6 +104,9 @@ const Desktop = ({
     focusedWindowId,
     onOpenWindow,
     onCloseWindow,
+    onMinimizeWindow,
+    onTaskbarToggle,
+    onShowDesktop,
     onWindowFocus,
     isStartOpen,
     toggleStart,
@@ -164,7 +167,7 @@ const Desktop = ({
             x: 10,
             y: 460
         },
-        { id: 'contact', title: 'Contact', icon: <img src={contactIcon} alt="Contact" style={{ width: '32px', height: '32px' }} />, content: <Contact />, x: 10, y: 550, options: { width: '400px', height: '250px', minHeight: '200px' } },
+        { id: 'contact', title: 'Contact', icon: <img src={contactIcon} alt="Contact" style={{ width: '32px', height: '32px' }} />, content: <Contact />, x: 10, y: 550, options: { width: '400px', height: '300px', minHeight: '260px' } },
         {
             id: 'minesweeper',
             title: 'Minesweeper',
@@ -227,18 +230,10 @@ const Desktop = ({
         return () => clearTimeout(timer);
     }, []);
 
-    // Nudge & Notification State
-    const [shakingWindowId, setShakingWindowId] = useState(null);
+    // Notification State
     const [toast, setToast] = useState(null);
 
     useEffect(() => {
-        // Nudge Handler
-        const handleNudge = (e) => {
-            const appId = e.detail.appId;
-            setShakingWindowId(appId);
-            setTimeout(() => setShakingWindowId(null), 500);
-        };
-
         // Toast Handler
         const handleToast = (e) => {
             setToast(e.detail);
@@ -250,11 +245,9 @@ const Desktop = ({
             onCloseWindow(e.detail.id);
         };
 
-        window.addEventListener('nudge', handleNudge);
         window.addEventListener('messenger-notification', handleToast);
         window.addEventListener('os-close-window', handleCloseRequest);
         return () => {
-            window.removeEventListener('nudge', handleNudge);
             window.removeEventListener('messenger-notification', handleToast);
             window.removeEventListener('os-close-window', handleCloseRequest);
         };
@@ -490,13 +483,20 @@ const Desktop = ({
                     id={win.id}
                     title={win.title}
                     onClose={() => onCloseWindow(win.id)}
-                    onMaximize={() => { }} /* TODO: Implement Maximize/Minimize Logic if needed or use Window internal state */
+                    onMinimize={onMinimizeWindow}
                     onFocus={onWindowFocus}
                     isActive={focusedWindowId === win.id}
                     zIndex={win.zIndex}
                     isMinimized={win.isMinimized}
-                    className={shakingWindowId === win.id ? 'window-shake' : ''}
+                    isClosing={win.isClosing}
                     icon={win.icon}
+                    width={win.width}
+                    height={win.height}
+                    minWidth={win.minWidth}
+                    minHeight={win.minHeight}
+                    bodyStyle={win.bodyStyle}
+                    bodyClassName={win.bodyClassName}
+                    resizable={win.resizable}
                 >
                     {/* SAFELY RENDER CONTENT — lazy-loaded apps resolve inside this boundary */}
                     <ErrorBoundary title={win.title} onClose={() => onCloseWindow(win.id)}>
@@ -510,7 +510,8 @@ const Desktop = ({
             <Taskbar
                 windows={openWindows}
                 activeWindowId={focusedWindowId}
-                onToggleWindow={onWindowFocus} /* Taskbar still calls it onToggleWindow technically, can likely stay same or rename in Taskbar */
+                onToggleWindow={onTaskbarToggle}
+                onShowDesktop={onShowDesktop}
                 onCloseWindow={onCloseWindow}
                 onOpenWindow={onOpenWindow}
                 isStartOpen={isStartOpen}

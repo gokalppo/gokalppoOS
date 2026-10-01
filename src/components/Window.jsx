@@ -1,6 +1,26 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useLayoutEffect } from 'react';
 import Draggable from 'react-draggable';
+import { useOS } from '../context/OSContext';
+import {
+    TASKBAR_HEIGHT,
+    RESIZE_HANDLES,
+    resolveInitialSize,
+    cascadePosition,
+    computeResize
+} from './windowUtils';
 import './Window.css';
+
+const MINIMIZE_MS = 220;
+let openedCount = 0; // drives the cascade offset of newly opened windows
+
+const prefersReducedMotion = () =>
+    typeof window !== 'undefined' &&
+    window.matchMedia &&
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+const viewportSize = () => ({ width: window.innerWidth, height: window.innerHeight });
+
+const iconStyle = { width: '16px', height: '16px', marginRight: '4px', marginLeft: '2px' };
 
 const Window = ({
     id,
@@ -10,131 +30,216 @@ const Window = ({
     zIndex,
     initialPosition,
     onClose,
+    onMinimize,
     onFocus,
-    style: propStyle, // Receive passed style (display: none etc)
+    isActive = true,
+    isMinimized = false,
+    isClosing = false,
+    style: propStyle,
     bodyStyle,
     bodyClassName,
-    resizable = true, // Default to true
-    icon // New prop
+    resizable = true,
+    icon,
+    width,
+    height,
+    minWidth,
+    minHeight
 }) => {
+    const { playSound } = useOS();
     const nodeRef = useRef(null);
+    const resizeRef = useRef(null);
+    const minimizeAnimRef = useRef(null);
+    const hideTimerRef = useRef(null);
+    const prevMinimizedRef = useRef(isMinimized);
+
+    const [initial] = useState(() => {
+        const viewport = viewportSize();
+        const size = resolveInitialSize({ width, height, minWidth, minHeight }, viewport);
+        const position = initialPosition || cascadePosition(size, viewport, openedCount++);
+        return { size, position };
+    });
+    const [size, setSize] = useState({ width: initial.size.width, height: initial.size.height });
+    const [pos, setPos] = useState(initial.position);
     const [maximized, setMaximized] = useState(false);
+    const [opening, setOpening] = useState(true);
+    const [hidden, setHidden] = useState(isMinimized);
 
-    useEffect(() => {
-        // console.log(`Window Mounted: ${title}`);
-    }, [title]);
+    // Restoring un-hides immediately (adjusting state while rendering, not in an effect).
+    if (!isMinimized && hidden) setHidden(false);
 
-    // REFINED STANDARD STYLES AS REQUESTED
-    const baseStyle = {
-        position: 'absolute', // Changed from fixed to absolute per request
-        top: '20%', // Fallback if no initialPosition
-        left: '30%',
-        width: '450px',
-        height: '350px',
-        minWidth: '300px',
-        minHeight: '200px',
-        zIndex: zIndex || 1000,
-        backgroundColor: '#c0c0c0', // Standard Windows Gray
-        border: '2px solid black',
-        boxShadow: '2px 2px 0px black', // Retro shadow
-        display: 'flex',
-        flexDirection: 'column',
-        ...propStyle // Merge passed styles (like display: none or zIndex overrides)
+    const min = { width: initial.size.minWidth, height: initial.size.minHeight };
+
+    // Fly to / from this window's taskbar button on minimize / restore.
+    useLayoutEffect(() => {
+        if (prevMinimizedRef.current === isMinimized) return;
+        prevMinimizedRef.current = isMinimized;
+        const el = nodeRef.current;
+        if (!el) return;
+
+        minimizeAnimRef.current?.cancel();
+        minimizeAnimRef.current = null;
+        clearTimeout(hideTimerRef.current);
+
+        if (prefersReducedMotion() || typeof el.animate !== 'function') {
+            if (isMinimized) Promise.resolve().then(() => setHidden(true));
+            return;
+        }
+
+        const rect = el.getBoundingClientRect();
+        const tab = document.querySelector(`[data-task-id="${id}"]`);
+        const t = tab
+            ? tab.getBoundingClientRect()
+            : { left: rect.left + rect.width / 2, top: window.innerHeight, width: 10, height: 10 };
+        const away = {
+            translate: `${t.left - rect.left}px ${t.top - rect.top}px`,
+            scale: `${Math.max(0.05, t.width / rect.width)} ${Math.max(0.05, t.height / rect.height)}`,
+            opacity: 0.2
+        };
+        const here = { translate: '0px 0px', scale: '1 1', opacity: 1 };
+
+        const anim = el.animate(isMinimized ? [here, away] : [away, here], {
+            duration: MINIMIZE_MS,
+            easing: 'ease-in-out',
+            fill: isMinimized ? 'forwards' : 'none'
+        });
+        minimizeAnimRef.current = anim;
+
+        if (isMinimized) {
+            // Hide once the fly-out ends; the timer is a backstop for when the
+            // browser throttles animations (e.g. a background tab).
+            const finish = () => {
+                clearTimeout(hideTimerRef.current);
+                setHidden(true);
+                anim.cancel();
+            };
+            anim.finished.then(finish).catch(() => { /* cancelled by a quick restore */ });
+            hideTimerRef.current = setTimeout(finish, MINIMIZE_MS + 120);
+        }
+    }, [isMinimized, id]);
+
+    const toggleMaximize = (e) => {
+        e?.stopPropagation();
+        if (!resizable) return;
+        playSound('restore');
+        setMaximized((m) => !m);
     };
 
-    // If maximized, override dimensions
-    if (maximized) {
-        baseStyle.width = '100%';
-        baseStyle.height = '100%';
-        baseStyle.top = 0;
-        baseStyle.left = 0;
-        baseStyle.transform = 'none'; // Disable drag transform effect visually
-    }
+    const startResize = (e, handle) => {
+        e.preventDefault();
+        e.stopPropagation();
+        e.currentTarget.setPointerCapture(e.pointerId);
+        onFocus && onFocus(id);
+        resizeRef.current = {
+            handle,
+            startX: e.clientX,
+            startY: e.clientY,
+            start: { x: pos.x, y: pos.y, width: size.width, height: size.height }
+        };
+    };
 
-    const dragProps = maximized ? { disabled: true, position: { x: 0, y: 0 } } : { defaultPosition: initialPosition || { x: 100, y: 100 } };
+    const moveResize = (e) => {
+        const r = resizeRef.current;
+        if (!r) return;
+        const next = computeResize(r.handle, r.start, e.clientX - r.startX, e.clientY - r.startY, min, viewportSize());
+        setPos({ x: next.x, y: next.y });
+        setSize({ width: next.width, height: next.height });
+    };
 
+    const endResize = () => { resizeRef.current = null; };
 
+    const viewport = viewportSize();
+    const windowStyle = {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        width: maximized ? '100%' : size.width,
+        height: maximized ? `calc(100% - ${TASKBAR_HEIGHT}px)` : size.height,
+        minWidth: min.width,
+        minHeight: min.height,
+        zIndex: zIndex || 1000,
+        boxSizing: 'border-box',
+        display: hidden ? 'none' : 'flex',
+        flexDirection: 'column',
+        transformOrigin: '0 0',
+        ...propStyle
+    };
+
+    const className = [
+        'window',
+        isActive ? '' : 'inactive',
+        opening ? 'window-opening' : '',
+        isClosing ? 'window-closing' : '',
+        maximized ? 'maximized' : ''
+    ].filter(Boolean).join(' ');
+
+    const renderedIcon = icon
+        ? (React.isValidElement(icon)
+            ? React.cloneElement(icon, { style: iconStyle })
+            : <img src={icon} alt="" style={iconStyle} />)
+        : null;
 
     return (
         <Draggable
             handle=".title-bar"
-            {...dragProps}
-            nodeRef={nodeRef}
-            onMouseDown={() => onFocus && onFocus(id)}
             cancel=".title-bar-controls button"
+            nodeRef={nodeRef}
+            disabled={maximized}
+            position={maximized ? { x: 0, y: 0 } : pos}
+            bounds={{
+                left: 100 - size.width,
+                top: 0,
+                right: viewport.width - 100,
+                bottom: viewport.height - TASKBAR_HEIGHT - 24
+            }}
+            onStart={() => onFocus && onFocus(id)}
+            onDrag={(e, data) => setPos({ x: data.x, y: data.y })}
+            onStop={(e, data) => setPos({ x: data.x, y: data.y })}
         >
             <div
                 ref={nodeRef}
-                className="window"
-                style={baseStyle}
+                className={className}
+                style={windowStyle}
                 onMouseDownCapture={() => onFocus && onFocus(id)}
+                onAnimationEnd={(e) => { if (e.target === nodeRef.current) setOpening(false); }}
             >
-                <div className="title-bar" onDoubleClick={() => setMaximized(!maximized)}>
-                    {icon ? (
-                        React.isValidElement(icon) ? (
-                            React.cloneElement(icon, { style: { width: '16px', height: '16px', marginRight: '4px', marginLeft: '2px' } })
-                        ) : (
-                            <img src={icon} alt="" style={{ width: '16px', height: '16px', marginRight: '4px', marginLeft: '2px' }} />
-                        )
-                    ) : (
-                        <img src="/src/assets/images/4.png" alt="" style={{ width: '16px', marginRight: '4px', marginLeft: '2px' }} />
-                    )}
+                <div className="title-bar" onDoubleClick={toggleMaximize}>
+                    {renderedIcon}
                     <div className="title-bar-text">{title}</div>
                     <div className="title-bar-controls">
-
                         <button
-                            title={maximized ? "Restore" : "Maximize"}
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                if (resizable) setMaximized(!maximized);
-                            }}
+                            title="Minimize"
+                            onClick={(e) => { e.stopPropagation(); onMinimize && onMinimize(id); }}
+                            onMouseDown={(e) => e.stopPropagation()}
+                            className="minimize-button"
+                        >
+                            <svg width="8" height="8" viewBox="0 0 8 8" style={{ display: 'block' }}>
+                                <rect x="0" y="6" width="6" height="2" fill="currentColor" />
+                            </svg>
+                        </button>
+                        <button
+                            title={maximized ? 'Restore' : 'Maximize'}
+                            onClick={toggleMaximize}
                             onMouseDown={(e) => e.stopPropagation()}
                             className={`maximize-button ${!resizable ? 'disabled' : ''}`}
                             disabled={!resizable}
                         >
                             {maximized ? (
-                                // Restore Icon (Two overlapping windows)
-                                <svg width="10" height="10" viewBox="0 0 11 11" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    {/* Background Window (Top Right) */}
-                                    <path fillRule="evenodd" clipRule="evenodd" d="M3 0H10V7H9V2H3V0ZM10 2H3V1H10V2Z" fill="currentColor" />
-                                    {/* Foreground Window (Bottom Left) */}
-                                    <path fillRule="evenodd" clipRule="evenodd" d="M0 3H7V10H0V3ZM1 5H6V9H1V5ZM1 4H6V5H1V4Z" fill="currentColor" />
-                                    {/* Correction for simple shapes: */}
-                                    {/* Background: Rect at 3,0 size 7x7. Top 2px. */}
-                                    {/* We can just draw paths for exact pixels. This 'path' logic is a bit complex to read. Let's use Rects. */}
+                                <svg width="10" height="10" viewBox="0 0 10 10" style={{ display: 'block' }}>
+                                    <rect x="3" y="0" width="7" height="2" fill="currentColor" />
+                                    <rect x="3" y="2" width="1" height="4" fill="currentColor" />
+                                    <rect x="9" y="2" width="1" height="5" fill="currentColor" />
+                                    <rect x="6" y="6" width="4" height="1" fill="currentColor" />
+                                    <rect x="0" y="3" width="7" height="2" fill="currentColor" />
+                                    <rect x="0" y="5" width="1" height="4" fill="currentColor" />
+                                    <rect x="6" y="5" width="1" height="4" fill="currentColor" />
+                                    <rect x="1" y="8" width="5" height="1" fill="currentColor" />
                                 </svg>
                             ) : (
-                                // Maximize Icon (9x9 with 2px top)
-                                <svg width="9" height="9" viewBox="0 0 9 9" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ display: 'block' }}>
-                                    {/* Top Move Bar (2px height) */}
+                                <svg width="9" height="9" viewBox="0 0 9 9" style={{ display: 'block' }}>
                                     <rect x="0" y="0" width="9" height="2" fill="currentColor" />
-                                    {/* Left Border */}
                                     <rect x="0" y="2" width="1" height="7" fill="currentColor" />
-                                    {/* Right Border */}
                                     <rect x="8" y="2" width="1" height="7" fill="currentColor" />
-                                    {/* Bottom Border */}
                                     <rect x="1" y="8" width="7" height="1" fill="currentColor" />
-                                </svg>
-                            )}
-                            {maximized && (
-                                // Restore (Overlapping) - Redoing for clarity/correctness
-                                <svg width="10" height="10" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ position: 'absolute' }}>
-                                    {/* Background Window (3,0 to 10,7) 7x7 */}
-                                    <rect x="3" y="0" width="7" height="2" fill="currentColor" /> {/* Top */}
-                                    <rect x="3" y="2" width="1" height="5" fill="currentColor" /> {/* Left */}
-                                    <rect x="9" y="2" width="1" height="5" fill="currentColor" /> {/* Right */}
-                                    <rect x="4" y="6" width="5" height="1" fill="currentColor" /> {/* Bottom */}
-
-                                    {/* Foreground Window (0,3 to 7,10) 7x7 - Opaque center needed to hide back? Usually transparent in icon but let's see. 
-                                       Actually in Win98 restore icon, the front window obscures the back one.
-                                       So we need a fill or matte. But user said "icon color black, background gray".
-                                       If we fill with gray, it might match button. 
-                                   */}
-                                    <rect x="0" y="3" width="7" height="7" fill="#c0c0c0" /> {/* Mask */}
-                                    <rect x="0" y="3" width="7" height="2" fill="currentColor" /> {/* Front Top */}
-                                    <rect x="0" y="5" width="1" height="5" fill="currentColor" /> {/* Front Left */}
-                                    <rect x="6" y="5" width="1" height="5" fill="currentColor" /> {/* Front Right */}
-                                    <rect x="1" y="9" width="5" height="1" fill="currentColor" /> {/* Front Bottom */}
                                 </svg>
                             )}
                         </button>
@@ -143,7 +248,7 @@ const Window = ({
                             onClick={(e) => { e.stopPropagation(); onClose && onClose(id); }}
                             onMouseDown={(e) => e.stopPropagation()}
                             className="close-button"
-                            style={{ marginLeft: '2px' }} // 2px gap
+                            style={{ marginLeft: '2px' }}
                         >
                             X
                         </button>
@@ -165,6 +270,17 @@ const Window = ({
                 >
                     {content || children}
                 </div>
+
+                {resizable && !maximized && RESIZE_HANDLES.map((handle) => (
+                    <div
+                        key={handle}
+                        className={`resize-handle resize-${handle}`}
+                        onPointerDown={(e) => startResize(e, handle)}
+                        onPointerMove={moveResize}
+                        onPointerUp={endResize}
+                        onPointerCancel={endResize}
+                    />
+                ))}
             </div>
         </Draggable>
     );

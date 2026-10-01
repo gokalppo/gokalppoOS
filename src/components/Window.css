@@ -44,7 +44,8 @@
 }
 
 .close-button,
-.maximize-button {
+.maximize-button,
+.minimize-button {
     width: 16px;
     height: 14px;
     min-width: 16px;
@@ -87,25 +88,6 @@
     fill: #808080;
 }
 
-.close-button,
-width: 16px;
-height: 14px;
-padding: 0;
-font-size: 9px;
-font-weight: bold;
-display: flex;
-align-items: center;
-justify-content: center;
-background-color: var(--win-gray);
-color: black;
-border-top: 1px solid var(--win-border-light);
-border-left: 1px solid var(--win-border-light);
-border-right: 1px solid var(--win-border-black);
-border-bottom: 1px solid var(--win-border-black);
-box-shadow: none;
-border-radius: 0;
-cursor: pointer;
-}
 
 
 
@@ -118,4 +100,50 @@ cursor: pointer;
     background: var(--win-gray);
     min-height: 50px;
     /* Removed display: block !important to allow flexibility */
+}
+/* Inactive windows dim their title bar, like Win98. */
+.window.inactive .title-bar {
+    background: linear-gradient(90deg, #808080 0%, #b5b5b5 100%);
+}
+
+.window.inactive .title-bar-text {
+    color: #d8d8d8;
+}
+
+/* Edge / corner resize handles. */
+.resize-handle {
+    position: absolute;
+    z-index: 5;
+    touch-action: none;
+}
+
+.resize-n, .resize-s { left: 10px; right: 10px; height: 6px; }
+.resize-e, .resize-w { top: 10px; bottom: 10px; width: 6px; }
+.resize-n { top: -3px; cursor: ns-resize; }
+.resize-s { bottom: -3px; cursor: ns-resize; }
+.resize-e { right: -3px; cursor: ew-resize; }
+.resize-w { left: -3px; cursor: ew-resize; }
+.resize-ne, .resize-nw, .resize-se, .resize-sw { width: 12px; height: 12px; }
+.resize-ne { top: -3px; right: -3px; cursor: nesw-resize; }
+.resize-nw { top: -3px; left: -3px; cursor: nwse-resize; }
+.resize-se { bottom: -3px; right: -3px; cursor: nwse-resize; }
+.resize-sw { bottom: -3px; left: -3px; cursor: nesw-resize; }
+
+/* Open / close transitions use the standalone `scale` property so they never
+   fight react-draggable's `transform`. */
+@keyframes window-open {
+    from { scale: 0.94; opacity: 0; }
+    to { scale: 1; opacity: 1; }
+}
+
+@keyframes window-close {
+    from { scale: 1; opacity: 1; }
+    to { scale: 0.92; opacity: 0; }
+}
+
+.window-opening { animation: window-open 140ms ease-out; }
+.window-closing { animation: window-close 130ms ease-in forwards; pointer-events: none; }
+
+@media (prefers-reduced-motion: reduce) {
+    .window-opening, .window-closing { animation: none; }
 }

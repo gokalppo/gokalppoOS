@@ -39,6 +39,58 @@ describe('BestTimes', () => {
     });
 });
 
+const playAndSubmit = async (name, time) => {
+    const view = render(<SubmitScore time={time} onSubmitted={() => { }} />);
+    fireEvent.change(screen.getByPlaceholderText('Your name'), { target: { value: name } });
+    fireEvent.click(screen.getByText('Submit'));
+    await waitFor(() => expect(screen.getByRole('status')).toBeTruthy());
+    const message = screen.getByRole('status').textContent;
+    view.unmount();
+    return message;
+};
+
+describe('one record per player', () => {
+    it('a faster second game replaces the first (89s then 65s leaves a single 65s row)', async () => {
+        expect(await playAndSubmit('Gokalp', 89)).toContain('Your time was submitted');
+        expect(await playAndSubmit('Gokalp', 65)).toContain('New personal best');
+
+        expect(scores()).toHaveLength(1);
+        expect(scores()[0]).toMatchObject({ name: 'Gokalp', time: 65 });
+
+        render(<BestTimes onClose={() => { }} refreshKey={0} />);
+        await waitFor(() => expect(document.querySelectorAll('.ms-scores li')).toHaveLength(1));
+        expect(document.querySelector('.ms-scores').textContent).toContain('65s');
+        expect(document.querySelector('.ms-scores').textContent).not.toContain('89s');
+    });
+
+    it('a slower second game leaves the better time alone and says so', async () => {
+        await playAndSubmit('Gokalp', 65);
+        const message = await playAndSubmit('Gokalp', 89);
+        expect(message).toContain('already have a faster time');
+        expect(message).toContain('65s');
+        expect(scores()).toHaveLength(1);
+        expect(scores()[0].time).toBe(65);
+    });
+
+    it('treats the same name with different casing/spacing as the same player', async () => {
+        await playAndSubmit('Ada Lovelace', 80);
+        await playAndSubmit('  ada   lovelace ', 70);
+        expect(scores()).toHaveLength(1);
+        expect(scores()[0].time).toBe(70);
+    });
+
+    it('different players each keep their own row', async () => {
+        await playAndSubmit('Ada', 80);
+        await playAndSubmit('Bob', 70);
+        expect(scores()).toHaveLength(2);
+    });
+
+    it('an equal time is not a new record', async () => {
+        await playAndSubmit('Ada', 50);
+        expect(await playAndSubmit('Ada', 50)).toContain('already have a faster time');
+    });
+});
+
 describe('SubmitScore', () => {
     it('stores the time with a server timestamp and remembers the name', async () => {
         const onSubmitted = vi.fn();

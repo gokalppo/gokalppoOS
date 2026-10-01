@@ -124,7 +124,7 @@
           "time"
         ],
         "$id": {
-          ".write": "!data.exists() && newData.exists()",
+          ".write": "$id.matches(/^[a-z0-9-]{1,20}$/) && newData.exists() && (!data.exists() || newData.child('time').val() < data.child('time').val())",
           ".validate": "newData.hasChildren(['name', 'time', 'timestamp'])",
           "name": {
             ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 20"

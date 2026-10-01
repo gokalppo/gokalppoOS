@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { cleanName, validateScore, topScores, NAME_MAX, MAX_TIME } from './minesweeperScores';
+import { cleanName, validateScore, topScores, scoreKey, bestPerName, NAME_MAX, MAX_TIME } from './minesweeperScores';
 
 describe('cleanName', () => {
     it('trims and collapses whitespace', () => {
@@ -41,5 +41,49 @@ describe('topScores', () => {
     it('limits the list and handles empty data', () => {
         expect(topScores(data, 2)).toHaveLength(2);
         expect(topScores(null)).toEqual([]);
+    });
+});
+
+describe('scoreKey', () => {
+    it('treats casing and spacing differences as the same player', () => {
+        expect(scoreKey('Ada Lovelace')).toBe('ada-lovelace');
+        expect(scoreKey('  ada   LOVELACE ')).toBe('ada-lovelace');
+    });
+
+    it('only produces database-safe keys', () => {
+        expect(scoreKey('A.b/c#d$[e]')).toBe('a-b-c-d-e');
+        expect(scoreKey('x'.repeat(50))).toHaveLength(NAME_MAX);
+        expect(scoreKey('***')).toBe('player');
+        expect(scoreKey('')).toBe('player');
+    });
+});
+
+describe('bestPerName', () => {
+    it('keeps each player\'s fastest time only', () => {
+        const rows = [
+            { name: 'Ada', time: 89, timestamp: 1 },
+            { name: 'ada ', time: 65, timestamp: 2 },
+            { name: 'Bob', time: 70, timestamp: 3 }
+        ];
+        expect(bestPerName(rows).map((r) => [r.name, r.time]).sort()).toEqual([['Bob', 70], ['ada ', 65]]);
+    });
+
+    it('on an exact tie keeps the earlier submission', () => {
+        const rows = [
+            { name: 'Ada', time: 50, timestamp: 9 },
+            { name: 'ada', time: 50, timestamp: 4 }
+        ];
+        expect(bestPerName(rows)).toEqual([{ name: 'ada', time: 50, timestamp: 4 }]);
+    });
+});
+
+describe('topScores with legacy duplicates', () => {
+    it('shows a player once, with their best time (89s then 65s -> 65s)', () => {
+        const data = {
+            '-OldPushKey1': { name: 'Gokalp', time: 89, timestamp: 1 },
+            '-OldPushKey2': { name: 'Gokalp', time: 65, timestamp: 2 },
+            other: { name: 'Bob', time: 70, timestamp: 3 }
+        };
+        expect(topScores(data).map((e) => [e.name, e.time])).toEqual([['Gokalp', 65], ['Bob', 70]]);
     });
 });

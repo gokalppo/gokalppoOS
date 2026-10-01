@@ -17,10 +17,31 @@ export const validateScore = ({ name, time }) => {
     return errors;
 };
 
-// Firebase snapshot ({id: {name,time,timestamp}}) -> fastest first, ties broken by who got there first.
+// One record per player: the database key is the name, lower-cased, so a second
+// submission under the same name updates that record instead of adding another.
+// "Ada Lovelace" and "  ada   lovelace " are the same player.
+export const scoreKey = (name) =>
+    cleanName(name).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, NAME_MAX) || 'player';
+
+const isFaster = (a, b) => a.time < b.time || (a.time === b.time && (a.timestamp || 0) < (b.timestamp || 0));
+
+// Keeps only each name's fastest entry (also folds old duplicate rows saved before records were per-name).
+export const bestPerName = (rows) => {
+    const best = new Map();
+    for (const row of rows) {
+        const key = scoreKey(row.name);
+        if (!best.has(key) || isFaster(row, best.get(key))) best.set(key, row);
+    }
+    return [...best.values()];
+};
+
+// Firebase snapshot ({id: {name,time,timestamp}}) -> fastest first, one row per player,
+// ties broken by who got there first.
 export const topScores = (data, limit = TOP_COUNT) =>
-    Object.entries(data || {})
-        .map(([id, entry]) => ({ id, ...entry }))
-        .filter((e) => Number.isFinite(e.time))
+    bestPerName(
+        Object.entries(data || {})
+            .map(([id, entry]) => ({ id, ...entry }))
+            .filter((e) => Number.isFinite(e.time))
+    )
         .sort((a, b) => a.time - b.time || (a.timestamp || 0) - (b.timestamp || 0))
         .slice(0, limit);

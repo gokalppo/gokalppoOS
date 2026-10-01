@@ -26,7 +26,7 @@ import wallpaper from '../assets/images/image.webp';
 import minesweeperIcon from '../assets/images/minesweeper.png';
 import ieIcon from '../assets/images/ie.webp';
 import guestbookIcon from '../assets/images/guestbook.svg';
-import solitaireIcon from '../assets/images/solitaire.svg';
+import solitaireIcon from '../assets/images/solitaire.webp';
 import binEmptyIcon from '../assets/images/Bin_Empty95.svg';
 import binFullIcon from '../assets/images/Bin_Full95.svg';
 import notepadIcon from '../assets/images/Notepad16.svg';

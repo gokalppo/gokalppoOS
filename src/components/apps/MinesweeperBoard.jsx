@@ -41,11 +41,18 @@ export const BestTimes = ({ onClose, refreshKey }) => {
     );
 };
 
+const resultMessage = (t, result) => {
+    if (result?.status === 'improved') return `✓ ${t('ms.newBest', { previous: result.previous })}`;
+    if (result?.status === 'not-faster') return `ℹ ${t('ms.notFaster', { best: result.best })}`;
+    return `✓ ${t('ms.submitted')}`;
+};
+
 // Shown after a win: send the time to the board once.
 export const SubmitScore = ({ time, onSubmitted, onViewBoard }) => {
     const { t } = useLanguage();
     const [name, setName] = useState(readName);
     const [state, setState] = useState('idle'); // idle | sending | sent | error
+    const [result, setResult] = useState(null);
     const [error, setError] = useState(null);
     const inFlightRef = useRef(false); // blocks double-clicks before state has re-rendered
 
@@ -58,8 +65,9 @@ export const SubmitScore = ({ time, onSubmitted, onViewBoard }) => {
         setState('sending');
         setError(null);
         try {
-            await submitTime({ name, time });
+            const outcome = await submitTime({ name, time });
             saveName(cleanName(name));
+            setResult(outcome);
             setState('sent');
             onSubmitted();
         } catch {
@@ -73,7 +81,7 @@ export const SubmitScore = ({ time, onSubmitted, onViewBoard }) => {
     if (state === 'sent') {
         return (
             <div className="ms-win-banner ms-sent" role="status">
-                <div>✓ {t('ms.submitted')}</div>
+                <div>{resultMessage(t, result)}</div>
                 <button className="ms-btn" type="button" onClick={onViewBoard}>🏆 {t('ms.viewBoard')}</button>
             </div>
         );

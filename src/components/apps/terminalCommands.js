@@ -111,16 +111,13 @@ const projectLines = (lang) => {
     return [...header, ...body];
 };
 
-const LS_LINES = [
-    "Desktop/",
-    "  My Computer",
-    "  Recycle Bin",
-    "  Notepad.exe",
-    "  MusicPlayer.exe",
-    "  Minesweeper.exe",
-    "  Terminal.exe",
-    "  resume.pdf"
-];
+// System folders show up as plain names, every other program is an .exe, like the real Desktop.
+const FOLDER_IDS = ['mycomputer', 'recyclebin'];
+
+export const lsLines = (programs = []) => {
+    const entry = ({ id, title }) => (FOLDER_IDS.includes(id) ? title : `${title.replace(/\s/g, '')}.exe`);
+    return ["Desktop/", ...programs.map((p) => `  ${entry(p)}`), "  resume.pdf"];
+};
 
 const MESSAGES = {
     en: {
@@ -144,7 +141,7 @@ export const parseCommand = (raw) => {
 const text = (lines) => ({ type: 'text', lines });
 
 // Result types: text | open | clear | matrix | neofetch | heart | crash | empty
-export const executeCommand = (raw, now = new Date(), lang = 'en') => {
+export const executeCommand = (raw, now = new Date(), lang = 'en', programs = []) => {
     const { normalized, name } = parseCommand(raw);
     const m = MESSAGES[lang] || MESSAGES.en;
     const open = (url, label) => ({ type: 'open', url, lines: [m.opening(label)] });
@@ -164,7 +161,7 @@ export const executeCommand = (raw, now = new Date(), lang = 'en') => {
         case 'cv': return open(RESUME_URL, 'resume.pdf');
         case 'contact': return text(pick(CONTACT));
         case 'projects': return text(projectLines(lang));
-        case 'ls': return text(LS_LINES);
+        case 'ls': return text(lsLines(programs));
         case 'date': return text([now.toLocaleString(lang)]);
         case 'clear': return { type: 'clear' };
         case 'matrix': return { type: 'matrix' };

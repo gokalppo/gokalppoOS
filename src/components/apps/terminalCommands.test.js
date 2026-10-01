@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
     parseCommand,
     executeCommand,
+    lsLines,
     HELP_LINES,
     GITHUB_URL,
     LINKEDIN_URL,
@@ -100,5 +101,28 @@ describe('executeCommand', () => {
         for (const title of ['IoT Smart Air Quality', 'Hardware TOTP Token', 'Document Scanner', 'AI Image Detector', 'CindraNet']) {
             expect(lines).toContain(title);
         }
+    });
+});
+
+describe('ls', () => {
+    const programs = [
+        { id: 'mycomputer', title: 'My Computer' },
+        { id: 'internetexplorer', title: 'Internet Explorer' },
+        { id: 'solitaire', title: 'Solitaire' }
+    ];
+
+    it('lists the programs it is given, not a hard-coded copy', () => {
+        const { lines } = executeCommand('ls', new Date(), 'en', programs);
+        expect(lines).toEqual([
+            'Desktop/',
+            '  My Computer',
+            '  InternetExplorer.exe',
+            '  Solitaire.exe',
+            '  resume.pdf'
+        ]);
+    });
+
+    it('still prints the resume when no programs are known yet', () => {
+        expect(lsLines()).toEqual(['Desktop/', '  resume.pdf']);
     });
 });

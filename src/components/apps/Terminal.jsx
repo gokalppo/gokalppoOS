@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import './Terminal.css';
 import { executeCommand } from './terminalCommands';
+import { getPrograms } from './programRegistry';
 import { useLanguage } from '../../context/LanguageContext';
 import { subscribeTerminal } from './terminalBus';
 
@@ -170,7 +171,7 @@ const Terminal = () => {
     };
 
     const handleCommand = (cmd) => {
-        const result = executeCommand(cmd, new Date(), lang);
+        const result = executeCommand(cmd, new Date(), lang, getPrograms());
         const echo = `C:\\Users\\Guest> ${cmd}`;
         let output = [];
 

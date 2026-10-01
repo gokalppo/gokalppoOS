@@ -4,6 +4,8 @@ import { FileSystemProvider } from '../context/FileSystemContext';
 import { DisplayProvider } from '../context/DisplayContext';
 import Desktop from './Desktop';
 import { openApp } from './appBus';
+import { getPrograms } from './apps/programRegistry';
+import { executeCommand } from './apps/terminalCommands';
 
 afterEach(() => cleanup());
 
@@ -107,5 +109,17 @@ describe('Desktop file opening', () => {
         expect(onOpenWindow.mock.calls[0][0]).toBe('a.txt');
         expect(onOpenWindow.mock.calls[1][0]).toBe('b.png');
         expect(onOpenWindow.mock.calls[1][2].width).toBe('830px');
+    });
+
+    it('publishes its programs so the Terminal ls always matches the desktop', () => {
+        setup();
+        const ids = getPrograms().map((p) => p.id);
+        expect(ids).toEqual(expect.arrayContaining(['notepad', 'paint', 'solitaire', 'internetexplorer', 'messenger']));
+        const { lines } = executeCommand('ls', new Date(), 'en', getPrograms());
+        expect(lines).toContain('  My Computer');
+        expect(lines).toContain('  Recycle Bin');
+        expect(lines).toContain('  Paint.exe');
+        expect(lines).toContain('  InternetExplorer.exe');
+        expect(lines).toContain('  Solitaire.exe');
     });
 });

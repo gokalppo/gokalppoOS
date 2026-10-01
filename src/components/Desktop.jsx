@@ -28,6 +28,7 @@ import minesweeperIcon from '../assets/images/minesweeper.png';
 import ieIcon from '../assets/images/ie.webp';
 import aboutIcon from '../assets/images/about.svg';
 import { OPEN_APP_EVENT } from './appBus';
+import { setPrograms } from './apps/programRegistry';
 import { fileKind } from './apps/fileTypes';
 import guestbookIcon from '../assets/images/guestbook.svg';
 import solitaireIcon from '../assets/images/solitaire.webp';
@@ -280,6 +281,7 @@ const Desktop = ({
     const programsRef = useRef(programs);
     const openWindowRef = useRef(onOpenWindow);
     useEffect(() => {
+        setPrograms(programs);
         programsRef.current = programs;
         openWindowRef.current = onOpenWindow;
     });

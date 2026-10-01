@@ -68,7 +68,7 @@ const AddContactPanel = ({ user, contacts, showNotification, onClose }) => {
             boxSizing: 'border-box',
             border: '2px solid #fff',
             borderColor: '#fff #808080 #808080 #fff',
-            background: '#c0c0c0',
+            background: 'var(--win-gray)',
             padding: '6px',
             flexShrink: 0,
             alignItems: 'stretch'
@@ -115,7 +115,7 @@ const AddContactPanel = ({ user, contacts, showNotification, onClose }) => {
             </div>
 
             {result && (
-                <div style={{ marginTop: '4px', background: '#c0c0c0', display: 'flex', flexDirection: 'column', gap: '4px', padding: '2px' }}>
+                <div style={{ marginTop: '4px', background: 'var(--win-gray)', display: 'flex', flexDirection: 'column', gap: '4px', padding: '2px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                         <img src={starIcon} style={{ width: '12px', opacity: 0.5 }} alt="" />
                         <span style={{ fontWeight: 'bold' }}>User found: {result.username}</span>
@@ -129,7 +129,7 @@ const AddContactPanel = ({ user, contacts, showNotification, onClose }) => {
             {error && (
                 <div style={{
                     marginTop: '4px',
-                    background: '#c0c0c0',
+                    background: 'var(--win-gray)',
                     border: '1px solid black',
                     padding: '4px',
                     display: 'flex',

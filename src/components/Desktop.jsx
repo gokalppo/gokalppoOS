@@ -22,7 +22,8 @@ const FileExplorer = lazy(() => import('./apps/FileExplorer'));
 // ...
 
 import './Desktop.css';
-import wallpaper from '../assets/images/image.webp';
+import { WALLPAPERS } from '../display/wallpapers';
+import { useDisplay } from '../context/DisplayContext';
 import minesweeperIcon from '../assets/images/minesweeper.png';
 import ieIcon from '../assets/images/ie.webp';
 import guestbookIcon from '../assets/images/guestbook.svg';
@@ -98,11 +99,21 @@ const DesktopIcon = ({ id, title, icon, position, isSelected, isAnimating, onDou
             <div
                 ref={nodeRef}
                 className={`desktop-icon-draggable ${isSelected ? 'selected' : ''} ${isAnimating ? 'resetting' : ''}`}
+                role="button"
+                tabIndex={0}
+                aria-label={title}
+                aria-pressed={isSelected}
                 onClick={handleClick}
+                onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        onDoubleClick();
+                    }
+                }}
                 // Stop propagation onMouseDown to prevent desktop selection start when clicking icon
                 onMouseDown={(e) => { e.stopPropagation(); onClick(e); }}
             >
-                <span className="icon-img">{icon}</span>
+                <span className="icon-img" aria-hidden="true">{icon}</span>
                 <span className="icon-text">{title}</span>
             </div>
         </Draggable>
@@ -123,6 +134,8 @@ const Desktop = ({
     onShutdown // Receive here
 }) => {
     const { t } = useLanguage();
+    const { display } = useDisplay();
+    const wallpaperImage = (WALLPAPERS[display.wallpaper] || WALLPAPERS.starfield).image;
     // Initial App Data
     // Opens a .txt file from the file system in its own Notepad window.
     const handleOpenFile = (node) => {
@@ -234,6 +247,15 @@ const Desktop = ({
             options: { width: '500px', height: '500px' }
         },
     ];
+
+    // Everything launchable, for Start > Programs and Run. The id matches the window id (derived from the title).
+    const programs = initialApps.map((app) => ({
+        id: app.options?.id || app.title.toLowerCase().replace(/\s/g, ''),
+        title: app.title,
+        icon: app.icon,
+        content: app.content,
+        options: app.options
+    }));
 
     const [icons, setIcons] = useState(() => {
         try {
@@ -467,7 +489,7 @@ const Desktop = ({
     return (
         <div
             className="desktop"
-            style={{ backgroundImage: `url(${wallpaper})` }}
+            style={{ backgroundImage: wallpaperImage ? `url(${wallpaperImage})` : 'none', backgroundColor: 'var(--os-bg)' }}
             onMouseDown={handleDesktopMouseDown}
             onMouseMove={handleDesktopMouseMove}
             onContextMenu={handleDesktopContextMenu}
@@ -550,6 +572,7 @@ const Desktop = ({
                 activeWindowId={focusedWindowId}
                 onToggleWindow={onTaskbarToggle}
                 onShowDesktop={onShowDesktop}
+                programs={programs}
                 onCloseWindow={onCloseWindow}
                 onOpenWindow={onOpenWindow}
                 isStartOpen={isStartOpen}

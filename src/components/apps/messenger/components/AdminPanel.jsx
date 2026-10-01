@@ -1,12 +1,12 @@
 const AdminPanel = ({ currentUid, allUsers, appUsage = [], onClose, onMigrateEmails, onToggleBan }) => (
     <div style={{
         position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
-        width: '300px', height: '400px', background: '#c0c0c0', border: '2px outset white',
+        width: '300px', height: '400px', background: 'var(--win-gray)', border: '2px outset white',
         zIndex: 9999, display: 'flex', flexDirection: 'column', padding: '5px', boxShadow: '5px 5px 10px rgba(0,0,0,0.5)'
     }}>
         <div style={{ background: 'darkblue', color: 'white', padding: '2px', fontWeight: 'bold', display: 'flex', justifyContent: 'space-between' }}>
             <span>Admin Tools</span>
-            <button onClick={onClose} style={{ background: '#c0c0c0', border: '1px outset white', cursor: 'pointer' }}>X</button>
+            <button onClick={onClose} style={{ background: 'var(--win-gray)', border: '1px outset white', cursor: 'pointer' }}>X</button>
         </div>
         <button
             onClick={onMigrateEmails}

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import './Terminal.css';
 import { executeCommand } from './terminalCommands';
 import { useLanguage } from '../../context/LanguageContext';
+import { subscribeTerminal } from './terminalBus';
 
 const NEOFETCH_ASCII = `
        .---. 
@@ -204,6 +205,11 @@ const Terminal = () => {
 
         setHistory(prev => [...prev, echo, ...output]);
     };
+
+    // Commands handed over by the OS (Start > Run...).
+    const runRef = useRef(handleCommand);
+    useEffect(() => { runRef.current = handleCommand; });
+    useEffect(() => subscribeTerminal((command) => runRef.current(command)), []);
 
     const handleKeyDown = (e) => {
         if (e.key === 'Enter') {

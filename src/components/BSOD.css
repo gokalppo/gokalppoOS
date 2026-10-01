@@ -25,7 +25,7 @@
 }
 
 .bsod-text pre {
-    background: #c0c0c0;
+    background: var(--win-gray);
     color: #0000aa;
     display: inline-block;
     padding: 2px 10px;

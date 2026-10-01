@@ -5,7 +5,7 @@
     left: 0;
     right: 0;
     height: 30px;
-    background: #c0c0c0;
+    background: var(--win-gray);
     border-top: 1px solid #fff;
     display: flex;
     align-items: center;
@@ -25,7 +25,7 @@
     font-size: 11px;
     border: 2px solid;
     border-color: #fff #404040 #404040 #fff;
-    background: #c0c0c0;
+    background: var(--win-gray);
     margin-right: 4px;
     box-shadow: 1px 1px 0 #000;
 }
@@ -52,7 +52,7 @@
 .task-tab {
     flex: 0 1 160px;
     height: 24px;
-    background: #c0c0c0;
+    background: var(--win-gray);
     border: 2px solid;
     border-color: #fff #404040 #404040 #fff;
     display: flex;
@@ -92,7 +92,7 @@
     border-color: #808080 #fff #fff #808080;
     padding: 2px 6px;
     margin-left: 4px;
-    background: #c0c0c0;
+    background: var(--win-gray);
     height: 24px;
     gap: 8px;
 }
@@ -114,7 +114,7 @@
 /* Flashing Animation */
 @keyframes flash-orange {
     0% {
-        background-color: #c0c0c0;
+        background-color: var(--win-gray);
     }
 
     50% {
@@ -124,7 +124,7 @@
     }
 
     100% {
-        background-color: #c0c0c0;
+        background-color: var(--win-gray);
     }
 }
 
@@ -135,7 +135,7 @@
 /* Context Menu */
 .taskbar-context-menu {
     position: fixed;
-    background: #c0c0c0;
+    background: var(--win-gray);
     border: 2px solid;
     border-color: #fff #404040 #404040 #fff;
     padding: 2px;
@@ -152,7 +152,7 @@
 }
 
 .taskbar-context-item:hover {
-    background: #000080;
+    background: var(--win-highlight);
     color: white;
 }
 
@@ -162,7 +162,7 @@
     bottom: 35px;
     right: 5px;
     width: 120px;
-    background: #c0c0c0;
+    background: var(--win-gray);
     border: 2px solid;
     border-color: #fff #404040 #404040 #fff;
     padding: 5px 8px;
@@ -232,7 +232,7 @@
     appearance: none;
     width: 24px;
     height: 14px;
-    background: #c0c0c0;
+    background: var(--win-gray);
     border: 1px solid;
     border-color: #fff #404040 #404040 #fff;
     box-shadow: 1px 1px 0 black;
@@ -258,7 +258,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: #c0c0c0;
+    background: var(--win-gray);
     border: 2px solid;
     border-color: #fff #404040 #404040 #fff;
     cursor: pointer;
@@ -269,3 +269,19 @@
 .tray-clock { cursor: pointer; }
 .tray-lang { font-family: 'Pixel', sans-serif; font-size: 11px; font-weight: bold; min-width: 18px; text-align: center; }
 .tray-network.offline { filter: grayscale(1); }
+
+/* Tray controls are real buttons now; keep them looking like the old icons. */
+button.tray-icon,
+button.tray-clock {
+    background: transparent;
+    border: none;
+    padding: 0;
+    margin: 0;
+    font: inherit;
+    color: inherit;
+    cursor: pointer;
+}
+
+button.tray-icon { font-size: 14px; }
+button.tray-lang { font-size: 11px; }
+button.tray-clock { font-family: 'Pixel', sans-serif; font-size: 11px; }

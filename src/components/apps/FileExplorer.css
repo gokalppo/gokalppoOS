@@ -16,13 +16,13 @@
     align-items: center;
     gap: 6px;
     padding: 4px 6px;
-    background: #c0c0c0;
+    background: var(--win-gray);
     border-bottom: 1px solid #808080;
     flex-shrink: 0;
 }
 
 .fe-up-btn {
-    background: #c0c0c0;
+    background: var(--win-gray);
     border: 1px solid;
     border-color: #fff #808080 #808080 #fff;
     cursor: pointer;
@@ -47,7 +47,7 @@
 }
 
 .fe-empty-btn {
-    background: #c0c0c0;
+    background: var(--win-gray);
     border: 1px solid;
     border-color: #fff #808080 #808080 #fff;
     cursor: pointer;
@@ -84,7 +84,7 @@
 }
 
 .fe-item.selected {
-    background: #000080;
+    background: var(--win-highlight);
     border: 1px dashed #fff;
 }
 
@@ -110,14 +110,14 @@
     width: 100%;
     font-size: 11px;
     font-family: 'MS Sans Serif', sans-serif;
-    border: 1px solid #000080;
+    border: 1px solid var(--win-highlight);
     padding: 1px 2px;
     text-align: center;
 }
 
 .fe-context-menu {
     position: absolute;
-    background: #c0c0c0;
+    background: var(--win-gray);
     border: 2px solid;
     border-color: #fff #404040 #404040 #fff;
     padding: 2px;
@@ -134,6 +134,6 @@
 }
 
 .fe-context-item:hover {
-    background: #000080;
+    background: var(--win-highlight);
     color: white;
 }

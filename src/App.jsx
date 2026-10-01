@@ -10,6 +10,7 @@ import BSOD from './components/BSOD';
 import Clippy from './components/Clippy';
 import TaskSwitcher from './components/TaskSwitcher';
 import { trackAppOpen } from './analytics/appUsage';
+import { prefersReducedMotion } from './display/motion';
 import { nextFocusAfterMinimize, switcherOrder, nextSwitcherIndex } from './components/windowUtils';
 import './App.css';
 import shutdownSound from './assets/windows98shutdown.mp3';
@@ -119,7 +120,7 @@ function App() {
 
     if (focusedWindowId === id) setFocusedWindowId(nextFocusAfterMinimize(openWindows, id));
 
-    const reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const reducedMotion = prefersReducedMotion();
     const remove = () => {
       closingIdsRef.current.delete(id);
       setOpenWindows((prev) => prev.filter((win) => win.id !== id));

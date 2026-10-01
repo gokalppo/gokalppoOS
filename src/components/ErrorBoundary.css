@@ -2,7 +2,7 @@
     height: 100%;
     box-sizing: border-box;
     padding: 16px;
-    background: #c0c0c0;
+    background: var(--win-gray);
     font-family: gokalppoOS, sans-serif;
     font-size: 12px;
     color: #000;
@@ -46,7 +46,7 @@
 .eb-btn {
     min-width: 84px;
     padding: 4px 10px;
-    background: #c0c0c0;
+    background: var(--win-gray);
     border: 2px solid;
     border-color: #fff #404040 #404040 #fff;
     font-family: inherit;

@@ -4,7 +4,7 @@
     bottom: 34px;
     width: 206px;
     z-index: 600000; /* above the Clippy assistant */
-    background: #c0c0c0;
+    background: var(--win-gray);
     border: 2px solid;
     border-color: #fff #404040 #404040 #fff;
     box-shadow: 2px 2px 0 #000;
@@ -15,7 +15,7 @@
 }
 
 .calendar-title {
-    background: linear-gradient(90deg, #000080 0%, #1084d0 100%);
+    background: linear-gradient(90deg, var(--title-from), var(--title-to));
     color: #fff;
     font-weight: bold;
     padding: 2px 4px;
@@ -36,7 +36,7 @@
     height: 18px;
     padding: 0;
     font-size: 8px;
-    background: #c0c0c0;
+    background: var(--win-gray);
     border: 2px solid;
     border-color: #fff #404040 #404040 #fff;
     cursor: pointer;
@@ -55,7 +55,7 @@
 }
 
 .calendar-grid th {
-    background: #c0c0c0;
+    background: var(--win-gray);
     font-weight: normal;
     border-bottom: 1px solid #808080;
     padding: 2px 0;
@@ -63,7 +63,7 @@
 
 .calendar-grid td { padding: 2px 0; height: 16px; }
 .calendar-grid td.outside { color: #a0a0a0; }
-.calendar-grid td.today { background: #000080; color: #fff; font-weight: bold; }
+.calendar-grid td.today { background: var(--win-highlight); color: #fff; font-weight: bold; }
 
 .calendar-time {
     margin: 6px 2px 0;

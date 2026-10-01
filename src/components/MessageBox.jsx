@@ -12,7 +12,7 @@ const MessageBox = ({ title, message, type = 'info', buttons = ['OK'], onResult 
             justifyContent: 'center',
             backgroundColor: 'rgba(0,0,0,0.1)' // Minimal dimming to focus attention
         }}>
-            <div className="window" style={{ width: '300px', boxShadow: '4px 4px 10px rgba(0,0,0,0.5)' }}>
+            <div className="window" role="dialog" aria-modal="true" aria-label={title} style={{ width: '300px', boxShadow: '4px 4px 10px rgba(0,0,0,0.5)' }}>
                 <div className="title-bar">
                     <div className="title-bar-text">{title}</div>
                     <div className="title-bar-controls">

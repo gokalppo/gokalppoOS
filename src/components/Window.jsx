@@ -1,4 +1,4 @@
-import React, { useRef, useState, useLayoutEffect } from 'react';
+import React, { useRef, useState, useLayoutEffect, useEffect, useId } from 'react';
 import Draggable from 'react-draggable';
 import { useOS } from '../context/OSContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -9,15 +9,11 @@ import {
     cascadePosition,
     computeResize
 } from './windowUtils';
+import { prefersReducedMotion } from '../display/motion';
 import './Window.css';
 
 const MINIMIZE_MS = 220;
 let openedCount = 0; // drives the cascade offset of newly opened windows
-
-const prefersReducedMotion = () =>
-    typeof window !== 'undefined' &&
-    window.matchMedia &&
-    window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 const viewportSize = () => ({ width: window.innerWidth, height: window.innerHeight });
 
@@ -48,6 +44,7 @@ const Window = ({
 }) => {
     const { playSound } = useOS();
     const { t } = useLanguage();
+    const titleId = useId();
     const nodeRef = useRef(null);
     const resizeRef = useRef(null);
     const minimizeAnimRef = useRef(null);
@@ -118,6 +115,12 @@ const Window = ({
             hideTimerRef.current = setTimeout(finish, MINIMIZE_MS + 120);
         }
     }, [isMinimized, id]);
+
+    // Keyboard users: a newly opened window takes focus unless something inside already has it.
+    useEffect(() => {
+        const el = nodeRef.current;
+        if (el && !el.contains(document.activeElement)) el.focus({ preventScroll: true });
+    }, []);
 
     const toggleMaximize = (e) => {
         e?.stopPropagation();
@@ -201,15 +204,19 @@ const Window = ({
                 ref={nodeRef}
                 className={className}
                 style={windowStyle}
+                role="dialog"
+                aria-labelledby={titleId}
+                tabIndex={-1}
                 onMouseDownCapture={() => onFocus && onFocus(id)}
                 onAnimationEnd={(e) => { if (e.target === nodeRef.current) setOpening(false); }}
             >
                 <div className="title-bar" onDoubleClick={toggleMaximize}>
                     {renderedIcon}
-                    <div className="title-bar-text">{title}</div>
+                    <div className="title-bar-text" id={titleId}>{title}</div>
                     <div className="title-bar-controls">
                         <button
                             title={t('window.minimize')}
+                            aria-label={t('window.minimize')}
                             onClick={(e) => { e.stopPropagation(); onMinimize && onMinimize(id); }}
                             onMouseDown={(e) => e.stopPropagation()}
                             className="minimize-button"
@@ -220,6 +227,7 @@ const Window = ({
                         </button>
                         <button
                             title={maximized ? t('window.restore') : t('window.maximize')}
+                            aria-label={maximized ? t('window.restore') : t('window.maximize')}
                             onClick={toggleMaximize}
                             onMouseDown={(e) => e.stopPropagation()}
                             className={`maximize-button ${!resizable ? 'disabled' : ''}`}
@@ -247,12 +255,13 @@ const Window = ({
                         </button>
                         <button
                             title={t('window.close')}
+                            aria-label={t('window.close')}
                             onClick={(e) => { e.stopPropagation(); onClose && onClose(id); }}
                             onMouseDown={(e) => e.stopPropagation()}
                             className="close-button"
                             style={{ marginLeft: '2px' }}
                         >
-                            X
+                            <span aria-hidden="true">X</span>
                         </button>
                     </div>
                 </div>

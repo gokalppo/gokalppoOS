@@ -11,7 +11,7 @@ const CalendarPopup = ({ now }) => {
     const go = (delta) => setView((v) => shiftMonth(v.year, v.month, delta));
 
     return (
-        <div className="calendar-popup" onClick={(e) => e.stopPropagation()}>
+        <div className="calendar-popup" role="dialog" aria-label={t('calendar.title')} onClick={(e) => e.stopPropagation()}>
             <div className="calendar-title">{t('calendar.title')}</div>
             <div className="calendar-nav">
                 <button className="calendar-btn" onClick={() => go(-1)} title={t('calendar.prev')}>◀</button>

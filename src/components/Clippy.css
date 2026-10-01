@@ -48,7 +48,7 @@
     width: 16px;
     height: 16px;
     border-radius: 50%;
-    background: #c0c0c0;
+    background: var(--win-gray);
     border: 1px solid #404040;
     color: black;
     font-size: 10px;
@@ -129,3 +129,14 @@
         display: none;
     }
 }
+
+.clippy-body {
+    background: transparent;
+    border: none;
+    padding: 0;
+    margin: 0;
+    cursor: pointer;
+    display: block;
+}
+
+.clippy-dismiss:focus-visible { opacity: 1; }

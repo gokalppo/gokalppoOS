@@ -4,6 +4,10 @@ import { useLanguage } from '../context/LanguageContext';
 import StartMenu from './StartMenu';
 import { playSystemSound } from '../audio/systemSounds';
 import CalendarPopup from './CalendarPopup';
+import RunDialog from './RunDialog';
+import { useStartActions, SETTINGS_IDS } from './startActions';
+import { resolveRunCommand } from './runCommand';
+import { queueTerminalCommand } from './apps/terminalBus';
 import './Taskbar.css';
 import startIcon from '../assets/images/windows.png';
 import loudIcon from '../assets/images/loud.png';
@@ -14,6 +18,7 @@ const Taskbar = ({
     activeWindowId,
     onToggleWindow,
     onShowDesktop,
+    programs = [],
     onCloseWindow,
     onOpenWindow,
     isStartOpen = false,
@@ -26,6 +31,8 @@ const Taskbar = ({
     const [contextMenu, setContextMenu] = useState(null); // { x, y, windowId }
     const [isVolumeOpen, setIsVolumeOpen] = useState(false);
     const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+    const [isRunOpen, setIsRunOpen] = useState(false);
+    const startActions = useStartActions(onOpenWindow);
     const [isOnline, setIsOnline] = useState(() => navigator.onLine);
     const [visitorCount, setVisitorCount] = useState(null);
     const [flashingWindows, setFlashingWindows] = useState(new Set());
@@ -96,9 +103,38 @@ const Taskbar = ({
             setIsVolumeOpen(false);
             setIsCalendarOpen(false);
         };
+        const handleEscape = (e) => {
+            if (e.key !== 'Escape') return;
+            setIsVolumeOpen(false);
+            setIsCalendarOpen(false);
+            setContextMenu(null);
+            if (isStartOpen) toggleStart();
+        };
+        window.addEventListener('keydown', handleEscape);
         window.addEventListener('click', handleClickOutside);
-        return () => window.removeEventListener('click', handleClickOutside);
+        return () => {
+            window.removeEventListener('click', handleClickOutside);
+            window.removeEventListener('keydown', handleEscape);
+        };
     }, [isStartOpen, toggleStart]);
+
+    // Start > Run...: open a program, a web address, or hand a command to the Terminal.
+    const programIds = [...programs.map((p) => p.id), ...SETTINGS_IDS];
+    const launchProgram = (app) => onOpenWindow(app.title, app.content, { icon: app.icon, ...app.options });
+    const executeRun = (input) => {
+        const result = resolveRunCommand(input, programIds);
+        if (result.type === 'program') {
+            if (result.id === 'systemproperties') startActions.openSystemProperties();
+            else if (result.id === 'displayproperties') startActions.openDisplayProperties();
+            else launchProgram(programs.find((p) => p.id === result.id));
+        } else if (result.type === 'url') {
+            window.open(result.url, '_blank', 'noopener,noreferrer');
+        } else if (result.type === 'terminal') {
+            queueTerminalCommand(result.command);
+            const terminal = programs.find((p) => p.id === 'terminal');
+            if (terminal) launchProgram(terminal);
+        }
+    };
 
     const handleStartClick = (e) => {
         e.stopPropagation();
@@ -184,7 +220,12 @@ const Taskbar = ({
                 onClose={() => toggleStart()}
                 onLaunch={onOpenWindow}
                 onShutdown={onShutdown}
+                programs={programs}
+                actions={startActions}
+                onRun={() => setIsRunOpen(true)}
             />
+
+            {isRunOpen && <RunDialog onExecute={executeRun} onClose={() => setIsRunOpen(false)} />}
 
             {contextMenu && (
                 <div
@@ -198,7 +239,7 @@ const Taskbar = ({
 
             {/* Volume Panel */}
             {isVolumeOpen && (
-                <div className="volume-panel" onClick={(e) => e.stopPropagation()}>
+                <div className="volume-panel" role="dialog" aria-label={t('taskbar.volume')} onClick={(e) => e.stopPropagation()}>
                     <div className="volume-title">{t('taskbar.volume')}</div>
                     <div className="volume-content-row">
                         {/* Volume Ramp Graphic */}
@@ -219,6 +260,7 @@ const Taskbar = ({
                                 value={volumePercent}
                                 onChange={handleVolumeChange}
                                 className="volume-slider"
+                                aria-label={t('taskbar.volume')}
                             />
                         </div>
                     </div>
@@ -260,7 +302,7 @@ const Taskbar = ({
                     />
                     Start
                 </button>
-                <button className="show-desktop-btn" onClick={(e) => { e.stopPropagation(); onShowDesktop && onShowDesktop(); }} title={t('taskbar.showDesktop')}>
+                <button className="show-desktop-btn" aria-label={t('taskbar.showDesktop')} onClick={(e) => { e.stopPropagation(); onShowDesktop && onShowDesktop(); }} title={t('taskbar.showDesktop')}>
                     <svg width="18" height="16" viewBox="0 0 18 16" style={{ display: 'block' }} aria-hidden="true">
                         <rect x="1" y="2" width="16" height="11" fill="#008080" stroke="#000" />
                         <rect x="1" y="2" width="16" height="3" fill="#000080" stroke="#000" />
@@ -272,6 +314,7 @@ const Taskbar = ({
                         <button
                             key={win.id}
                             data-task-id={win.id}
+                            aria-pressed={activeWindowId === win.id && !win.isMinimized}
                             className={`task-tab ${activeWindowId === win.id && !win.isMinimized ? 'active' : ''} ${flashingWindows.has(win.id) ? 'flashing' : ''}`}
                             onClick={(e) => { e.stopPropagation(); onToggleWindow(win.id); }}
                             onContextMenu={(e) => handleContextMenu(e, win.id)}
@@ -281,26 +324,26 @@ const Taskbar = ({
                     ))}
                 </div>
                 <div className="tray-area">
-                    <div className="tray-icon tray-lang" onClick={(e) => { e.stopPropagation(); toggleLang(); }} title={t('taskbar.language')}>
+                    <button type="button" className="tray-icon tray-lang" onClick={(e) => { e.stopPropagation(); toggleLang(); }} title={t('taskbar.language')} aria-label={t('taskbar.language')}>
                         {lang.toUpperCase()}
-                    </div>
-                    <div className="tray-icon" title={isOnline ? t('taskbar.networkOn') : t('taskbar.networkOff')}>
+                    </button>
+                    <div className="tray-icon" role="img" title={isOnline ? t('taskbar.networkOn') : t('taskbar.networkOff')} aria-label={isOnline ? t('taskbar.networkOn') : t('taskbar.networkOff')}>
                         <span className={`tray-network ${isOnline ? '' : 'offline'}`}>{isOnline ? '🌐' : '⛔'}</span>
                     </div>
                     {visitorCount !== null && (
-                        <div className="tray-icon" title={t('taskbar.visitors', { count: visitorCount })}>👥</div>
+                        <div className="tray-icon" role="img" title={t('taskbar.visitors', { count: visitorCount })} aria-label={t('taskbar.visitors', { count: visitorCount })}>👥</div>
                     )}
-                    <div className={`tray-icon ${isVolumeOpen ? 'active' : ''}`} onClick={toggleVolume} title={t('taskbar.volume')}>
+                    <button type="button" className={`tray-icon ${isVolumeOpen ? 'active' : ''}`} onClick={toggleVolume} title={t('taskbar.volume')} aria-label={t('taskbar.volume')} aria-expanded={isVolumeOpen}>
                         <img
                             src={volumePercent === 0 ? mutedIcon : loudIcon}
                             alt="Volume"
                             style={{ width: '16px', height: '16px' }}
                         />
-                    </div>
-                    <div className="tray-icon" onClick={toggleFullScreen} title={t('taskbar.fullScreen')}>🖥️</div>
-                    <div className="tray-clock" onClick={toggleCalendar} title={time.toLocaleDateString(lang, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}>
+                    </button>
+                    <button type="button" className="tray-icon" onClick={toggleFullScreen} title={t('taskbar.fullScreen')} aria-label={t('taskbar.fullScreen')}>🖥️</button>
+                    <button type="button" className="tray-clock" aria-expanded={isCalendarOpen} onClick={toggleCalendar} title={time.toLocaleDateString(lang, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}>
                         {formatTime(time)}
-                    </div>
+                    </button>
                 </div>
             </div>
         </>

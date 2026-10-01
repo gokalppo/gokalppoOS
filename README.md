@@ -16,6 +16,8 @@ Instead of a static page of cards, my portfolio is a tiny operating system runni
 ### The OS shell
 - **BIOS boot sequence**, Windows 98 startup and shutdown sounds, taskbar with a live clock and volume control
 - **Window manager**: drag, resize from all eight edges and corners, minimize (the window flies to its taskbar button), maximize, open/close transitions (reduced-motion aware), focus and z-order handling, dimmed inactive title bars
+- **Start menu**: Programs (every app), Settings (Display Properties, System Properties), Documents, Help, **Run...** (type a program name like `paint` or `cmd`, a web address, or any Terminal command such as `neofetch`) and Shut Down. Fully keyboard-navigable
+- **Display Properties**: four wallpapers (including Windows 98 and Bliss) or a solid colour, five colour schemes (Windows Standard, Rainy Day, Hotdog Stand, Eggplant, Desert), and a screen saver picker (Starfield, Mystify or none) with a wait time and live preview. Saved in `localStorage`
 - **Taskbar**: click a button to minimize or restore, a Show Desktop button, a clock that opens a calendar, and tray icons for network status, live visitor count and volume
 - **Alt + `** (and Alt+Tab where the browser lets it through) opens a Win98-style window switcher; release Alt to jump, Esc to cancel
 - **Optional system sounds** (synthesized with Web Audio, off by default): open, close, minimize, restore, error. Toggle them from the volume popup
@@ -24,6 +26,7 @@ Instead of a static page of cards, my portfolio is a tiny operating system runni
 - **Clippy-style assistant** that gives context-aware tips depending on which app you have focused (and follows your cursor with its eyes)
 - **Warp-speed screensaver** after two minutes of inactivity
 - **Crash-proof windows**: each app runs inside an error boundary, so a crashing program shows a Win98-style "illegal operation" dialog instead of taking the desktop down (hidden `crash` terminal command to see it)
+- **Accessibility**: desktop icons are keyboard-focusable buttons (Enter/Space opens), windows are labelled dialogs that take focus when opened, taskbar/tray controls are real buttons with labels, Escape closes menus and popups, focus rings are visible, and `prefers-reduced-motion` turns off screen savers and decorative animation
 - **Hidden easter egg**: try the Konami Code
 - **Turkish / English**: a TR/EN switch in the tray (follows the browser language by default). The shell, Clippy, Terminal, Gallery, Contact, Guestbook, Internet Explorer, Solitaire, Minesweeper and System Properties are translated; program names stay as proper names
 
@@ -90,6 +93,13 @@ A few design decisions worth mentioning:
 - **Privacy-friendly analytics.** The only analytics are anonymous app-open counters (`analytics/appOpens/{app}`): no cookies, no IDs, no personal data. Do Not Track is respected, local development is excluded, and only an admin can read the totals (Messenger > Admin Tools).
 - **Security lives in the database rules.** The client is never trusted: `role` and `isBanned` can only be changed by admins, private messages and typing state are readable only by the two participants, friend lists cannot be forged, and email addresses are kept in a separate `userPrivate` node. Rules are in [`database.rules.json`](database.rules.json).
 
+## Hardening
+
+- **Database rules** (`database.rules.json`) validate message length, the shape and size of `outbox` entries, guestbook posts and Minesweeper records; roles and bans can only be changed by admins.
+- **Visitor counter** increments once per browser session, so reloads cannot inflate it (each write is also limited to +1 by the rules).
+- **Firebase App Check (optional).** Set `VITE_RECAPTCHA_SITE_KEY` (see `.env.example`) to a reCAPTCHA v3 site key, register the same key in Firebase Console > App Check, deploy, and only then turn enforcement on. Without the key the code is compiled out, so the repo works as-is.
+- **EmailJS**: restrict the allowed domain and set a monthly limit in the EmailJS dashboard; the public key in the client is not a secret.
+
 ## Running it locally
 
 Requires Node.js 18+.
@@ -108,7 +118,7 @@ Open <http://localhost:5173>, wait for the BIOS text, and press **Enter**.
 | `npm run dev` | Start the Vite dev server |
 | `npm run build` | Production build into `dist/` |
 | `npm run preview` | Serve the production build locally |
-| `npm test` | Run the Vitest suite (185 tests) |
+| `npm test` | Run the Vitest suite (277 tests) |
 | `npm run lint` | Run ESLint |
 
 ### Using your own Firebase project

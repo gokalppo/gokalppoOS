@@ -1,7 +1,7 @@
 .contact-container {
     height: 100%;
     width: 100%;
-    background-color: #c0c0c0;
+    background-color: var(--win-gray);
     /* Windows Gray */
     display: flex;
     flex-direction: column;
@@ -59,7 +59,7 @@
     font-size: 14px;
     font-family: 'gokalppoOS', sans-serif;
     border: 2px outset white;
-    background: #c0c0c0;
+    background: var(--win-gray);
     cursor: pointer;
     margin-left: 2px;
 }
@@ -99,7 +99,7 @@
     width: 60px;
     height: 60px;
     border: 2px outset white;
-    background: #c0c0c0;
+    background: var(--win-gray);
     transition: transform 0.1s, box-shadow 0.1s;
     cursor: pointer;
 }

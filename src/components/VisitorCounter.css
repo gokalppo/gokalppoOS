@@ -17,7 +17,7 @@
 .visitor-counter-label {
     font-family: 'MS Sans Serif', sans-serif;
     font-size: 9px;
-    color: #c0c0c0;
+    color: var(--win-gray);
     letter-spacing: 1px;
 }
 

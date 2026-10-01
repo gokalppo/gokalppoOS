@@ -5,13 +5,16 @@ import App from './App.jsx'
 import { OSProvider } from './context/OSContext';
 import { FileSystemProvider } from './context/FileSystemContext';
 import { LanguageProvider } from './context/LanguageContext';
+import { DisplayProvider } from './context/DisplayContext';
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <LanguageProvider>
       <OSProvider>
         <FileSystemProvider>
-          <App />
+          <DisplayProvider>
+            <App />
+          </DisplayProvider>
         </FileSystemProvider>
       </OSProvider>
     </LanguageProvider>

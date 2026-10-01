@@ -2,7 +2,7 @@
     height: 100%;
     display: flex;
     flex-direction: column;
-    background: #c0c0c0;
+    background: var(--win-gray);
     font-family: 'gokalppoOS', sans-serif;
     font-size: 12px;
     color: #000;
@@ -29,7 +29,7 @@
     left: 0;
     min-width: 210px;
     z-index: 20;
-    background: #c0c0c0;
+    background: var(--win-gray);
     border: 2px solid;
     border-color: #fff #404040 #404040 #fff;
     box-shadow: 2px 2px 0 #000;
@@ -53,7 +53,7 @@
 
 .ie-dropdown .indent { padding-left: 28px; }
 .ie-dropdown button:hover,
-.ie-dropdown a:hover { background: #000080; color: #fff; }
+.ie-dropdown a:hover { background: var(--win-highlight); color: #fff; }
 .ie-sep { height: 1px; background: #808080; margin: 3px 2px; border-bottom: 1px solid #fff; }
 
 .ie-toolbar {
@@ -68,7 +68,7 @@
     font-family: inherit;
     font-size: 12px;
     padding: 3px 9px;
-    background: #c0c0c0;
+    background: var(--win-gray);
     border: 2px solid;
     border-color: #fff #404040 #404040 #fff;
     cursor: pointer;
@@ -118,7 +118,7 @@
     line-height: 1.45;
 }
 
-.ie-page h1 { font-size: 20px; margin: 0 0 8px; color: #000080; }
+.ie-page h1 { font-size: 20px; margin: 0 0 8px; color: var(--win-highlight); }
 .ie-page h2 { font-size: 14px; margin: 14px 0 6px; }
 .ie-page a { color: #0000ee; }
 
@@ -136,13 +136,13 @@
     font-size: 12px;
 }
 
-.ie-card:hover { border-color: #000080; box-shadow: 0 0 0 1px #000080; }
+.ie-card:hover { border-color: var(--win-highlight); box-shadow: 0 0 0 1px var(--win-highlight); }
 .ie-card-img { width: 100%; height: 96px; object-fit: cover; background: #202020; }
 .ie-card-body { padding: 6px 8px; display: flex; flex-direction: column; gap: 2px; }
 
 .ie-project-img { max-width: 100%; max-height: 220px; display: block; border: 1px solid #808080; }
 .ie-badges { display: flex; flex-wrap: wrap; gap: 4px; }
-.ie-badge { background: #000080; color: #fff; padding: 1px 6px; font-size: 11px; }
+.ie-badge { background: var(--win-highlight); color: #fff; padding: 1px 6px; font-size: 11px; }
 .ie-description { white-space: pre-wrap; margin-top: 10px; }
 .ie-links li { margin: 4px 0; }
 

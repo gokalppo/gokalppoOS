@@ -3,7 +3,7 @@
     flex-direction: column;
     height: 100%;
     width: 100%;
-    background-color: #c0c0c0;
+    background-color: var(--win-gray);
     font-family: 'gokalppoOS', sans-serif;
     box-sizing: border-box;
     overflow: hidden;
@@ -68,7 +68,7 @@
     font-weight: bold;
     border: 2px solid #fff;
     border-color: #ffffff #808080 #808080 #ffffff;
-    background: #c0c0c0;
+    background: var(--win-gray);
     box-shadow: 1px 1px 0 black;
     cursor: pointer;
 }
@@ -153,7 +153,7 @@
     border-bottom: none;
     border-top-left-radius: 3px;
     border-top-right-radius: 3px;
-    background: #c0c0c0;
+    background: var(--win-gray);
     cursor: pointer;
     font-size: 12px;
 }
@@ -163,7 +163,7 @@
     font-weight: bold;
     position: relative;
     top: 2px;
-    border-color: #ffffff #808080 #c0c0c0 #ffffff;
+    border-color: #ffffff #808080 var(--win-gray) #ffffff;
 }
 
 /* LEFT SIDEBAR */
@@ -232,12 +232,12 @@
 }
 
 .msn-contact:hover {
-    background: #000080;
+    background: var(--win-highlight);
     color: white;
 }
 
 .msn-contact.active {
-    background: #000080;
+    background: var(--win-highlight);
     color: white;
 }
 

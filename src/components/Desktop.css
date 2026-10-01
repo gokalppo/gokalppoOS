@@ -94,7 +94,7 @@
 }
 .desktop-context-menu {
     position: fixed;
-    background: #c0c0c0;
+    background: var(--win-gray);
     border: 2px solid;
     border-color: #fff #404040 #404040 #fff;
     padding: 2px;
@@ -112,15 +112,15 @@
 }
 
 .desktop-context-item:hover {
-    background: #000080;
+    background: var(--win-highlight);
     color: white;
 }
 
 .app-loading-spinner {
     width: 14px;
     height: 14px;
-    border: 2px solid #c0c0c0;
-    border-top-color: #000080;
+    border: 2px solid var(--win-gray);
+    border-top-color: var(--win-highlight);
     border-radius: 50%;
     animation: app-loading-spin 0.7s linear infinite;
     display: inline-block;
@@ -128,4 +128,13 @@
 
 @keyframes app-loading-spin {
     to { transform: rotate(360deg); }
+}
+
+/* Keyboard focus looks like a selected icon. */
+.desktop-icon-draggable:focus { outline: none; }
+.desktop-icon-draggable:focus-visible .icon-text {
+    background-color: var(--win-highlight);
+    color: #fff;
+    outline: 1px dotted #fff;
+    outline-offset: -1px;
 }

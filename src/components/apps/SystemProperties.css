@@ -2,7 +2,7 @@
     height: 100%;
     box-sizing: border-box;
     padding: 8px;
-    background: #c0c0c0;
+    background: var(--win-gray);
     display: flex;
     flex-direction: column;
     font-family: 'gokalppoOS', sans-serif;
@@ -14,7 +14,7 @@
 
 .sp-tab {
     padding: 3px 12px;
-    background: #c0c0c0;
+    background: var(--win-gray);
     border: 2px solid;
     border-color: #fff #404040 transparent #fff;
     border-bottom: none;
@@ -31,7 +31,7 @@
 .sp-panel {
     flex: 1;
     min-height: 0;
-    background: #c0c0c0;
+    background: var(--win-gray);
     border: 2px solid;
     border-color: #fff #404040 #404040 #fff;
     padding: 12px;
@@ -77,7 +77,7 @@
 .sp-tree-group { margin-left: 8px; width: calc(100% - 8px); }
 .sp-tree-device { margin-left: 34px; width: calc(100% - 34px); }
 .sp-tree-device:hover { text-decoration: underline; }
-.sp-tree-device.selected { background: #000080; color: #fff; border: 1px dotted #fff; }
+.sp-tree-device.selected { background: var(--win-highlight); color: #fff; border: 1px dotted #fff; }
 
 .sp-box {
     display: inline-block;
@@ -93,7 +93,7 @@
 
 .sp-details {
     min-height: 92px;
-    background: #c0c0c0;
+    background: var(--win-gray);
     border: 2px solid;
     border-color: #808080 #fff #fff #808080;
     padding: 6px 8px;
@@ -108,7 +108,7 @@
 .sp-btn {
     min-width: 76px;
     padding: 4px 10px;
-    background: #c0c0c0;
+    background: var(--win-gray);
     border: 2px solid;
     border-color: #fff #404040 #404040 #fff;
     font-family: inherit;

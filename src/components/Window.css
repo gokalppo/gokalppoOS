@@ -16,7 +16,7 @@
 }
 
 .title-bar {
-    background: linear-gradient(90deg, #000080 0%, #1084d0 100%);
+    background: linear-gradient(90deg, var(--title-from), var(--title-to));
     padding: 2px;
     display: flex;
     align-items: center;
@@ -59,7 +59,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background-color: #c0c0c0;
+    background-color: var(--win-gray);
     /* Standard Gray */
     color: black;
 
@@ -103,7 +103,7 @@
 }
 /* Inactive windows dim their title bar, like Win98. */
 .window.inactive .title-bar {
-    background: linear-gradient(90deg, #808080 0%, #b5b5b5 100%);
+    background: linear-gradient(90deg, var(--title-inactive-from), var(--title-inactive-to));
 }
 
 .window.inactive .title-bar-text {
@@ -147,3 +147,5 @@
 @media (prefers-reduced-motion: reduce) {
     .window-opening, .window-closing { animation: none; }
 }
+
+.window:focus { outline: none; }

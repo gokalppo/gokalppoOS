@@ -141,7 +141,7 @@
 }
 
 .notepad-dialog-close {
-    background: #c0c0c0;
+    background: var(--win-gray);
     border: 1px outset white;
     cursor: pointer;
     font-size: 10px;
@@ -177,7 +177,7 @@
 }
 
 .notepad-saveas-actions button {
-    background: #c0c0c0;
+    background: var(--win-gray);
     border: 1px solid;
     border-color: #fff #404040 #404040 #fff;
     padding: 3px 14px;

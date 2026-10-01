@@ -1,7 +1,7 @@
 .gallery-container {
     height: 100%;
     width: 100%;
-    background-color: #c0c0c0;
+    background-color: var(--win-gray);
     /* Classic Windows Gray */
     display: flex;
     flex-direction: column;
@@ -97,7 +97,7 @@
 .gallery-modal {
     width: 90%;
     height: 90%;
-    background-color: #c0c0c0;
+    background-color: var(--win-gray);
     border-top: 2px solid white;
     border-left: 2px solid white;
     border-right: 2px solid black;
@@ -120,7 +120,7 @@
 }
 
 .gallery-modal-close {
-    background: #c0c0c0;
+    background: var(--win-gray);
     color: black;
     border-top: 1px solid white;
     border-left: 1px solid white;
@@ -190,7 +190,7 @@
 }
 
 .gallery-tech-badge {
-    background: var(--win-blue, #000080);
+    background: var(--win-blue, var(--win-highlight));
     color: white;
     font-size: 10px;
     font-family: 'gokalppoOS', sans-serif;

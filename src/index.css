@@ -8,7 +8,12 @@
 :root {
   --os-bg: #008080;
   --win-gray: #c0c0c0;
-  --win-blue: #000080;
+  --win-highlight: #000080;
+  --win-blue: var(--win-highlight);
+  --title-from: #000080;
+  --title-to: #1084d0;
+  --title-inactive-from: #808080;
+  --title-inactive-to: #b5b5b5;
   --win-text: #000000;
   --win-white: #ffffff;
   --win-border-light: #ffffff;
@@ -67,7 +72,7 @@ textarea,
 
 /* 3. Hareket eden parça (Thumb/Handle) */
 ::-webkit-scrollbar-thumb {
-  background-color: #c0c0c0;
+  background-color: var(--win-gray);
   border: 2px solid;
   /* Windows 98'in o meşhur 3D bevel (eğim) efekti */
   border-color: #ffffff #808080 #808080 #ffffff;
@@ -80,7 +85,7 @@ textarea,
 
 /* 4. Köşelerdeki düğmeler (Buttons) - İsteğe bağlı */
 ::-webkit-scrollbar-button {
-  background-color: #c0c0c0;
+  background-color: var(--win-gray);
   width: 16px;
   height: 16px;
   border: 2px solid;
@@ -121,4 +126,22 @@ textarea,
   background-repeat: no-repeat;
   background-position: center;
   background-size: 8px;
+}
+
+/* --- Accessibility --- */
+:focus-visible {
+  outline: 2px dotted #000;
+  outline-offset: 1px;
+}
+
+/* Honour "reduce motion": no looping or decorative animation anywhere. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
 }

@@ -84,22 +84,27 @@ const Clippy = ({ openWindows, focusedWindowId }) => {
     return (
         <div className="clippy-root">
             {bubbleOpen && (
-                <div className="clippy-bubble">
+                <div className="clippy-bubble" role="status" aria-live="polite">
                     <button className="clippy-bubble-close" onClick={() => setBubbleOpen(false)} title={t('clippy.close')}>×</button>
                     <div className="clippy-bubble-text">{message}</div>
                 </div>
             )}
-            <div
-                className="clippy-character"
-                onClick={() => showTipForCategory(category)}
-                title={t('clippy.click')}
-            >
+            <div className="clippy-character">
                 <button
+                    type="button"
                     className="clippy-dismiss"
-                    onClick={(e) => { e.stopPropagation(); setVisible(false); }}
+                    onClick={() => setVisible(false)}
                     title={t('clippy.hide')}
+                    aria-label={t('clippy.hide')}
                 >×</button>
-                <svg viewBox="0 0 110 160" width="66" height="96" className="clippy-svg">
+                <button
+                    type="button"
+                    className="clippy-body"
+                    onClick={() => showTipForCategory(category)}
+                    title={t('clippy.click')}
+                    aria-label={t('clippy.click')}
+                >
+                <svg viewBox="0 0 110 160" width="66" height="96" className="clippy-svg" aria-hidden="true">
                     <defs>
                         <linearGradient id="clippyMetal" x1="0%" y1="0%" x2="100%" y2="100%">
                             <stop offset="0%" stopColor="#f5f5f5" />
@@ -141,6 +146,7 @@ const Clippy = ({ openWindows, focusedWindowId }) => {
                         <circle cx={72 + pupilOffset.x} cy={48 + pupilOffset.y} r="3.2" fill="#1a1a1a" />
                     </g>
                 </svg>
+                </button>
             </div>
         </div>
     );

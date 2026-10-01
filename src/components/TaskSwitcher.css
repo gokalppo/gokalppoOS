@@ -9,7 +9,7 @@
 }
 
 .task-switcher {
-    background: #c0c0c0;
+    background: var(--win-gray);
     border: 2px solid;
     border-color: #fff #404040 #404040 #fff;
     box-shadow: 2px 2px 0 #000;
@@ -35,7 +35,7 @@
 }
 
 .task-switcher-tile.selected {
-    border-color: #000080;
+    border-color: var(--win-highlight);
     background: #d4d0c8;
     outline: 1px dotted #000;
     outline-offset: -4px;

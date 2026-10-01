@@ -76,3 +76,17 @@ describe('Internet Explorer', () => {
         expect(github.getAttribute('rel')).toContain('noopener');
     });
 });
+
+describe('Internet Explorer project links', () => {
+    it('shows safe Source / demo links on a project page, and none for a private project', () => {
+        render(<InternetExplorer />);
+        typeAddress('projects/iot-air-quality');
+        const source = screen.getByText('Source code').closest('a');
+        expect(source.getAttribute('href')).toBe('https://github.com/gokalppo/IoT-Air-Quality-Monitor');
+        expect(source.getAttribute('rel')).toContain('noopener');
+        expect(screen.getByText('Watch demo').closest('a').getAttribute('target')).toBe('_blank');
+
+        typeAddress('projects/cindranet');
+        expect(screen.queryByText('Source code')).toBeNull();
+    });
+});

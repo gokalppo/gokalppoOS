@@ -13,7 +13,7 @@ const ALIASES = {
     notepad: 'notepad', wordpad: 'notepad',
     'desk.cpl': 'displayproperties', display: 'displayproperties', 'control': 'displayproperties',
     'sysdm.cpl': 'systemproperties', system: 'systemproperties',
-    book: 'guestbook', resume: 'myresume', cv: 'myresume'
+    book: 'guestbook', resume: 'myresume', cv: 'myresume', about: 'aboutme', tour: 'welcome', welcome: 'welcome'
 };
 
 const stripExtension = (name) => name.replace(/\.(exe|com|bat|cpl)$/i, (m) => (m.toLowerCase() === '.cpl' ? m : ''));

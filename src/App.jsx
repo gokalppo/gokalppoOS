@@ -11,6 +11,8 @@ import Clippy from './components/Clippy';
 import TaskSwitcher from './components/TaskSwitcher';
 import { trackAppOpen } from './analytics/appUsage';
 import { prefersReducedMotion } from './display/motion';
+import { useStartActions } from './components/startActions';
+import { isWelcomeHidden } from './components/apps/welcomeStorage';
 import { nextFocusAfterMinimize, switcherOrder, nextSwitcherIndex } from './components/windowUtils';
 import './App.css';
 import shutdownSound from './assets/windows98shutdown.mp3';
@@ -40,8 +42,13 @@ function App() {
 
   const toggleStart = () => setIsStartOpen(!isStartOpen);
 
+  // The Welcome window greets first-time visitors (and anyone who left it enabled).
+  const welcomeActionsRef = useRef(null);
   const handleBootComplete = () => {
     setIsBooting(false);
+    if (!isWelcomeHidden()) {
+      setTimeout(() => welcomeActionsRef.current?.openWelcome(), 900);
+    }
   };
 
   const handleWindowFocus = (id) => {
@@ -112,6 +119,9 @@ function App() {
     setOpenWindows((prev) => prev.map((w) => ({ ...w, isMinimized: !allMinimized })));
     setFocusedWindowId(allMinimized ? nextFocusAfterMinimize(openWindows.map((w) => ({ ...w, isMinimized: false })), null) : null);
   };
+
+  const startActions = useStartActions(handleIconClick);
+  useEffect(() => { welcomeActionsRef.current = startActions; });
 
   const closeWindow = (id) => {
     if (closingIdsRef.current.has(id)) return;

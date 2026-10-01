@@ -5,11 +5,14 @@ import imgAI from '../assets/images/gallery04.webp';
 import imgCindraNet from '../assets/images/cindranet.svg';
 
 // Single source of truth for the portfolio projects (Gallery, Internet Explorer, Terminal).
-// `description` is localized: { en, tr }.
+// `description` is localized: { en, tr }. `links` only lists public URLs that really exist
+// (CindraNet is a private repository, so it has none).
+export const GITHUB_PROFILE = 'https://github.com/gokalppo';
 export const PROJECTS = [
     {
         id: 1,
         slug: 'iot-air-quality',
+        links: { source: 'https://github.com/gokalppo/IoT-Air-Quality-Monitor', demo: 'https://youtube.com/shorts/mowip0-1FCY' },
         title: 'IoT Smart Air Quality',
         image: imgIoT,
         tech: ['ESP32', 'C++', 'DHT22', 'MQ-135', 'SSD1306 OLED', 'Blynk'],
@@ -25,6 +28,7 @@ export const PROJECTS = [
     {
         id: 2,
         slug: 'totp-token',
+        links: { source: 'https://github.com/gokalppo/ESP32-Hardware-TOTP-Token' },
         title: 'Hardware TOTP Token',
         image: imgTOTP,
         tech: ['Embedded C', 'OLED 128x64', 'Secure Storage'],
@@ -40,6 +44,7 @@ export const PROJECTS = [
     {
         id: 3,
         slug: 'document-scanner',
+        links: { source: 'https://github.com/gokalppo/OpenCV-DocScanner' },
         title: 'Document Scanner',
         image: imgScanner,
         tech: ['C++', 'OpenCV', 'Canny Edge Detection'],
@@ -55,6 +60,7 @@ export const PROJECTS = [
     {
         id: 4,
         slug: 'ai-image-detector',
+        links: { source: 'https://github.com/gokalppo/ai-image-detector-resnet' },
         title: 'AI Image Detector',
         image: imgAI,
         tech: ['PyTorch', 'ResNet18', 'Transfer Learning'],
@@ -70,6 +76,7 @@ export const PROJECTS = [
     {
         id: 5,
         slug: 'cindranet',
+        links: {},
         title: 'CindraNet',
         image: imgCindraNet,
         tech: ['Rust', 'Tauri', 'X3DH', 'Double Ratchet', 'Kademlia DHT'],

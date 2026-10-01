@@ -1,0 +1,44 @@
+.welcome-root {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+    padding: 12px;
+    background: var(--win-gray);
+    color: #000;
+    font-family: 'gokalppoOS', sans-serif;
+    font-size: 12px;
+    gap: 10px;
+}
+
+.welcome-main {
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+    display: flex;
+    gap: 14px;
+    padding: 10px 12px;
+    background: #ffffe0;
+    border: 2px solid;
+    border-color: #808080 #fff #fff #808080;
+}
+
+.welcome-logo { font-size: 36px; flex: none; }
+.welcome-text h1 { margin: 0 0 6px; font-size: 16px; color: var(--win-highlight); }
+.welcome-text h2 { margin: 12px 0 4px; font-size: 13px; }
+.welcome-text p { margin: 0; line-height: 1.45; }
+.welcome-text ul { margin: 0; padding-left: 18px; line-height: 1.45; }
+.welcome-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.welcome-footer { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.welcome-footer label { display: flex; align-items: center; gap: 6px; cursor: pointer; }
+
+.welcome-btn {
+    padding: 4px 12px;
+    font: inherit;
+    background: var(--win-gray);
+    border: 2px solid;
+    border-color: #fff #404040 #404040 #fff;
+    cursor: pointer;
+}
+
+.welcome-btn:active { border-color: #404040 #fff #fff #404040; }

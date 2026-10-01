@@ -126,6 +126,7 @@ const Taskbar = ({
         if (result.type === 'program') {
             if (result.id === 'systemproperties') startActions.openSystemProperties();
             else if (result.id === 'displayproperties') startActions.openDisplayProperties();
+            else if (result.id === 'welcome') startActions.openWelcome();
             else launchProgram(programs.find((p) => p.id === result.id));
         } else if (result.type === 'url') {
             window.open(result.url, '_blank', 'noopener,noreferrer');

@@ -26,6 +26,8 @@ import { WALLPAPERS } from '../display/wallpapers';
 import { useDisplay } from '../context/DisplayContext';
 import minesweeperIcon from '../assets/images/minesweeper.png';
 import ieIcon from '../assets/images/ie.webp';
+import aboutIcon from '../assets/images/about.svg';
+import { OPEN_APP_EVENT } from './appBus';
 import guestbookIcon from '../assets/images/guestbook.svg';
 import solitaireIcon from '../assets/images/solitaire.webp';
 import binEmptyIcon from '../assets/images/Bin_Empty95.svg';
@@ -40,6 +42,7 @@ import resumeIcon from '../assets/images/resume.png';
 import messengerIcon from '../assets/images/msn.png';
 import paintIcon from '../assets/images/paint.png';
 
+const AboutMe = lazy(() => import('./apps/AboutMe'));
 const InternetExplorer = lazy(() => import('./apps/InternetExplorer'));
 const Guestbook = lazy(() => import('./apps/Guestbook'));
 const Solitaire = lazy(() => import('./apps/Solitaire'));
@@ -173,7 +176,7 @@ const Desktop = ({
             x: 10,
             y: 190
         },
-        { id: 'resume', title: 'My Resume', icon: <img src={resumeIcon} alt="My Resume" style={{ width: '32px', height: '32px' }} />, content: <MyResume />, x: 10, y: 280 },
+        { id: 'resume', title: 'My Resume', icon: <img src={resumeIcon} alt="My Resume" style={{ width: '32px', height: '32px' }} />, content: <MyResume />, x: 10, y: 280, options: { width: '640px', height: '580px', minWidth: '420px', minHeight: '360px', bodyStyle: { padding: 0 } } },
         {
             id: 'terminal',
             title: 'Terminal',
@@ -238,6 +241,15 @@ const Desktop = ({
             options: { width: '620px', height: '540px', minWidth: '560px', minHeight: '420px', bodyStyle: { padding: 0 } }
         },
         {
+            id: 'aboutme',
+            title: 'About Me',
+            icon: <img src={aboutIcon} alt="About Me" style={{ width: '32px', height: '32px' }} />,
+            content: <AboutMe />,
+            x: 100,
+            y: 550,
+            options: { width: '520px', height: '460px', minWidth: '380px', minHeight: '320px', bodyStyle: { padding: 0 } }
+        },
+        {
             id: 'messenger',
             title: 'Messenger',
             icon: <img src={messengerIcon} alt="Messenger" style={{ width: '32px', height: '32px' }} />,
@@ -256,6 +268,22 @@ const Desktop = ({
         content: app.content,
         options: app.options
     }));
+
+    // Windows can ask the desktop to open an app by window id (e.g. Welcome > "Open resume").
+    const programsRef = useRef(programs);
+    const openWindowRef = useRef(onOpenWindow);
+    useEffect(() => {
+        programsRef.current = programs;
+        openWindowRef.current = onOpenWindow;
+    });
+    useEffect(() => {
+        const handleOpenApp = (e) => {
+            const app = programsRef.current.find((p) => p.id === e.detail.id);
+            if (app) openWindowRef.current(app.title, app.content, { icon: app.icon, ...app.options });
+        };
+        window.addEventListener(OPEN_APP_EVENT, handleOpenApp);
+        return () => window.removeEventListener(OPEN_APP_EVENT, handleOpenApp);
+    }, []);
 
     const [icons, setIcons] = useState(() => {
         try {

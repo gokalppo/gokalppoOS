@@ -7,8 +7,9 @@ import helpIcon from '../assets/images/help.png';
 const OutlookExpress = lazy(() => import('./apps/OutlookExpress'));
 const SystemProperties = lazy(() => import('./apps/SystemProperties'));
 const DisplayProperties = lazy(() => import('./apps/DisplayProperties'));
+const Welcome = lazy(() => import('./apps/Welcome'));
 
-export const SETTINGS_IDS = ['systemproperties', 'displayproperties'];
+export const SETTINGS_IDS = ['systemproperties', 'displayproperties', 'welcome'];
 
 // The windows opened from the Start menu / Run box that are not desktop icons.
 export const useStartActions = (onOpenWindow) => {
@@ -23,6 +24,10 @@ export const useStartActions = (onOpenWindow) => {
         openDisplayProperties: () => onOpenWindow(t('start.displayProperties'), <DisplayProperties />, {
             id: 'displayproperties', width: '440px', height: '500px', minWidth: '440px', minHeight: '500px', ...dialog,
             icon: <img src={computerIcon} alt="" />
+        }),
+        openWelcome: () => onOpenWindow(t('welcome.title'), <Welcome />, {
+            id: 'welcome', width: '520px', height: '400px', minWidth: '420px', minHeight: '340px',
+            bodyStyle: { padding: 0 }, icon: <img src={helpIcon} alt="" />
         }),
         openDocuments: () => onOpenWindow(t('start.documents'), <div>{t('start.documentsStub')}</div>, { id: 'documents' }),
         openHelp: () => onOpenWindow('New Message', <OutlookExpress />, {

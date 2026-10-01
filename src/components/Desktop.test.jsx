@@ -3,6 +3,7 @@ import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { FileSystemProvider } from '../context/FileSystemContext';
 import { DisplayProvider } from '../context/DisplayContext';
 import Desktop from './Desktop';
+import { openApp } from './appBus';
 
 afterEach(() => cleanup());
 
@@ -64,5 +65,28 @@ describe('Desktop icons (keyboard access)', () => {
         setup();
         // The Start menu receives these; verify through the Run box path in the taskbar.
         expect(screen.getByRole('button', { name: 'Internet Explorer' })).toBeTruthy();
+    });
+});
+
+describe('Desktop open-app bus', () => {
+    it('opens an app when a window asks for it by id (with its options)', () => {
+        const { onOpenWindow } = setup();
+        openApp('myresume');
+        expect(onOpenWindow).toHaveBeenCalledTimes(1);
+        const [title, content, options] = onOpenWindow.mock.calls[0];
+        expect(title).toBe('My Resume');
+        expect(content).toBeTruthy();
+        expect(options.width).toBe('640px');
+    });
+
+    it('ignores unknown ids', () => {
+        const { onOpenWindow } = setup();
+        openApp('does-not-exist');
+        expect(onOpenWindow).not.toHaveBeenCalled();
+    });
+
+    it('has an About Me icon', () => {
+        setup();
+        expect(screen.getByRole('button', { name: 'About Me' })).toBeTruthy();
     });
 });

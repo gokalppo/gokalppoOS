@@ -131,6 +131,7 @@ const StartMenu = ({ isOpen, onClose, onLaunch, onShutdown, programs = [], actio
             </div>
           )}
         </div>
+        <Item icon={helpIcon} label={t('start.welcome')} onClick={finish(actions.openWelcome)} onMouseEnter={() => setOpenSub(null)} />
         <Item icon={helpIcon} label={t('start.help')} onClick={finish(actions.openHelp)} onMouseEnter={() => setOpenSub(null)} />
         <Item icon="▶️" label={t('start.run')} onClick={finish(onRun)} onMouseEnter={() => setOpenSub(null)} />
         <div className="divider"></div>

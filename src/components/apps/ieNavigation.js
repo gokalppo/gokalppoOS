@@ -9,6 +9,7 @@ export const EXTERNAL_LINKS = [
     { id: 'github', label: 'GitHub', url: 'https://github.com/gokalppo' },
     { id: 'linkedin', label: 'LinkedIn', url: 'https://www.linkedin.com/in/gokalp-eker/' },
     { id: 'instagram', label: 'Instagram', url: 'https://www.instagram.com/_gokalpeker/' },
+    { id: 'site-source', label: 'This site\'s source code', url: 'https://github.com/gokalppo/gokalppoOS' },
     { id: 'resume', label: 'Resume (PDF)', url: '/resume.pdf' },
     { id: 'email', label: 'Email', url: 'mailto:ekergokalp@gmail.com' }
 ];

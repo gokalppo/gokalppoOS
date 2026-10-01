@@ -8,6 +8,7 @@ import {
     canGoBack, canGoForward, currentPath
 } from './ieNavigation';
 import ieLogo from '../../assets/images/ie.webp';
+import ProjectLinks from './ProjectLinks';
 import './InternetExplorer.css';
 
 const LOAD_MS = 280;
@@ -66,6 +67,7 @@ const ProjectPage = ({ project, t, lang, onOpen }) => (
         <img src={project.image} alt={project.title} className="ie-project-img" />
         <h2>{t('ie.tech')}</h2>
         <div className="ie-badges">{project.tech.map((x) => <span key={x} className="ie-badge">{x}</span>)}</div>
+        <ProjectLinks project={project} />
         <div className="ie-description">{localized(project.description, lang)}</div>
     </>
 );

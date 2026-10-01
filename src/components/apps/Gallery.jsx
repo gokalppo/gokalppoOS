@@ -4,6 +4,7 @@ import './Gallery.css';
 import { PROJECTS } from '../../data/projects';
 import { useLanguage } from '../../context/LanguageContext';
 import { localized } from '../../i18n/translate';
+import ProjectLinks from './ProjectLinks';
 
 const Gallery = () => {
     const { t, lang } = useLanguage();
@@ -46,6 +47,7 @@ const Gallery = () => {
                                         ))}
                                     </div>
                                 )}
+                                <ProjectLinks project={selectedProject} />
                                 <div style={{ whiteSpace: 'pre-wrap' }}>{localized(selectedProject.description, lang)}</div>
                             </div>
                         </div>

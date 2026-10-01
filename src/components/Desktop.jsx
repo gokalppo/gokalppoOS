@@ -26,7 +26,7 @@ import { WALLPAPERS } from '../display/wallpapers';
 import { useDisplay } from '../context/DisplayContext';
 import minesweeperIcon from '../assets/images/minesweeper.png';
 import ieIcon from '../assets/images/ie.webp';
-import aboutIcon from '../assets/images/about.svg';
+import aboutIcon from '../assets/images/about.png';
 import { OPEN_APP_EVENT, OPEN_FILE_EVENT } from './appBus';
 import { setPrograms } from './apps/programRegistry';
 import { fileKind } from './apps/fileTypes';

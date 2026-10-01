@@ -1,4 +1,5 @@
 import { createContext, useState, useContext, useCallback } from 'react';
+import { loadSoundsEnabled, saveSoundsEnabled, playSystemSound } from '../audio/systemSounds';
 
 const OSContext = createContext();
 
@@ -16,6 +17,18 @@ export const OSProvider = ({ children }) => {
         localStorage.setItem('gokalppoOS_volume', newVol.toString());
     }, []);
 
+    // --- System sounds (opt-in, off by default) ---
+    const [soundsEnabled, setSoundsEnabledState] = useState(loadSoundsEnabled);
+
+    const setSoundsEnabled = useCallback((enabled) => {
+        setSoundsEnabledState(enabled);
+        saveSoundsEnabled(enabled);
+    }, []);
+
+    const playSound = useCallback((name) => {
+        if (soundsEnabled) playSystemSound(name, volume);
+    }, [soundsEnabled, volume]);
+
     // Real windows live in App.jsx's state; apps ask for a close via this
     // event so they don't need the window-management props threaded down to them.
     const closeWindow = useCallback((id) => {
@@ -27,7 +40,10 @@ export const OSProvider = ({ children }) => {
             value={{
                 closeWindow,
                 volume,
-                setGlobalVolume
+                setGlobalVolume,
+                soundsEnabled,
+                setSoundsEnabled,
+                playSound
             }}
         >
             {children}

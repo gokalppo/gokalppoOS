@@ -1,5 +1,13 @@
-import React from 'react';
+import React, { useEffect } from 'react';
+import { useOS } from '../context/OSContext';
 import './ErrorBoundary.css';
+
+// Plays the (opt-in) system error sound once when the crash dialog appears.
+const CrashSound = () => {
+    const { playSound } = useOS();
+    useEffect(() => { playSound('error'); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    return null;
+};
 
 class ErrorBoundary extends React.Component {
     state = { error: null, showDetails: false };
@@ -23,6 +31,7 @@ class ErrorBoundary extends React.Component {
 
         return (
             <div className="eb-root" role="alert">
+                <CrashSound />
                 <div className="eb-body">
                     <div className="eb-icon" aria-hidden="true">✖</div>
                     <div className="eb-text">

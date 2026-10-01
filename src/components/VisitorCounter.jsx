@@ -20,7 +20,9 @@ const VisitorCounter = () => {
         }
 
         const unsubscribe = onValue(counterRef, (snap) => {
-            setCount(snap.val() || 0);
+            const value = snap.val() || 0;
+            setCount(value);
+            window.dispatchEvent(new CustomEvent('visitor-count', { detail: { count: value } }));
         });
 
         return () => unsubscribe();

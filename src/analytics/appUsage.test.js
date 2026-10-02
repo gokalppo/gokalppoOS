@@ -1,5 +1,9 @@
+/* global process */
+
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { isTrackable, sanitizeAppId, sortUsage, trackAppOpen } from './appUsage';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+import { isTrackable, sanitizeAppId, sortUsage, trackAppOpen, KNOWN_APPS } from './appUsage';
 
 const updateMock = vi.fn(() => Promise.resolve());
 vi.mock('../firebase', () => ({ db: {} }));
@@ -68,5 +72,31 @@ describe('trackAppOpen', () => {
     it('swallows backend failures', async () => {
         updateMock.mockRejectedValueOnce(new Error('offline'));
         await expect(trackAppOpen('paint', prod)).resolves.toBeUndefined();
+    });
+});
+
+describe('only real apps are counted', () => {
+    const prod = { doNotTrack: null, hostname: 'gokalppo.me' };
+
+    it('ignores made-up ids and the names of the visitor\'s own files', async () => {
+        await trackAppOpen('totally-made-up', prod);
+        await trackAppOpen('my-secret-notes_txt', prod);
+        expect(updateMock).not.toHaveBeenCalled();
+    });
+
+    it('counts every app that exists', async () => {
+        for (const id of KNOWN_APPS) await trackAppOpen(id, prod);
+        expect(updateMock).toHaveBeenCalledTimes(KNOWN_APPS.length);
+    });
+
+    it('agrees with the database rules, so a counter is never refused (or invented)', () => {
+        const rules = JSON.parse(readFileSync(resolve(process.cwd(), 'database.rules.json'), 'utf8'));
+        const clause = rules.rules.analytics.appOpens.$app['.write'];
+        const allowed = new RegExp(clause.match(/matches\(\/(.*)\/\)/)[1]);
+        for (const id of KNOWN_APPS) expect(allowed.test(id), id).toBe(true);
+        expect(allowed.test('made-up')).toBe(false);
+        // and nothing the rules accept is missing from the client list
+        const listed = clause.match(/\^\((.*)\)\$/)[1].split('|');
+        expect(listed.sort()).toEqual([...KNOWN_APPS].sort());
     });
 });

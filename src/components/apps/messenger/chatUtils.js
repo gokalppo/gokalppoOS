@@ -4,6 +4,10 @@
 // react-hooks/purity lint rule (they never run during render).
 export const nowMs = () => Date.now();
 
+// Sign-up limits. The database rules accept names up to 40 characters; 8+ characters is the usual minimum for passwords.
+export const MAX_USERNAME_LENGTH = 30;
+export const MIN_PASSWORD_LENGTH = 8;
+
 export const GLOBAL_ROOMS = ['global-1', 'global-2'];
 export const BOT_ROOM = 'bot';
 

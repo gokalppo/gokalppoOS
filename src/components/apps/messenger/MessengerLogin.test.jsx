@@ -83,3 +83,40 @@ describe('chat with the bot without signing in', () => {
         expect(fakeDb.read('')).toBeNull();
     });
 });
+
+describe('sign-up rules', () => {
+    const fillAndSubmit = ({ name, email = 'a@example.com', password }) => {
+        render(<LoginScreen onLogin={() => { }} onBot={() => { }} />);
+        fireEvent.click(screen.getByText('Sign Up', { selector: 'span' }));
+        fireEvent.change(screen.getByPlaceholderText('Screen Name'), { target: { value: name } });
+        fireEvent.change(screen.getByPlaceholderText('example@hotmail.com'), { target: { value: email } });
+        fireEvent.change(document.querySelector('input[type="password"]'), { target: { value: password } });
+        fireEvent.click(screen.getByRole('button', { name: 'Sign Up' }));
+    };
+
+    it('turns away passwords shorter than 8 characters before asking Firebase', async () => {
+        fillAndSubmit({ name: 'Ayşe', password: 'abc1234' });
+        await waitFor(() => expect(screen.getByText('Password must be at least 8 characters.')).toBeTruthy());
+        expect(authMock.createUserWithEmailAndPassword).not.toHaveBeenCalled();
+    });
+
+    it('limits the screen name length in the form and in the check', () => {
+        render(<LoginScreen onLogin={() => { }} onBot={() => { }} />);
+        fireEvent.click(screen.getByText('Sign Up', { selector: 'span' }));
+        expect(screen.getByPlaceholderText('Screen Name').getAttribute('maxLength')).toBe('30');
+    });
+
+    it('turns away a blank (spaces only) screen name', async () => {
+        fillAndSubmit({ name: '   ', password: 'longenough1' });
+        await waitFor(() => expect(screen.getByText(/Screen name must be 1 to 30 characters/)).toBeTruthy());
+        expect(authMock.createUserWithEmailAndPassword).not.toHaveBeenCalled();
+    });
+
+    it('creates the account with a trimmed name', async () => {
+        authMock.createUserWithEmailAndPassword.mockResolvedValue({ user: { uid: 'new-uid' } });
+        authMock.updateProfile.mockResolvedValue();
+        fillAndSubmit({ name: '  Ayşe  ', password: 'longenough1' });
+        await waitFor(() => expect(fakeDb.read('users/new-uid')).toMatchObject({ uid: 'new-uid', username: 'Ayşe' }));
+        expect(fakeDb.read('userPrivate/new-uid')).toEqual({ email: 'a@example.com' });
+    });
+});

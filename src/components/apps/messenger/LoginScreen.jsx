@@ -5,7 +5,7 @@ import messengerIcon from '../../../assets/images/msn.png';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signInAnonymously, updateProfile } from "firebase/auth";
 import { auth, db } from "../../../firebase";
 import { ref, set, get } from "firebase/database";
-import { makeGuestName } from './chatUtils';
+import { makeGuestName, MAX_USERNAME_LENGTH, MIN_PASSWORD_LENGTH } from './chatUtils';
 
 const LoginScreen = ({ onLogin, onBot }) => {
     const [isSignUp, setIsSignUp] = useState(false);
@@ -112,8 +112,13 @@ const LoginScreen = ({ onLogin, onBot }) => {
 
         if (!email || !password || !username) return;
 
-        if (password.length < 6) {
-            setErrorMessage('Password must be at least 6 characters.');
+        if (password.length < MIN_PASSWORD_LENGTH) {
+            setErrorMessage(`Password must be at least ${MIN_PASSWORD_LENGTH} characters.`);
+            return;
+        }
+        const cleanName = username.trim();
+        if (cleanName.length < 1 || cleanName.length > MAX_USERNAME_LENGTH) {
+            setErrorMessage(`Screen name must be 1 to ${MAX_USERNAME_LENGTH} characters.`);
             return;
         }
 
@@ -124,14 +129,14 @@ const LoginScreen = ({ onLogin, onBot }) => {
             const user = userCredential.user;
 
             await updateProfile(user, {
-                displayName: username
+                displayName: cleanName
             });
 
             // FIX: Save to Realtime Database as well for searching
             // Email is PII and lives in userPrivate/, not the publicly-readable users/ node.
             await set(ref(db, 'users/' + user.uid), {
                 uid: user.uid,
-                username: username, // Important for search
+                username: cleanName, // Important for search
                 status: 'online',
                 avatar: 'default'
             });
@@ -173,6 +178,7 @@ const LoginScreen = ({ onLogin, onBot }) => {
                             value={username}
                             onChange={(e) => setUsername(e.target.value)}
                             placeholder="Screen Name"
+                            maxLength={MAX_USERNAME_LENGTH}
                             required
                         />
                     </>
@@ -202,9 +208,9 @@ const LoginScreen = ({ onLogin, onBot }) => {
                     }}
                     required
                 />
-                {isSignUp && password.length > 0 && password.length < 6 && (
+                {isSignUp && password.length > 0 && password.length < MIN_PASSWORD_LENGTH && (
                     <small style={{ color: 'red', fontSize: '10px', marginTop: '-5px', marginBottom: '5px' }}>
-                        Min 6 characters
+                        Min {MIN_PASSWORD_LENGTH} characters
                     </small>
                 )}
 

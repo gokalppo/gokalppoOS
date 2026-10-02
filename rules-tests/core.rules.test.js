@@ -110,7 +110,7 @@ describe('visitor counter', () => {
 });
 
 describe('outbox', () => {
-    const entry = (extra = {}) => ({ from: 'a@x.com', to: 'me@x.com', subject: 'Hi', body: 'Hello', sentVia: 'emailjs', timestamp: 123, ...extra });
+    const entry = (extra = {}) => ({ from: 'a@x.com', to: 'gokalppoos@gmail.com', subject: 'Hi', body: 'Hello', sentVia: 'emailjs', timestamp: 123, ...extra });
 
     it('lets visitors create a well-formed entry but never read or overwrite it', async () => {
         await assertSucceeds(anonDb(env).ref('outbox/o1').set(entry()));

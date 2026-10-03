@@ -31,3 +31,18 @@ export const seed = (env, data) =>
 
 export const dbAs = (env, uid) => env.authenticatedContext(uid).database();
 export const anonDb = (env) => env.unauthenticatedContext().database();
+
+// A guest (anonymous sign-in) as the rules see them.
+export const guestDb = (env, uid) => env.authenticatedContext(uid, { firebase: { sign_in_provider: 'anonymous' } }).database();
+
+// Gives the test accounts what a normal, settled account has: it was created long ago and its device id is stored.
+// (New accounts must wait 3 minutes before chatting, and chat needs a device id, so most tests start from this.)
+export const deviceIdOf = (uid) => Buffer.from(uid).toString('hex').padEnd(32, '0').slice(0, 32);
+export const seedAccounts = (env, uids = ['alice', 'bob', 'carol', 'mallory', 'root']) => seed(env, Object.fromEntries(
+    uids.flatMap((uid) => [[`users/${uid}/createdAt`, 1], [`userPrivate/${uid}/deviceId`, deviceIdOf(uid)]])
+));
+
+// Server-recorded start and finish of a Minesweeper game (seeded with the rules switched off).
+export const seedRun = (env, id, { startedAt, finishedAt, usedAt } = {}) => seed(env, {
+    [`runs/${id}`]: { startedAt, ...(finishedAt ? { finishedAt } : {}), ...(usedAt ? { usedAt } : {}) }
+});

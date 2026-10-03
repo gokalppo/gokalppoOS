@@ -41,6 +41,54 @@ afterEach(() => {
     vi.useRealTimers();
 });
 
+describe('Minesweeper keeps a server record of each game', () => {
+    it('stamps the start on the first click and the end on the win, then uses the game up when the time is saved', async () => {
+        render(<Minesweeper />);
+        expect(fakeDb.read('runs')).toBeNull();
+        await winTheGame();
+        await act(async () => { await vi.advanceTimersByTimeAsync(100); });
+
+        const runs = fakeDb.read('runs');
+        const [id] = Object.keys(runs);
+        expect(Object.keys(runs)).toHaveLength(1);
+        expect(typeof runs[id].startedAt).toBe('number');
+        expect(typeof runs[id].finishedAt).toBe('number');
+        expect(runs[id].usedAt).toBeUndefined();
+
+        fireEvent.change(screen.getByPlaceholderText('Your name'), { target: { value: 'Ada' } });
+        fireEvent.click(screen.getByText('Submit'));
+        await waitFor(() => expect(screen.getByText(/Your time was submitted/)).toBeTruthy());
+        expect(scores()[0]).toMatchObject({ name: 'Ada', run: id });
+        expect(typeof fakeDb.read(`runs/${id}/usedAt`)).toBe('number');
+    });
+
+    it('a new game is a new run', async () => {
+        render(<Minesweeper />);
+        await winTheGame();
+        fireEvent.click(document.querySelector('.minesweeper-smiley'));
+        Math.random.mockRestore(); // back to a real random board (only the Math.random spy, not the module mocks)
+        fireEvent.click(cellAt(4, 4));
+        await act(async () => { await vi.advanceTimersByTimeAsync(100); });
+        await waitFor(() => expect(Object.keys(fakeDb.read('runs'))).toHaveLength(2));
+    });
+
+    it('cannot save a time when the game could not be recorded (the board was unreachable)', async () => {
+        const { databaseMock } = await import('../../test/fakeDatabase');
+        const original = databaseMock.set;
+        databaseMock.set = (r, v) => (String(r.path).startsWith('runs/') ? Promise.reject(new Error('offline')) : original(r, v));
+        try {
+            render(<Minesweeper />);
+            await winTheGame();
+            fireEvent.change(screen.getByPlaceholderText('Your name'), { target: { value: 'Ada' } });
+            fireEvent.click(screen.getByText('Submit'));
+            await waitFor(() => expect(document.querySelector('.ms-error')).toBeTruthy());
+            expect(scores()).toHaveLength(0);
+        } finally {
+            databaseMock.set = original;
+        }
+    });
+});
+
 describe('Minesweeper best times', () => {
     it('offers score submission only after a win', async () => {
         render(<Minesweeper />);

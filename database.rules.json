@@ -6,7 +6,7 @@
       ],
       ".read": "auth != null",
       "$uid": {
-        ".write": "auth != null && ((auth.uid === $uid && newData.child('role').val() === data.child('role').val() && newData.child('isBanned').val() === data.child('isBanned').val()) || root.child('users').child(auth.uid).child('role').val() === 'admin')",
+        ".write": "auth != null && ((auth.uid === $uid && newData.child('role').val() === data.child('role').val() && newData.child('isBanned').val() === data.child('isBanned').val() && (newData.child('createdAt').val() === data.child('createdAt').val() || !data.child('createdAt').exists())) || root.child('users').child(auth.uid).child('role').val() === 'admin')",
         "role": {
           ".validate": "root.child('users').child(auth.uid).child('role').val() === 'admin'"
         },
@@ -85,6 +85,9 @@
         },
         "$other": {
           ".validate": false
+        },
+        "createdAt": {
+          ".validate": "newData.val() === now"
         }
       }
     },
@@ -92,7 +95,7 @@
       "$room": {
         ".read": "auth != null",
         "$msgId": {
-          ".write": "auth != null && (!data.exists() ? (newData.child('senderUid').val() === auth.uid && newData.parent().parent().parent().child('users').child(auth.uid).child('lastMessageAt').val() === now && (!root.child('users').child(auth.uid).child('lastMessageAt').exists() || root.child('users').child(auth.uid).child('lastMessageAt').val() < now - 900)) : root.child('users').child(auth.uid).child('role').val() === 'admin')",
+          ".write": "auth != null && (!data.exists() ? (newData.child('senderUid').val() === auth.uid && root.child('users').child(auth.uid).child('isBanned').val() !== true && root.child('userPrivate').child(auth.uid).child('deviceId').exists() && !root.child('bannedDevices').child(root.child('userPrivate').child(auth.uid).child('deviceId').val()).exists() && auth.token.firebase.sign_in_provider !== 'anonymous' && (root.child('users').child(auth.uid).child('role').val() === 'admin' || (root.child('users').child(auth.uid).child('createdAt').exists() && root.child('users').child(auth.uid).child('createdAt').val() < now - 180000)) && newData.parent().parent().parent().child('users').child(auth.uid).child('lastMessageAt').val() === now && (!root.child('users').child(auth.uid).child('lastMessageAt').exists() || root.child('users').child(auth.uid).child('lastMessageAt').val() < now - 900)) : root.child('users').child(auth.uid).child('role').val() === 'admin')",
           "text": {
             ".validate": "newData.isString() && newData.val().length <= 1000"
           },
@@ -123,7 +126,7 @@
       "$roomId": {
         ".read": "auth != null && $roomId.contains(auth.uid)",
         "$msgId": {
-          ".write": "auth != null && $roomId.contains(auth.uid) && (!data.exists() ? (newData.child('senderUid').val() === auth.uid && newData.parent().parent().parent().child('users').child(auth.uid).child('lastMessageAt').val() === now && (!root.child('users').child(auth.uid).child('lastMessageAt').exists() || root.child('users').child(auth.uid).child('lastMessageAt').val() < now - 900)) : root.child('users').child(auth.uid).child('role').val() === 'admin')",
+          ".write": "auth != null && $roomId.contains(auth.uid) && (!data.exists() ? (newData.child('senderUid').val() === auth.uid && root.child('users').child(auth.uid).child('isBanned').val() !== true && root.child('userPrivate').child(auth.uid).child('deviceId').exists() && !root.child('bannedDevices').child(root.child('userPrivate').child(auth.uid).child('deviceId').val()).exists() && newData.parent().parent().parent().child('users').child(auth.uid).child('lastMessageAt').val() === now && (!root.child('users').child(auth.uid).child('lastMessageAt').exists() || root.child('users').child(auth.uid).child('lastMessageAt').val() < now - 900)) : root.child('users').child(auth.uid).child('role').val() === 'admin')",
           "text": {
             ".validate": "newData.isString() && newData.val().length <= 1000"
           },
@@ -165,7 +168,7 @@
         ".read": "auth != null && auth.uid === $targetUid",
         "$fromUid": {
           ".read": "auth != null && (auth.uid === $fromUid || auth.uid === $targetUid)",
-          ".write": "auth != null && ((auth.uid === $fromUid && auth.token.firebase.sign_in_provider !== 'anonymous') || (auth.uid === $targetUid && !newData.exists() && data.exists()))",
+          ".write": "auth != null && ((auth.uid === $fromUid && auth.token.firebase.sign_in_provider !== 'anonymous' && root.child('users').child(auth.uid).child('isBanned').val() !== true) || (auth.uid === $targetUid && !newData.exists() && data.exists()))",
           ".validate": "newData.hasChildren(['fromUid', 'fromName', 'status']) && newData.child('fromUid').val() === $fromUid",
           "fromUid": {
             ".validate": "newData.isString()"
@@ -201,6 +204,9 @@
         },
         "$other": {
           ".validate": false
+        },
+        "deviceId": {
+          ".validate": "newData.isString() && newData.val().matches(/^[a-f0-9]{32}$/)"
         }
       }
     },
@@ -343,24 +349,54 @@
           "time"
         ],
         "$id": {
-          ".write": "$id.matches(/^[a-z0-9-]{1,20}$/) && newData.exists() && (!data.exists() || newData.child('time').val() < data.child('time').val())",
-          ".validate": "newData.hasChildren(['name', 'time', 'timestamp'])",
+          ".write": "$id.matches(/^[a-z0-9-]{1,20}$/) && newData.exists() && (!data.exists() || newData.child('time').val() < data.child('time').val()) && root.child('runs').child(newData.child('run').val()).child('finishedAt').exists() && !root.child('runs').child(newData.child('run').val()).child('usedAt').exists() && newData.parent().parent().parent().child('runs').child(newData.child('run').val()).child('usedAt').val() === now && root.child('runs').child(newData.child('run').val()).child('finishedAt').val() - root.child('runs').child(newData.child('run').val()).child('startedAt').val() >= 2000 && newData.child('time').val() >= (root.child('runs').child(newData.child('run').val()).child('finishedAt').val() - root.child('runs').child(newData.child('run').val()).child('startedAt').val()) / 1000 - 2",
+          ".validate": "newData.hasChildren(['name', 'time', 'timestamp', 'run'])",
           "name": {
             ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 20"
           },
           "time": {
-            ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 999 && newData.val() % 1 === 0"
+            ".validate": "newData.isNumber() && newData.val() >= 3 && newData.val() <= 999 && newData.val() % 1 === 0"
           },
           "timestamp": {
             ".validate": "newData.val() === now"
           },
           "$other": {
             ".validate": false
+          },
+          "run": {
+            ".validate": "newData.isString() && newData.val().matches(/^[a-f0-9]{20}$/)"
           }
         }
       }
     },
     ".read": false,
-    ".write": false
+    ".write": false,
+    "bannedDevices": {
+      "$deviceId": {
+        ".read": true,
+        ".write": "auth != null && root.child('users').child(auth.uid).child('role').val() === 'admin'",
+        ".validate": "newData.val() === true && $deviceId.matches(/^[a-f0-9]{32}$/)"
+      }
+    },
+    "runs": {
+      "$runId": {
+        ".validate": "$runId.matches(/^[a-f0-9]{20}$/)",
+        "startedAt": {
+          ".write": "!data.exists()",
+          ".validate": "newData.val() === now"
+        },
+        "finishedAt": {
+          ".write": "!data.exists() && data.parent().child('startedAt').exists()",
+          ".validate": "newData.val() === now"
+        },
+        "usedAt": {
+          ".write": "!data.exists() && data.parent().child('finishedAt').exists()",
+          ".validate": "newData.val() === now"
+        },
+        "$other": {
+          ".validate": false
+        }
+      }
+    }
   }
 }

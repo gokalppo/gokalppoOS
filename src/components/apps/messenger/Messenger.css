@@ -605,3 +605,11 @@
 .lesson-field input, .lesson-field textarea { font-family: inherit; font-size: 11px; padding: 2px 4px; }
 .lesson-field textarea { min-height: 60px; resize: vertical; }
 .lesson-warning { color: #a00000; font-weight: bold; margin-top: 4px; }
+
+.chat-locked-notice {
+    padding: 4px 8px;
+    font-size: 11px;
+    background: #ffffe1;
+    border-top: 1px solid #808080;
+    color: #000;
+}

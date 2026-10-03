@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
-import { setupEnv, seed, sendMessage, dbAs, anonDb, assertSucceeds, assertFails, NOW } from './helpers';
+import { setupEnv, seed, seedAccounts, sendMessage, dbAs, anonDb, assertSucceeds, assertFails, NOW } from './helpers';
 
 let env;
 beforeAll(async () => { env = await setupEnv(); });
@@ -13,6 +13,7 @@ beforeEach(async () => {
             root: { uid: 'root', username: 'root', role: 'admin' }
         }
     });
+    await seedAccounts(env);
 });
 
 const send = (db, room, key, extra = {}, options) => sendMessage(db, 'alice', room, key, extra, options);

@@ -117,6 +117,49 @@ describe('sign-up rules', () => {
         authMock.updateProfile.mockResolvedValue();
         fillAndSubmit({ name: '  Ayşe  ', password: 'longenough1' });
         await waitFor(() => expect(fakeDb.read('users/new-uid')).toMatchObject({ uid: 'new-uid', username: 'Ayşe' }));
-        expect(fakeDb.read('userPrivate/new-uid')).toEqual({ email: 'a@example.com' });
+        expect(fakeDb.read('userPrivate/new-uid')).toEqual({ email: 'a@example.com', deviceId: expect.stringMatching(/^[a-f0-9]{32}$/) });
+        expect(typeof fakeDb.read('users/new-uid/createdAt')).toBe('number'); // starts the 3-minute wait
+    });
+});
+
+describe('a banned device', () => {
+    const banThisDevice = async () => {
+        const { getDeviceId } = await import('../../../security/deviceId');
+        fakeDb.seed(`bannedDevices/${getDeviceId()}`, true);
+    };
+
+    it('cannot continue as a guest, so ban-dodging with a new guest fails', async () => {
+        await banThisDevice();
+        const onLogin = vi.fn();
+        render(<LoginScreen onLogin={onLogin} onBot={() => { }} />);
+        fireEvent.click(screen.getByText(/Continue as guest/));
+        await waitFor(() => expect(screen.getByText('This device has been banned from gokalppoOS.')).toBeTruthy());
+        expect(authMock.signInAnonymously).not.toHaveBeenCalled();
+        expect(onLogin).not.toHaveBeenCalled();
+    });
+
+    it('cannot sign in or create an account either', async () => {
+        await banThisDevice();
+        render(<LoginScreen onLogin={() => { }} onBot={() => { }} />);
+        fireEvent.change(screen.getByPlaceholderText('example@hotmail.com'), { target: { value: 'a@example.com' } });
+        fireEvent.change(document.querySelector('input[type="password"]'), { target: { value: 'longenough1' } });
+        fireEvent.click(screen.getByRole('button', { name: 'Sign In' }));
+        await waitFor(() => expect(screen.getByText('This device has been banned from gokalppoOS.')).toBeTruthy());
+        expect(authMock.signInWithEmailAndPassword).not.toHaveBeenCalled();
+
+        fireEvent.click(screen.getByText('Sign Up', { selector: 'span' }));
+        fireEvent.change(screen.getByPlaceholderText('Screen Name'), { target: { value: 'Ayşe' } });
+        fireEvent.click(screen.getByRole('button', { name: 'Sign Up' }));
+        await waitFor(() => expect(screen.getAllByText('This device has been banned from gokalppoOS.').length).toBeGreaterThan(0));
+        expect(authMock.createUserWithEmailAndPassword).not.toHaveBeenCalled();
+    });
+
+    it('does not bother other devices', async () => {
+        fakeDb.seed(`bannedDevices/${'c'.repeat(32)}`, true);
+        authMock.signInAnonymously.mockResolvedValue({ user: { uid: 'guest-uid' } });
+        const onLogin = vi.fn();
+        render(<LoginScreen onLogin={onLogin} onBot={() => { }} />);
+        fireEvent.click(screen.getByText(/Continue as guest/));
+        await waitFor(() => expect(onLogin).toHaveBeenCalled());
     });
 });

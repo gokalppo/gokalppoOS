@@ -4,7 +4,7 @@ import './Messenger.css';
 import { db } from '../../../firebase';
 import { ref, push, get, set, remove, update, increment, serverTimestamp } from 'firebase/database';
 import MessageBox from '../../MessageBox';
-import { censorText, getMessagesPath, nowMs, BOT_ROOM, SEND_COOLDOWN_MS } from './chatUtils';
+import { censorText, getMessagesPath, nowMs, BOT_ROOM, SEND_COOLDOWN_MS, formatWait } from './chatUtils';
 import { useLanguage } from '../../../context/LanguageContext';
 import { useNotification } from './hooks/useNotification';
 import { useSounds } from './hooks/useSounds';
@@ -18,6 +18,8 @@ import { useFriendActions } from './hooks/useFriendActions';
 import { useAdminTools } from './hooks/useAdminTools';
 import { useInbox } from './hooks/useInbox';
 import { useLessons } from './hooks/useLessons';
+import { useChatAccess } from './hooks/useChatAccess';
+import { getDeviceId } from '../../../security/deviceId';
 import { useReadReceipts } from './hooks/useReadReceipts';
 import { useBotChat } from './hooks/useBotChat';
 import BotPanel from './components/BotPanel';
@@ -67,12 +69,13 @@ const ChatInterface = ({ user, onLogout }) => {
         user, contacts, status, showNotification
     });
     const admin = useAdminTools({ user, currentRoom, activeContactId, showNotification });
+    const access = useChatAccess({ user });
     const inbox = useInbox({ user, showNotification });
     const lessons = useLessons({ user, showNotification });
     const [showInbox, setShowInbox] = useState(false);
 
-    // Self-healing: make sure my public profile has a username, and keep my
-    // email in the private (non-public) node.
+    // Self-healing: make sure my public profile has a username and a creation time (older accounts had none;
+    // the server stamps it), and keep my email and device mark in the private (non-public) node.
     useEffect(() => {
         const myRef = ref(db, `users/${user.uid}`);
         get(myRef).then((snap) => {
@@ -81,12 +84,15 @@ const ChatInterface = ({ user, onLogout }) => {
                 update(myRef, {
                     uid: user.uid,
                     username: user.username || user.email?.split('@')[0] || 'Guest',
-                    status: 'online'
+                    status: 'online',
+                    ...(user.isGuest ? {} : { createdAt: serverTimestamp() })
                 }).catch((err) => console.error('Backfill failed', err));
+            } else if (!user.isGuest && !data.createdAt) {
+                update(myRef, { createdAt: serverTimestamp() }).catch((err) => console.error('Backfill failed', err));
             }
         });
-        if (user.email) update(ref(db, `userPrivate/${user.uid}`), { email: user.email }).catch(() => { });
-    }, [user.uid, user.username, user.email]);
+        update(ref(db, `userPrivate/${user.uid}`), { deviceId: getDeviceId(), ...(user.email ? { email: user.email } : {}) }).catch(() => { });
+    }, [user.uid, user.username, user.email, user.isGuest]);
 
     useEffect(() => { playDing(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -115,9 +121,12 @@ const ChatInterface = ({ user, onLogout }) => {
         return () => window.removeEventListener('click', closeMenu);
     }, []);
 
+    const globalLocked = currentRoom !== 'private' && !access.allowed;
+
     const handleSend = useCallback(async (rawText) => {
         const path = getMessagesPath(currentRoom, activeContactId, user.uid);
         if (!path) return false;
+        if (currentRoom !== 'private' && !access.allowed) return false; // the composer is locked; the database refuses it too
 
         // The database rules allow roughly one message per second per person; tell the user
         // instead of letting the write fail.
@@ -152,7 +161,7 @@ const ChatInterface = ({ user, onLogout }) => {
             showNotification('Failed to send: ' + error.message, 'error');
             return false;
         }
-    }, [currentRoom, activeContactId, user.uid, user.username, stopTyping, playDing, showNotification]);
+    }, [currentRoom, activeContactId, user.uid, user.username, access.allowed, stopTyping, playDing, showNotification]);
 
     const handleSelectGlobalRoom = (room) => {
         setCurrentRoom(room);
@@ -257,8 +266,15 @@ const ChatInterface = ({ user, onLogout }) => {
                             contacts={contacts}
                             onAddFriend={(target) => { setContextMenu(null); sendFriendRequest(target); }}
                         />
+                        {globalLocked && (
+                            <div className="chat-locked-notice" role="status">
+                                {access.reason === 'guest'
+                                    ? "Guests can read this chat but can't post here. Sign in with an email account to chat (private chats and the bot still work)."
+                                    : `New accounts can post here after a short wait: ${formatWait(access.remainingMs)} left.`}
+                            </div>
+                        )}
                         <Composer
-                            disabled={currentRoom === 'private' && !activeContact}
+                            disabled={(currentRoom === 'private' && !activeContact) || globalLocked}
                             onSend={handleSend}
                             onNudge={handleNudge}
                             onTyping={notifyTyping}

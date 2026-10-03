@@ -1,5 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import {
+    chatAccess,
+    formatWait,
+    NEW_ACCOUNT_WAIT_MS,
     getPrivateRoomId,
     getMessagesPath,
     censorText,
@@ -165,5 +168,33 @@ describe('makeGuestName / paging', () => {
 
     it('loads history in pages', () => {
         expect(PAGE_SIZE).toBe(50);
+    });
+});
+
+describe('who may post in the global chat', () => {
+    const now = 10_000_000;
+
+    it('admins always, guests never', () => {
+        expect(chatAccess({ isAdmin: true, isGuest: false, createdAt: now, serverNow: now })).toEqual({ allowed: true, reason: null, remainingMs: 0 });
+        expect(chatAccess({ isGuest: true, createdAt: 1, serverNow: now })).toEqual({ allowed: false, reason: 'guest', remainingMs: 0 });
+    });
+
+    it('new accounts wait three minutes, counted on the server clock', () => {
+        expect(NEW_ACCOUNT_WAIT_MS).toBe(180000);
+        expect(chatAccess({ createdAt: now - 60000, serverNow: now })).toEqual({ allowed: false, reason: 'wait', remainingMs: 120000 });
+        expect(chatAccess({ createdAt: now - 180000, serverNow: now }).allowed).toBe(true);
+        expect(chatAccess({ createdAt: now - 999999, serverNow: now }).allowed).toBe(true);
+    });
+
+    it('an account whose creation time is not stamped yet is treated as brand new', () => {
+        expect(chatAccess({ createdAt: null, serverNow: now })).toMatchObject({ allowed: false, reason: 'wait', remainingMs: 180000 });
+        expect(chatAccess({ createdAt: undefined, serverNow: now }).allowed).toBe(false);
+    });
+
+    it('formats the countdown as minutes:seconds', () => {
+        expect(formatWait(180000)).toBe('3:00');
+        expect(formatWait(61000)).toBe('1:01');
+        expect(formatWait(999)).toBe('0:01');
+        expect(formatWait(0)).toBe('0:00');
     });
 });

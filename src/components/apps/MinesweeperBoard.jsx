@@ -48,7 +48,8 @@ const resultMessage = (t, result) => {
 };
 
 // Shown after a win: send the time to the board once.
-export const SubmitScore = ({ time, onSubmitted, onViewBoard }) => {
+// `run` is the finished game (a run id, or a promise of one) that vouches for the time.
+export const SubmitScore = ({ time, run, onSubmitted, onViewBoard }) => {
     const { t } = useLanguage();
     const [name, setName] = useState(readName);
     const [state, setState] = useState('idle'); // idle | sending | sent | error
@@ -65,7 +66,7 @@ export const SubmitScore = ({ time, onSubmitted, onViewBoard }) => {
         setState('sending');
         setError(null);
         try {
-            const outcome = await submitTime({ name, time });
+            const outcome = await submitTime({ name, time, run: await run });
             saveName(cleanName(name));
             setResult(outcome);
             setState('sent');

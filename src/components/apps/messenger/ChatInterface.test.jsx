@@ -39,7 +39,7 @@ beforeEach(() => {
     localStorage.clear();
     fakeDb.reset();
     fakeDb.seed('.info/connected', true);
-    fakeDb.seed('users/me', { uid: 'me', username: 'Gokalp' });
+    fakeDb.seed('users/me', { uid: 'me', username: 'Gokalp', createdAt: 1 }); // an account that is long past the new-account wait
 });
 
 afterEach(() => cleanup());
@@ -615,13 +615,114 @@ describe('Gökalp Bot inside the Messenger', () => {
 });
 
 describe('guest accounts', () => {
-    it('can use the Messenger without an email address', async () => {
-        const guest = { uid: 'g1', username: 'Guest-1234', email: null, role: 'user', isGuest: true };
+    const guest = { uid: 'g1', username: 'Guest-1234', email: null, role: 'user', isGuest: true };
+
+    it('can use the Messenger without an email address, and keeps no email for them', async () => {
         renderChat(guest);
         expect(screen.getByText('Guest-1234')).toBeTruthy();
-        typeAndSend('hi from a guest');
+        await waitFor(() => expect(fakeDb.read('userPrivate/g1/deviceId')).toMatch(/^[a-f0-9]{32}$/));
+        expect(fakeDb.read('userPrivate/g1/email')).toBeNull();
+    });
+
+    it('can read the global chat but not post in it', () => {
+        fakeDb.seed('messages/global-1/m1', { senderUid: 'bob', senderName: 'Bob', text: 'hello all', timestamp: 1 });
+        renderChat(guest);
+        expect(screen.getByText('hello all')).toBeTruthy();
+        expect(screen.getByRole('status').textContent).toMatch(/Guests can read this chat but can't post here/);
+        expect(document.querySelector('.msn-textarea').disabled).toBe(true);
+        expect(screen.getByText('Send').disabled).toBe(true);
+    });
+
+    it('never sends to the global chat even if the box is forced open', async () => {
+        renderChat(guest);
+        const box = document.querySelector('.msn-textarea');
+        box.disabled = false;
+        typeAndSend('sneaky');
+        await new Promise((r) => setTimeout(r, 50));
+        expect(fakeDb.read('messages/global-1')).toBeNull();
+    });
+});
+
+describe('new accounts wait before posting in the global chat', () => {
+    it('shows a countdown and keeps the box locked', () => {
+        fakeDb.seed('users/me/createdAt', Date.now() - 30 * 1000);
+        renderChat();
+        expect(screen.getByRole('status').textContent).toMatch(/New accounts can post here after a short wait: 2:[0-9]{2} left/);
+        expect(document.querySelector('.msn-textarea').disabled).toBe(true);
+    });
+
+    it('unlocks once three minutes have passed', async () => {
+        fakeDb.seed('users/me/createdAt', Date.now() - 4 * 60 * 1000);
+        renderChat();
+        expect(screen.queryByRole('status')).toBeNull();
+        expect(document.querySelector('.msn-textarea').disabled).toBe(false);
+        typeAndSend('finally');
         await waitFor(() => expect(fakeDb.read('messages/global-1')).not.toBeNull());
-        expect(fakeDb.read('userPrivate/g1')).toBeNull(); // no email to store
+    });
+
+    it('an older account without a creation time gets one stamped, and an admin is never held back', async () => {
+        fakeDb.seed('users/me', { uid: 'me', username: 'Gokalp' });
+        renderChat();
+        await waitFor(() => expect(typeof fakeDb.read('users/me/createdAt')).toBe('number'));
+
+        cleanup();
+        fakeDb.seed('users/me', { uid: 'me', username: 'Gokalp', role: 'admin', createdAt: Date.now() });
+        renderChat(admin);
+        expect(document.querySelector('.msn-textarea').disabled).toBe(false);
+    });
+
+    it('private chats are not held back', () => {
+        fakeDb.seed('users/me/createdAt', Date.now());
+        fakeDb.seed('users/me/friends/bob', { id: 'bob', uid: 'bob', name: 'Bob', status: 'online' });
+        renderChat();
+        fireEvent.click(screen.getByText('Bob'));
+        expect(document.querySelector('.msn-textarea').disabled).toBe(false);
+    });
+});
+
+describe('device mark and bans', () => {
+    it('stores the device mark privately for signed-in users', async () => {
+        renderChat();
+        await waitFor(() => expect(fakeDb.read('userPrivate/me/deviceId')).toMatch(/^[a-f0-9]{32}$/));
+    });
+
+    it('banning someone also bans their device, and un-banning lifts it', async () => {
+        const deviceId = 'b'.repeat(32);
+        fakeDb.seed('users/bob', { username: 'bob', role: 'user' });
+        fakeDb.seed('userPrivate/bob', { email: 'bob@example.com', deviceId });
+        renderChat(admin);
+        fireEvent.click(screen.getByText(/Admin Tools/));
+        await waitFor(() => expect(screen.getByText('bob@example.com')).toBeTruthy());
+
+        fireEvent.click(screen.getByText('BAN'));
+        await waitFor(() => expect(fakeDb.read('users/bob/isBanned')).toBe(true));
+        expect(fakeDb.read(`bannedDevices/${deviceId}`)).toBe(true);
+        await waitFor(() => expect(screen.getByText(/BANNED \(and their device\)/)).toBeTruthy());
+
+        fireEvent.click(screen.getByText('UNBAN'));
+        await waitFor(() => expect(fakeDb.read('users/bob/isBanned')).toBe(false));
+        expect(fakeDb.read(`bannedDevices/${deviceId}`)).toBeNull();
+    });
+
+    it('never bans the admin\'s own browser, even if the banned person used it', async () => {
+        const { getDeviceId } = await import('../../../security/deviceId');
+        fakeDb.seed('users/bob', { username: 'bob', role: 'user' });
+        fakeDb.seed('userPrivate/bob', { email: 'bob@example.com', deviceId: getDeviceId() });
+        renderChat(admin);
+        fireEvent.click(screen.getByText(/Admin Tools/));
+        await waitFor(() => expect(screen.getByText('bob@example.com')).toBeTruthy());
+        fireEvent.click(screen.getByText('BAN'));
+        await waitFor(() => expect(fakeDb.read('users/bob/isBanned')).toBe(true));
+        expect(fakeDb.read(`bannedDevices/${getDeviceId()}`)).toBeNull();
+    });
+
+    it('bans someone who has no device mark yet without trouble', async () => {
+        fakeDb.seed('users/bob', { username: 'bob', role: 'user' });
+        renderChat(admin);
+        fireEvent.click(screen.getByText(/Admin Tools/));
+        await waitFor(() => expect(screen.getByText('BAN')).toBeTruthy());
+        fireEvent.click(screen.getByText('BAN'));
+        await waitFor(() => expect(fakeDb.read('users/bob/isBanned')).toBe(true));
     });
 });
 

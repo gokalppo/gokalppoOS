@@ -4,8 +4,10 @@ import messengerIcon from '../../../assets/images/msn.png';
 
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signInAnonymously, updateProfile } from "firebase/auth";
 import { auth, db } from "../../../firebase";
-import { ref, set, get } from "firebase/database";
+import { ref, set, get, serverTimestamp } from "firebase/database";
 import { makeGuestName, MAX_USERNAME_LENGTH, MIN_PASSWORD_LENGTH } from './chatUtils';
+import { isThisDeviceBanned, BANNED_DEVICE_MESSAGE } from './deviceGuard';
+import { getDeviceId } from '../../../security/deviceId';
 
 const LoginScreen = ({ onLogin, onBot }) => {
     const [isSignUp, setIsSignUp] = useState(false);
@@ -34,6 +36,7 @@ const LoginScreen = ({ onLogin, onBot }) => {
         setErrorMessage('');
 
         try {
+            if (await isThisDeviceBanned()) throw new Error(BANNED_DEVICE_MESSAGE);
             const userCredential = await signInWithEmailAndPassword(auth, email, password);
             const user = userCredential.user;
 
@@ -77,6 +80,7 @@ const LoginScreen = ({ onLogin, onBot }) => {
         setIsLoading(true);
         setErrorMessage('');
         try {
+            if (await isThisDeviceBanned()) throw new Error(BANNED_DEVICE_MESSAGE);
             const { user } = await signInAnonymously(auth);
             const existing = (await get(ref(db, `users/${user.uid}`))).val();
 
@@ -125,6 +129,7 @@ const LoginScreen = ({ onLogin, onBot }) => {
         setIsLoading(true);
 
         try {
+            if (await isThisDeviceBanned()) throw new Error(BANNED_DEVICE_MESSAGE);
             const userCredential = await createUserWithEmailAndPassword(auth, email, password);
             const user = userCredential.user;
 
@@ -138,9 +143,10 @@ const LoginScreen = ({ onLogin, onBot }) => {
                 uid: user.uid,
                 username: cleanName, // Important for search
                 status: 'online',
-                avatar: 'default'
+                avatar: 'default',
+                createdAt: serverTimestamp() // new accounts wait a few minutes before posting in the global chat
             });
-            await set(ref(db, 'userPrivate/' + user.uid), { email: email });
+            await set(ref(db, 'userPrivate/' + user.uid), { email: email, deviceId: getDeviceId() });
 
             setSuccessMessage("Account created!");
             setTimeout(() => {
@@ -153,6 +159,8 @@ const LoginScreen = ({ onLogin, onBot }) => {
                 setErrorMessage('Password is too weak.');
             } else if (error.code === 'auth/email-already-in-use') {
                 setErrorMessage('Email already in use.');
+            } else if (error.message && error.message.includes('banned')) {
+                setErrorMessage(error.message);
             } else {
                 setErrorMessage("Signup Failed: " + error.message);
             }

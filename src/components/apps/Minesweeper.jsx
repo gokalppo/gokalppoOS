@@ -1,7 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import './Minesweeper.css';
 import { useLanguage } from '../../context/LanguageContext';
 import { BestTimes, SubmitScore } from './MinesweeperBoard';
+import { startRun, finishRun } from './leaderboard';
+import { MIN_TIME } from './minesweeperScores';
 
 const Minesweeper = () => {
     const { t } = useLanguage();
@@ -16,6 +18,9 @@ const Minesweeper = () => {
     const [smiley, setSmiley] = useState('😊');
     const [showBoard, setShowBoard] = useState(false);
     const [boardVersion, setBoardVersion] = useState(0);
+    // The server's own record of this game (see leaderboard.js): started on the first click, finished on the win.
+    const runRef = useRef(null);
+    const [finishedRun, setFinishedRun] = useState(null);
 
     // Timer Effect
     useEffect(() => {
@@ -32,6 +37,8 @@ const Minesweeper = () => {
 
     // Initialize Game
     const initGame = () => {
+        runRef.current = null;
+        setFinishedRun(null);
         setTimer(0);
         setGrid(createEmptyGrid());
         setGameState('waiting');
@@ -124,6 +131,7 @@ const Minesweeper = () => {
         if (gameState === 'waiting') {
             newGrid = placeMines(r, c);
             setGameState('playing');
+            runRef.current = startRun().catch(() => null); // if the board is unreachable the game still plays
         }
 
         const cell = newGrid[r][c];
@@ -148,6 +156,8 @@ const Minesweeper = () => {
 
             if (unrevealedSafe === 0) {
                 setGameState('won');
+                const started = runRef.current;
+                setFinishedRun(started ? started.then((id) => (id ? finishRun(id) : null)).catch(() => null) : null);
                 setSmiley('😎');
                 setMineCount(0); // Force mines to 0
             }
@@ -227,7 +237,8 @@ const Minesweeper = () => {
 
             {gameState === 'won' && (
                 <SubmitScore
-                    time={Math.max(1, timer)}
+                    time={Math.max(MIN_TIME, timer)}
+                    run={finishedRun}
                     onSubmitted={() => setBoardVersion((v) => v + 1)}
                     onViewBoard={() => setShowBoard(true)}
                 />

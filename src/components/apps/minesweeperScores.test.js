@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { cleanName, validateScore, topScores, scoreKey, bestPerName, NAME_MAX, MAX_TIME } from './minesweeperScores';
+import { cleanName, validateScore, topScores, scoreKey, bestPerName, NAME_MAX, MAX_TIME, MIN_TIME } from './minesweeperScores';
 
 describe('cleanName', () => {
     it('trims and collapses whitespace', () => {
@@ -85,5 +85,14 @@ describe('topScores with legacy duplicates', () => {
             other: { name: 'Bob', time: 70, timestamp: 3 }
         };
         expect(topScores(data).map((e) => [e.name, e.time])).toEqual([['Gokalp', 65], ['Bob', 70]]);
+    });
+});
+
+describe('minimum believable time', () => {
+    it('refuses wins faster than the minimum and accepts the minimum itself', () => {
+        expect(MIN_TIME).toBe(3);
+        expect(validateScore({ name: 'Ada', time: 2 })).toEqual(['badTime']);
+        expect(validateScore({ name: 'Ada', time: 1 })).toEqual(['badTime']);
+        expect(validateScore({ name: 'Ada', time: MIN_TIME })).toEqual([]);
     });
 });

@@ -1,5 +1,5 @@
 import { describe, it, beforeAll, afterAll, beforeEach } from 'vitest';
-import { setupEnv, seed, sendMessage, dbAs, anonDb, assertSucceeds, assertFails, NOW } from './helpers';
+import { setupEnv, seed, seedAccounts, guestDb, deviceIdOf, sendMessage, dbAs, anonDb, assertSucceeds, assertFails, NOW } from './helpers';
 
 // Attacks a malicious (but signed-in) visitor could try against the database. Every one of these must fail.
 let env;
@@ -15,6 +15,7 @@ beforeEach(async () => {
             root: { uid: 'root', username: 'root', role: 'admin' }
         }
     });
+    await seedAccounts(env);
 });
 
 describe('moderation cannot be undone by the person it targets', () => {
@@ -202,5 +203,95 @@ describe('small side doors', () => {
         await assertFails(dbAs(env, 'root').ref().get());
         await assertFails(dbAs(env, 'root').ref('somethingNew').set(1));
         await assertFails(anonDb(env).ref('somethingNew').set(1));
+    });
+});
+
+describe('who may post in the global chat', () => {
+    const post = (db, uid, key = 'm1', extra = {}) => sendMessage(db, uid, 'messages/global-1', key, extra);
+
+    it('guests can read the global chat but not write to it, and still use private chats', async () => {
+        await seed(env, {
+            'users/guest1': { uid: 'guest1', username: 'guest1', isGuest: true, createdAt: 1 },
+            'userPrivate/guest1/deviceId': deviceIdOf('guest1'),
+            'messages/global-1/old': { senderUid: 'alice', senderName: 'alice', text: 'hi', timestamp: 1 }
+        });
+        const guest = guestDb(env, 'guest1');
+        await assertSucceeds(guest.ref('messages/global-1').get());
+        await assertFails(post(guest, 'guest1'));
+        await assertSucceeds(sendMessage(guest, 'guest1', 'privateMessages/alice_guest1', 'p1'));
+    });
+
+    it('a brand-new account has to wait three minutes, an older one does not', async () => {
+        const stamp = (uid, createdAt) => seed(env, { [`users/${uid}`]: { uid, username: uid, role: 'user', createdAt }, [`userPrivate/${uid}/deviceId`]: deviceIdOf(uid) });
+        await stamp('fresh', Date.now() - 60000);       // one minute old
+        await stamp('settled', Date.now() - 200000);    // a bit over three minutes old
+        await assertFails(post(dbAs(env, 'fresh'), 'fresh'));
+        await assertSucceeds(post(dbAs(env, 'settled'), 'settled'));
+        await assertSucceeds(sendMessage(dbAs(env, 'fresh'), 'fresh', 'privateMessages/alice_fresh', 'p1')); // friends chats are not held back
+    });
+
+    it('an account with no creation time at all cannot post (there is no way around the wait)', async () => {
+        await seed(env, { 'users/ghost': { uid: 'ghost', username: 'ghost', role: 'user' }, 'userPrivate/ghost/deviceId': deviceIdOf('ghost') });
+        await assertFails(post(dbAs(env, 'ghost'), 'ghost'));
+    });
+
+    it('the creation time is stamped by the server, once, and cannot be changed or removed', async () => {
+        const fresh = dbAs(env, 'fresh');
+        await assertSucceeds(fresh.ref('users/fresh').set({ uid: 'fresh', username: 'fresh', createdAt: NOW }));
+        await assertFails(fresh.ref('users/fresh/createdAt').set(1));
+        await assertFails(fresh.ref('users/fresh/createdAt').set(NOW));
+        await assertFails(fresh.ref('users/fresh/createdAt').remove());
+        await assertFails(fresh.ref('users/fresh').set({ uid: 'fresh', username: 'fresh' }));
+        await assertFails(dbAs(env, 'noclock').ref('users/noclock').set({ uid: 'noclock', username: 'x', createdAt: 1 })); // a made-up past date
+    });
+
+    it('an admin can always post', async () => {
+        await seed(env, { 'users/root/createdAt': Date.now() });
+        await assertSucceeds(post(dbAs(env, 'root'), 'root'));
+    });
+});
+
+describe('bans are enforced by the database, not only by the screen', () => {
+    it('a banned account cannot post anywhere or send friend requests', async () => {
+        await assertFails(sendMessage(dbAs(env, 'mallory'), 'mallory', 'messages/global-1', 'm1'));
+        await assertFails(sendMessage(dbAs(env, 'mallory'), 'mallory', 'privateMessages/alice_mallory', 'm2'));
+        await assertFails(dbAs(env, 'mallory').ref('friendRequests/alice/mallory').set({ fromUid: 'mallory', fromName: 'mallory', status: 'pending' }));
+    });
+
+    it('a ban on a device blocks every account that uses it, until an admin lifts it', async () => {
+        await assertSucceeds(sendMessage(dbAs(env, 'alice'), 'alice', 'messages/global-1', 'm1'));
+        await assertSucceeds(dbAs(env, 'root').ref(`bannedDevices/${deviceIdOf('alice')}`).set(true));
+        await assertFails(sendMessage(dbAs(env, 'alice'), 'alice', 'messages/global-2', 'm2'));
+        await assertFails(sendMessage(dbAs(env, 'alice'), 'alice', 'privateMessages/alice_bob', 'm3'));
+        await assertSucceeds(sendMessage(dbAs(env, 'bob'), 'bob', 'messages/global-1', 'm4')); // other devices are untouched
+        await assertSucceeds(dbAs(env, 'root').ref(`bannedDevices/${deviceIdOf('alice')}`).remove());
+        await seed(env, { 'users/alice/lastMessageAt': Date.now() - 5000 }); // past the one-message-per-second limit
+        await assertSucceeds(sendMessage(dbAs(env, 'alice'), 'alice', 'messages/global-2', 'm5'));
+    });
+
+    it('chatting needs a stored device id, so leaving it out does not dodge a device ban', async () => {
+        await seed(env, { 'users/nodev': { uid: 'nodev', username: 'nodev', role: 'user', createdAt: 1 } });
+        await assertFails(sendMessage(dbAs(env, 'nodev'), 'nodev', 'messages/global-1', 'm1'));
+        await assertSucceeds(dbAs(env, 'nodev').ref('userPrivate/nodev/deviceId').set(deviceIdOf('nodev')));
+        await assertSucceeds(sendMessage(dbAs(env, 'nodev'), 'nodev', 'messages/global-1', 'm2'));
+    });
+
+    it('only an admin can list or change banned devices; anyone can ask about one specific id', async () => {
+        const id = deviceIdOf('someone');
+        await assertFails(dbAs(env, 'alice').ref(`bannedDevices/${id}`).set(true));
+        await assertFails(anonDb(env).ref(`bannedDevices/${id}`).set(true));
+        await assertSucceeds(dbAs(env, 'root').ref(`bannedDevices/${id}`).set(true));
+        await assertSucceeds(anonDb(env).ref(`bannedDevices/${id}`).get());
+        await assertFails(anonDb(env).ref('bannedDevices').get());
+        await assertFails(dbAs(env, 'root').ref('bannedDevices/not-a-device-id').set(true));
+        await assertFails(dbAs(env, 'root').ref(`bannedDevices/${deviceIdOf('x')}`).set('yes'));
+    });
+
+    it('the device id is private and has a fixed shape', async () => {
+        await assertFails(dbAs(env, 'bob').ref('userPrivate/alice/deviceId').get());
+        await assertSucceeds(dbAs(env, 'alice').ref('userPrivate/alice/deviceId').get());
+        await assertSucceeds(dbAs(env, 'root').ref('userPrivate/alice/deviceId').get());
+        await assertFails(dbAs(env, 'alice').ref('userPrivate/alice/deviceId').set('not hex'));
+        await assertFails(dbAs(env, 'alice').ref('userPrivate/alice/deviceId').set('A'.repeat(32)));
     });
 });

@@ -3,6 +3,7 @@ import { db } from '../../../../firebase';
 import { ref, get, update } from 'firebase/database';
 import { getMessagesPath, mergeUsersWithPrivate } from '../chatUtils';
 import { sortUsage } from '../../../../analytics/appUsage';
+import { getDeviceId } from '../../../../security/deviceId';
 
 // Admin-only actions: user list / bans, email migration, message removal.
 // The database rules enforce the role; this only drives the UI.
@@ -63,8 +64,14 @@ export const useAdminTools = ({ user, currentRoom, activeContactId, showNotifica
     const toggleBan = useCallback(async (targetUid, currentlyBanned) => {
         if (!isAdmin) return;
         try {
-            await update(ref(db, `users/${targetUid}`), { isBanned: !currentlyBanned });
-            showNotification(`User ${!currentlyBanned ? 'BANNED' : 'UNBANNED'}`, 'success');
+            // A ban also covers the browser that person used, so a fresh guest or account there does not undo it.
+            // The admin's own browser is never banned this way (it could lock the admin out).
+            const deviceId = (await get(ref(db, `userPrivate/${targetUid}/deviceId`))).val();
+            const deviceBannable = Boolean(deviceId) && deviceId !== getDeviceId();
+            const updates = { [`users/${targetUid}/isBanned`]: !currentlyBanned };
+            if (deviceBannable) updates[`bannedDevices/${deviceId}`] = currentlyBanned ? null : true;
+            await update(ref(db), updates);
+            showNotification(`User ${!currentlyBanned ? 'BANNED' : 'UNBANNED'}${deviceBannable ? ' (and their device)' : ''}`, 'success');
             loadAllUsers();
         } catch (e) { showNotification('Ban error: ' + e.message, 'error'); }
     }, [isAdmin, showNotification, loadAllUsers]);

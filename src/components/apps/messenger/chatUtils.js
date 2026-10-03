@@ -8,6 +8,25 @@ export const nowMs = () => Date.now();
 export const MAX_USERNAME_LENGTH = 30;
 export const MIN_PASSWORD_LENGTH = 8;
 
+// New email accounts wait this long before they can post in the global chat (the database rules enforce it).
+export const NEW_ACCOUNT_WAIT_MS = 3 * 60 * 1000;
+
+// Who may post in the global chat right now? Guests never (they can read, use private chats and the bot);
+// new accounts after a short wait; admins always. `serverNow` is the server's clock (see useChatAccess).
+export const chatAccess = ({ isGuest, isAdmin, createdAt, serverNow }) => {
+    if (isAdmin) return { allowed: true, reason: null, remainingMs: 0 };
+    if (isGuest) return { allowed: false, reason: 'guest', remainingMs: 0 };
+    const remainingMs = Number.isFinite(createdAt)
+        ? Math.max(0, createdAt + NEW_ACCOUNT_WAIT_MS - serverNow)
+        : NEW_ACCOUNT_WAIT_MS; // creation time not stamped yet: it is being set right now
+    return remainingMs > 0 ? { allowed: false, reason: 'wait', remainingMs } : { allowed: true, reason: null, remainingMs: 0 };
+};
+
+export const formatWait = (ms) => {
+    const total = Math.ceil(ms / 1000);
+    return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, '0')}`;
+};
+
 export const GLOBAL_ROOMS = ['global-1', 'global-2'];
 export const BOT_ROOM = 'bot';
 

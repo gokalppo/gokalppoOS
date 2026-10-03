@@ -2,6 +2,9 @@
 
 export const NAME_MAX = 20;
 export const MAX_TIME = 999;
+// A faster win than this is not believable (and the database refuses it): the first click has to lay the mines and
+// open an area, and a human then has to finish the board.
+export const MIN_TIME = 3;
 export const TOP_COUNT = 10;
 export const BOARD_PATH = 'leaderboards/minesweeper';
 
@@ -13,7 +16,7 @@ export const validateScore = ({ name, time }) => {
     const n = cleanName(name);
     if (n.length < 1) errors.push('nameRequired');
     if (n.length > NAME_MAX) errors.push('nameTooLong');
-    if (!Number.isInteger(time) || time < 1 || time > MAX_TIME) errors.push('badTime');
+    if (!Number.isInteger(time) || time < MIN_TIME || time > MAX_TIME) errors.push('badTime');
     return errors;
 };
 

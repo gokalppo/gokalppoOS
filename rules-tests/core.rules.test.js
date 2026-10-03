@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
-import { setupEnv, seed, sendMessage, dbAs, anonDb, assertSucceeds, assertFails, NOW } from './helpers';
+import { setupEnv, seed, seedAccounts, seedRun, sendMessage, dbAs, anonDb, assertSucceeds, assertFails, NOW } from './helpers';
 
 let env;
 beforeAll(async () => { env = await setupEnv(); });
@@ -13,6 +13,7 @@ beforeEach(async () => {
             root: { uid: 'root', username: 'root', role: 'admin' }
         }
     });
+    await seedAccounts(env);
 });
 
 describe('users', () => {
@@ -216,33 +217,85 @@ describe('guestbook', () => {
 });
 
 describe('minesweeper leaderboard', () => {
-    const score = (extra = {}) => ({ name: 'Ada', time: 90, timestamp: NOW, ...extra });
+    // Each game is a "run": the server stamps when it started and when it finished, and a record may only be
+    // saved once, for a game that really lasted about as long as the time it claims.
+    const RUN = 'a1b2c3d4e5f60718293a';
+    const score = (extra = {}) => ({ name: 'Ada', time: 90, timestamp: NOW, run: RUN, ...extra });
+    const save = (db, key, extra, runId = RUN) => db.ref().update({
+        [`leaderboards/minesweeper/${key}`]: score({ ...extra, run: runId }),
+        [`runs/${runId}/usedAt`]: NOW
+    });
+    const finishedRun = (id = RUN, seconds = 90) => seedRun(env, id, { startedAt: Date.now() - seconds * 1000 - 5000, finishedAt: Date.now() - 5000 });
 
-    it('is publicly readable and lets anyone create a record', async () => {
-        await assertSucceeds(anonDb(env).ref('leaderboards/minesweeper/ada').set(score()));
+    it('is publicly readable, and a finished game can save a record', async () => {
+        await finishedRun();
+        await assertSucceeds(save(anonDb(env), 'ada'));
         await assertSucceeds(anonDb(env).ref('leaderboards/minesweeper').get());
     });
 
-    it('allows improving your own time but not making it worse or equal', async () => {
-        await assertSucceeds(anonDb(env).ref('leaderboards/minesweeper/ada').set(score({ time: 90 })));
-        await assertSucceeds(anonDb(env).ref('leaderboards/minesweeper/ada').set(score({ time: 65 })));
-        await assertFails(anonDb(env).ref('leaderboards/minesweeper/ada').set(score({ time: 89 })));
-        await assertFails(anonDb(env).ref('leaderboards/minesweeper/ada').set(score({ time: 65 })));
+    it('runs: the server stamps start and finish, in order, once', async () => {
+        const db = anonDb(env);
+        await assertSucceeds(db.ref(`runs/${RUN}/startedAt`).set(NOW));
+        await assertFails(db.ref(`runs/${RUN}/startedAt`).set(NOW)); // cannot restart the clock
+        await assertFails(db.ref('runs/b1b2c3d4e5f60718293a/finishedAt').set(NOW)); // no start, no finish
+        await assertFails(db.ref(`runs/${RUN}/startedAt`).remove());
+        await assertSucceeds(db.ref(`runs/${RUN}/finishedAt`).set(NOW));
+        await assertFails(db.ref(`runs/${RUN}/finishedAt`).set(NOW));
+        await assertFails(db.ref('runs/short/startedAt').set(NOW)); // ids must look like real ones
+        await assertFails(db.ref('runs/c1b2c3d4e5f60718293a/startedAt').set(Date.now() - 5000)); // the clock is the server's
     });
 
-    it('cannot be deleted', async () => {
-        await seed(env, { leaderboards: { minesweeper: { ada: { name: 'Ada', time: 50, timestamp: 1 } } } });
+    it('a record needs a finished game, and cannot use the same game twice', async () => {
+        await assertFails(save(anonDb(env), 'ada')); // no such run
+        await seedRun(env, RUN, { startedAt: Date.now() - 100000 });
+        await assertFails(save(anonDb(env), 'ada')); // started but never finished
+        await finishedRun();
+        await assertSucceeds(save(anonDb(env), 'ada'));
+        await assertFails(save(anonDb(env), 'grace')); // the game is already used up
+    });
+
+    it('cannot claim a time much shorter than the game really took', async () => {
+        await finishedRun(RUN, 90);
+        await assertFails(save(anonDb(env), 'ada', { time: 30 }));
+        await assertFails(save(anonDb(env), 'ada', { time: 87 }));
+        await assertSucceeds(save(anonDb(env), 'ada', { time: 89 })); // a little rounding is fine
+    });
+
+    it('a game that lasted under two seconds, or a claim under three, is never a record', async () => {
+        await finishedRun('d1b2c3d4e5f60718293a', 1);
+        await assertFails(save(anonDb(env), 'ada', { time: 3 }, 'd1b2c3d4e5f60718293a'));
+        await finishedRun('e1b2c3d4e5f60718293a', 10);
+        await assertFails(save(anonDb(env), 'ada', { time: 2 }, 'e1b2c3d4e5f60718293a'));
+        await assertSucceeds(save(anonDb(env), 'ada', { time: 10 }, 'e1b2c3d4e5f60718293a'));
+    });
+
+    it('allows improving your own time with a new game, not making it worse or equal', async () => {
+        await finishedRun('f1b2c3d4e5f60718293a', 90);
+        await assertSucceeds(save(anonDb(env), 'ada', { time: 90 }, 'f1b2c3d4e5f60718293a'));
+        await finishedRun('f2b2c3d4e5f60718293a', 65);
+        await assertSucceeds(save(anonDb(env), 'ada', { time: 65 }, 'f2b2c3d4e5f60718293a'));
+        await finishedRun('f3b2c3d4e5f60718293a', 89);
+        await assertFails(save(anonDb(env), 'ada', { time: 89 }, 'f3b2c3d4e5f60718293a'));
+        await finishedRun('f4b2c3d4e5f60718293a', 65);
+        await assertFails(save(anonDb(env), 'ada', { time: 65 }, 'f4b2c3d4e5f60718293a'));
+    });
+
+    it('cannot be deleted or saved without a game', async () => {
+        await seed(env, { leaderboards: { minesweeper: { ada: { name: 'Ada', time: 50, timestamp: 1, run: RUN } } } });
         await assertFails(anonDb(env).ref('leaderboards/minesweeper/ada').remove());
+        await assertFails(anonDb(env).ref('leaderboards/minesweeper/grace').set({ name: 'Grace', time: 40, timestamp: NOW }));
     });
 
     it('validates keys, names, times and timestamps', async () => {
-        await assertFails(anonDb(env).ref('leaderboards/minesweeper/Ada Lovelace').set(score()));
-        await assertFails(anonDb(env).ref('leaderboards/minesweeper/ok1').set(score({ name: '' })));
-        await assertFails(anonDb(env).ref('leaderboards/minesweeper/ok2').set(score({ name: 'n'.repeat(21) })));
-        await assertFails(anonDb(env).ref('leaderboards/minesweeper/ok3').set(score({ time: 0 })));
-        await assertFails(anonDb(env).ref('leaderboards/minesweeper/ok4').set(score({ time: 1000 })));
-        await assertFails(anonDb(env).ref('leaderboards/minesweeper/ok5').set(score({ time: 12.5 })));
-        await assertFails(anonDb(env).ref('leaderboards/minesweeper/ok6').set(score({ timestamp: 5 })));
-        await assertFails(anonDb(env).ref('leaderboards/minesweeper/ok7').set(score({ extra: 1 })));
+        await finishedRun(RUN, 90);
+        const bad = (key, extra) => assertFails(save(anonDb(env), key, extra));
+        await bad('Ada Lovelace', {});
+        await bad('ok1', { name: '' });
+        await bad('ok2', { name: 'n'.repeat(21) });
+        await bad('ok3', { time: 0 });
+        await bad('ok4', { time: 1000 });
+        await bad('ok5', { time: 12.5 });
+        await bad('ok6', { timestamp: 5 });
+        await bad('ok7', { extra: 1 });
     });
 });

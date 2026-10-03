@@ -16,6 +16,7 @@ beforeEach(() => {
 afterEach(() => cleanup());
 
 const scores = () => Object.values(fakeDb.read('leaderboards/minesweeper') || {});
+const RUN = 'a1b2c3d4e5f60718293a'; // a finished game, as the server recorded it
 
 describe('BestTimes', () => {
     it('lists the fastest times first', async () => {
@@ -40,7 +41,7 @@ describe('BestTimes', () => {
 });
 
 const playAndSubmit = async (name, time) => {
-    const view = render(<SubmitScore time={time} onSubmitted={() => { }} />);
+    const view = render(<SubmitScore time={time} run={RUN} onSubmitted={() => { }} />);
     fireEvent.change(screen.getByPlaceholderText('Your name'), { target: { value: name } });
     fireEvent.click(screen.getByText('Submit'));
     await waitFor(() => expect(screen.getByRole('status')).toBeTruthy());
@@ -94,7 +95,7 @@ describe('one record per player', () => {
 describe('SubmitScore', () => {
     it('stores the time with a server timestamp and remembers the name', async () => {
         const onSubmitted = vi.fn();
-        render(<SubmitScore time={27} onSubmitted={onSubmitted} />);
+        render(<SubmitScore time={27} run={RUN} onSubmitted={onSubmitted} />);
         fireEvent.change(screen.getByPlaceholderText('Your name'), { target: { value: '  Ada  ' } });
         fireEvent.click(screen.getByText('Submit'));
 
@@ -107,14 +108,14 @@ describe('SubmitScore', () => {
     });
 
     it('rejects an empty name without writing', () => {
-        render(<SubmitScore time={27} onSubmitted={() => { }} />);
+        render(<SubmitScore time={27} run={RUN} onSubmitted={() => { }} />);
         fireEvent.click(screen.getByText('Submit'));
         expect(screen.getByText('Please enter your name.')).toBeTruthy();
         expect(scores()).toHaveLength(0);
     });
 
     it('refuses an impossible time (e.g. tampered to 0)', () => {
-        render(<SubmitScore time={0} onSubmitted={() => { }} />);
+        render(<SubmitScore time={0} run={RUN} onSubmitted={() => { }} />);
         fireEvent.change(screen.getByPlaceholderText('Your name'), { target: { value: 'Ada' } });
         fireEvent.click(screen.getByText('Submit'));
         expect(screen.getByText('That time cannot be submitted.')).toBeTruthy();
@@ -122,7 +123,7 @@ describe('SubmitScore', () => {
     });
 
     it('records a time only once even when Submit is hammered', async () => {
-        render(<SubmitScore time={27} onSubmitted={() => { }} />);
+        render(<SubmitScore time={27} run={RUN} onSubmitted={() => { }} />);
         fireEvent.change(screen.getByPlaceholderText('Your name'), { target: { value: 'Ada' } });
         const form = screen.getByText('Submit').closest('form');
         for (let i = 0; i < 6; i++) fireEvent.submit(form);
@@ -132,7 +133,7 @@ describe('SubmitScore', () => {
     });
 
     it('swaps the form for a confirmation and cannot be submitted again afterwards', async () => {
-        render(<SubmitScore time={27} onSubmitted={() => { }} />);
+        render(<SubmitScore time={27} run={RUN} onSubmitted={() => { }} />);
         fireEvent.change(screen.getByPlaceholderText('Your name'), { target: { value: 'Ada' } });
         fireEvent.click(screen.getByText('Submit'));
 
@@ -145,7 +146,7 @@ describe('SubmitScore', () => {
     it('keeps the confirmation when the parent re-renders (e.g. the board refreshes)', async () => {
         const Parent = () => {
             const [version, setVersion] = useState(0);
-            return <SubmitScore time={27} onSubmitted={() => setVersion((v) => v + 1)} onViewBoard={() => { }} data-v={version} />;
+            return <SubmitScore time={27} run={RUN} onSubmitted={() => setVersion((v) => v + 1)} onViewBoard={() => { }} data-v={version} />;
         };
         render(<Parent />);
         fireEvent.change(screen.getByPlaceholderText('Your name'), { target: { value: 'Ada' } });
@@ -159,7 +160,7 @@ describe('SubmitScore', () => {
 
     it('offers a button to open the best times after submitting', async () => {
         const onViewBoard = vi.fn();
-        render(<SubmitScore time={27} onSubmitted={() => { }} onViewBoard={onViewBoard} />);
+        render(<SubmitScore time={27} run={RUN} onSubmitted={() => { }} onViewBoard={onViewBoard} />);
         fireEvent.change(screen.getByPlaceholderText('Your name'), { target: { value: 'Ada' } });
         fireEvent.click(screen.getByText('Submit'));
         await waitFor(() => expect(screen.getByText(/View best times/)).toBeTruthy());

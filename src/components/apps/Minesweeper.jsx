@@ -4,6 +4,8 @@ import { useLanguage } from '../../context/LanguageContext';
 import { BestTimes, SubmitScore } from './MinesweeperBoard';
 import { startRun, finishRun } from './leaderboard';
 import { MIN_TIME } from './minesweeperScores';
+import { minesweeperCell } from './layoutScale';
+import { useElementSize } from './useElementSize';
 
 const Minesweeper = () => {
     const { t } = useLanguage();
@@ -18,6 +20,9 @@ const Minesweeper = () => {
     const [smiley, setSmiley] = useState('😊');
     const [showBoard, setShowBoard] = useState(false);
     const [boardVersion, setBoardVersion] = useState(0);
+    // The board grows in proportion when the window is bigger or maximized (20px cells at the normal size).
+    const [containerRef, containerSize] = useElementSize();
+    const cell = minesweeperCell(containerSize);
     // The server's own record of this game (see leaderboard.js): started on the first click, finished on the win.
     const runRef = useRef(null);
     const [finishedRun, setFinishedRun] = useState(null);
@@ -194,7 +199,7 @@ const Minesweeper = () => {
     };
 
     return (
-        <div className="minesweeper-container" onMouseUp={handleMouseUp}>
+        <div className="minesweeper-container" ref={containerRef} style={{ '--ms-cell': `${cell}px` }} onMouseUp={handleMouseUp}>
             {/* Header Panel */}
             <div className="minesweeper-panel">
                 <div className="minesweeper-counter">
@@ -206,9 +211,11 @@ const Minesweeper = () => {
                 >
                     {smiley}
                 </div>
-                <button className="ms-trophy" onClick={() => setShowBoard(true)} title={t('ms.bestTimes')}>🏆</button>
-                <div className="minesweeper-counter">
-                    {String(timer).padStart(3, '0')}
+                <div className="ms-panel-right">
+                    <button className="ms-trophy" onClick={() => setShowBoard(true)} title={t('ms.bestTimes')}>🏆</button>
+                    <div className="minesweeper-counter">
+                        {String(timer).padStart(3, '0')}
+                    </div>
                 </div>
             </div>
 

@@ -5,6 +5,8 @@ import {
     SUITS, SUIT_SYMBOL, isRed, rankLabel, deal, moveCards, drawFromStock, autoMoveToFoundation,
     canMove, getMovingCards, isWon
 } from './solitaireLogic';
+import { solitaireScale } from './layoutScale';
+import { useElementSize } from './useElementSize';
 import './Solitaire.css';
 
 const HISTORY_LIMIT = 200;
@@ -43,6 +45,9 @@ const Solitaire = () => {
     const [started, setStarted] = useState(false);
     const [elapsed, setElapsed] = useState(0);
     const dragFromRef = useRef(null);
+    // Cards grow in proportion when the window is bigger or maximized (k = 1 is the normal size).
+    const [boardRef, boardSize] = useElementSize();
+    const k = solitaireScale(boardSize);
 
     const won = isWon(game);
 
@@ -131,7 +136,7 @@ const Solitaire = () => {
     const wasteLocation = { pile: 'waste' };
 
     return (
-        <div className="sol-root">
+        <div className="sol-root" style={{ '--k': k }}>
             <div className="sol-toolbar">
                 <button className="sol-btn" onClick={newGame}>{t('sol.newGame')}</button>
                 <button className="sol-btn" onClick={undo} disabled={!history.length}>{t('sol.undo')}</button>
@@ -139,7 +144,7 @@ const Solitaire = () => {
                 <span className="sol-stat">{t('sol.time')}: {minutes}:{seconds}</span>
             </div>
 
-            <div className="sol-board">
+            <div className="sol-board" ref={boardRef}>
                 <div className="sol-top">
                     <div className="sol-slot" onClick={handleStockClick} data-pile="stock" title={t('sol.stock')}>
                         {game.stock.length > 0
@@ -203,7 +208,7 @@ const Solitaire = () => {
                                 {pile.map((card, cardIndex) => {
                                     const location = { ...column, cardIndex };
                                     const style = { top: offset };
-                                    offset += card.faceUp ? FACE_UP_GAP : FACE_DOWN_GAP;
+                                    offset += (card.faceUp ? FACE_UP_GAP : FACE_DOWN_GAP) * k;
                                     return (
                                         <Card
                                             key={card.id}

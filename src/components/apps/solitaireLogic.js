@@ -134,3 +134,113 @@ export const autoMoveToFoundation = (state, from) => {
 };
 
 export const isWon = (state) => state.foundations.every((pile) => pile.length === 13);
+
+// ---------------------------------------------------------------------------
+// Hints and "no more moves"
+// ---------------------------------------------------------------------------
+// A move counts as PROGRESS when it cannot simply be undone by shuffling: a card goes to a foundation, a face-down
+// card is turned over, or a card from the stock/waste is placed on the board. Moving runs between columns, drawing
+// from the stock and recycling the waste are not progress (they can be repeated forever).
+
+const faceDownCount = (state) => state.tableau.reduce((n, pile) => n + pile.filter((c) => !c.faceUp).length, 0);
+const foundationTotal = (state) => state.foundations.reduce((n, pile) => n + pile.length, 0);
+const boardTotal = (state) => foundationTotal(state) + state.tableau.reduce((n, pile) => n + pile.length, 0);
+
+export const madeProgress = (before, after) =>
+    faceDownCount(after) < faceDownCount(before) ||
+    foundationTotal(after) > foundationTotal(before) ||
+    boardTotal(after) > boardTotal(before);
+
+// Every legal move from here: { kind: 'move', from, to } or { kind: 'draw' } (draw / recycle).
+export const legalMoves = (state) => {
+    const moves = [];
+    const sources = [];
+    if (state.waste.length) sources.push({ pile: 'waste' });
+    state.foundations.forEach((pile, index) => { if (pile.length) sources.push({ pile: 'foundation', index }); });
+    state.tableau.forEach((pile, index) => {
+        pile.forEach((c, cardIndex) => { if (c.faceUp) sources.push({ pile: 'tableau', index, cardIndex }); });
+    });
+    const targets = [
+        ...SUITS.map((_, index) => ({ pile: 'foundation', index })),
+        ...state.tableau.map((_, index) => ({ pile: 'tableau', index }))
+    ];
+    for (const from of sources) {
+        for (const to of targets) {
+            if (!canMove(state, from, to)) continue;
+            // A whole column that is already a run starting at its bottom, moved to an empty column, changes nothing.
+            if (from.pile === 'tableau' && to.pile === 'tableau' && from.cardIndex === 0 && !state.tableau[to.index].length) continue;
+            moves.push({ kind: 'move', from, to });
+        }
+    }
+    if (drawFromStock(state)) moves.push({ kind: 'draw' });
+    return moves;
+};
+
+export const applyMove = (state, move) => (move.kind === 'draw' ? drawFromStock(state) : moveCards(state, move.from, move.to));
+
+const ids = (pile) => pile.map((c) => c.id).join(',');
+// Two states are the same position when every pile holds the same cards, face up or down, in the same order.
+const stateKey = (state) => [
+    ids(state.stock), ids(state.waste),
+    state.foundations.map((p) => p.length).join(','),
+    state.tableau.map((p) => p.map((c) => `${c.id}${c.faceUp ? 'u' : 'd'}`).join(',')).join('/')
+].join('|');
+
+export const SEARCH_LIMIT = 6000;
+
+// Breadth-first search for the shortest series of moves that ends in progress.
+// -> { found: true, move }                  the first move of that series
+//    { found: false, exhausted: true }      every reachable position was checked: nothing can ever progress
+//    { found: false, exhausted: false }     gave up (too many positions): unknown
+export const searchProgress = (root, limit = SEARCH_LIMIT) => {
+    const seen = new Set([stateKey(root)]);
+    let queue = [{ state: root, first: null }];
+    while (queue.length) {
+        const next = [];
+        for (const { state, first } of queue) {
+            for (const move of legalMoves(state)) {
+                const after = applyMove(state, move);
+                if (!after) continue;
+                const firstMove = first || move;
+                if (madeProgress(root, after)) return { found: true, move: firstMove };
+                const key = stateKey(after);
+                if (seen.has(key)) continue;
+                if (seen.size >= limit) return { found: false, exhausted: false };
+                seen.add(key);
+                next.push({ state: after, first: firstMove });
+            }
+        }
+        queue = next;
+    }
+    return { found: false, exhausted: true };
+};
+
+// How good an immediately available progress move is (higher first): to a foundation, then turning a card over
+// (the column with most hidden cards first), then playing from the waste.
+const movePriority = (state, move) => {
+    if (move.kind !== 'move') return 0;
+    if (move.to.pile === 'foundation') return 3000 + (move.from.pile === 'tableau' ? 1 : 0);
+    if (move.from.pile === 'tableau') {
+        const pile = state.tableau[move.from.index];
+        const hidden = pile.slice(0, move.from.cardIndex).filter((c) => !c.faceUp).length;
+        if (hidden > 0 && move.from.cardIndex > 0 && !pile[move.from.cardIndex - 1].faceUp) return 2000 + hidden;
+        return 500; // frees a column
+    }
+    return 1000; // waste -> tableau
+};
+
+// The best next move: { found: true, move } or { found: false, stuck } (stuck = true only when it is certain).
+export const findHint = (state) => {
+    if (isWon(state)) return { found: false, stuck: false };
+    const direct = legalMoves(state)
+        .map((move) => ({ move, after: applyMove(state, move) }))
+        .filter(({ move, after }) => after && move.kind === 'move' && madeProgress(state, after))
+        .sort((a, b) => movePriority(state, b.move) - movePriority(state, a.move));
+    if (direct.length) return { found: true, move: direct[0].move };
+    const result = searchProgress(state);
+    if (result.found) return { found: true, move: result.move };
+    return { found: false, stuck: result.exhausted };
+};
+
+// True only when no series of moves, however long, can ever make progress.
+export const isStuck = (state) => !isWon(state) && findHint(state).stuck === true;

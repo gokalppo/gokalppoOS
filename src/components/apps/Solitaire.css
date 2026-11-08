@@ -133,3 +133,29 @@
 }
 
 .sol-win-title { font-size: 18px; font-weight: bold; }
+
+.sol-hint-text {
+    color: #000;
+    background: #ffffe1;
+    border: 1px solid #808080;
+    padding: 2px 6px;
+    margin-left: 6px;
+}
+
+/* Hint: the cards to move glow, and so does where they should go. */
+.sol-card.hinted { outline: 3px solid #00e5ff; outline-offset: -1px; animation: sol-hint-pulse 0.9s ease-in-out infinite; z-index: 3; }
+.sol-card.landing { outline: 3px dashed #00e5ff; outline-offset: -1px; }
+.sol-slot.hint-target,
+.sol-column.hint-target { outline: 3px dashed #00e5ff; outline-offset: 2px; }
+
+@keyframes sol-hint-pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(0, 229, 255, 0.6); }
+    50% { box-shadow: 0 0 10px 4px rgba(0, 229, 255, 0.8); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .sol-card.hinted { animation: none; }
+}
+
+.sol-stuck-text { max-width: 260px; line-height: 1.4; }
+.sol-stuck-actions { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; }

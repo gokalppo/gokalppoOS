@@ -188,3 +188,168 @@ describe('auto-move and winning', () => {
         expect(isWon(state)).toBe(false);
     });
 });
+
+import { madeProgress, legalMoves, applyMove, searchProgress, findHint, isStuck } from './solitaireLogic';
+
+describe('progress', () => {
+    it('counts foundation moves, turned cards and board placements, not shuffling', () => {
+        const base = emptyState();
+        base.tableau[0] = [card(9, 'S', false), card(5, 'H')];
+        base.tableau[1] = [card(6, 'S')];
+        base.waste = [card(4, 'C')];
+        base.foundations[2] = [card(1, 'D')];
+        base.stock = [card(7, 'D', false)];
+
+        expect(madeProgress(base, applyMove(base, { kind: 'move', from: { pile: 'tableau', index: 0, cardIndex: 1 }, to: { pile: 'tableau', index: 1 } }))).toBe(true); // turns the 9♠
+        expect(madeProgress(base, applyMove(base, { kind: 'move', from: { pile: 'waste' }, to: { pile: 'tableau', index: 0 } }))).toBe(true); // 4♣ onto 5♥
+        expect(madeProgress(base, applyMove(base, { kind: 'draw' }))).toBe(false);
+        // a lateral move that turns nothing
+        const lateral = emptyState();
+        lateral.tableau[0] = [card(6, 'S')];
+        lateral.tableau[1] = [card(7, 'H')];
+        expect(madeProgress(lateral, applyMove(lateral, { kind: 'move', from: { pile: 'tableau', index: 0, cardIndex: 0 }, to: { pile: 'tableau', index: 1 } }))).toBe(false);
+    });
+
+    it('moving a card to a foundation is progress, pulling it back is not', () => {
+        const state = emptyState();
+        state.tableau[0] = [card(1, 'S')];
+        const up = applyMove(state, { kind: 'move', from: { pile: 'tableau', index: 0, cardIndex: 0 }, to: { pile: 'foundation', index: 0 } });
+        expect(madeProgress(state, up)).toBe(true);
+        const down = applyMove(up, { kind: 'move', from: { pile: 'foundation', index: 0 }, to: { pile: 'tableau', index: 1 } });
+        expect(down).toBeNull(); // an Ace cannot go on an empty column, only a King
+    });
+});
+
+describe('legal moves', () => {
+    it('lists run moves, waste plays, foundation moves and the stock, and skips pointless shifts', () => {
+        const state = emptyState();
+        state.tableau[0] = [card(13, 'S')];            // a King alone: moving it to an empty column changes nothing
+        state.tableau[1] = [card(5, 'H'), card(4, 'S')];
+        state.tableau[2] = [card(6, 'C')];
+        state.waste = [card(1, 'S')];
+        state.stock = [card(2, 'D', false)];
+        const moves = legalMoves(state);
+        const has = (from, to) => moves.some((m) => m.kind === 'move' && m.from.pile === from.pile && m.from.index === from.index && m.to.pile === to.pile && m.to.index === to.index);
+
+        expect(has({ pile: 'waste' }, { pile: 'foundation', index: 0 })).toBe(true);                     // A♠ up
+        expect(has({ pile: 'tableau', index: 1 }, { pile: 'tableau', index: 2 })).toBe(true);            // 5♥,4♠ onto 6♣
+        expect(moves.some((m) => m.kind === 'draw')).toBe(true);
+        expect(moves.some((m) => m.kind === 'move' && m.from.index === 0 && m.from.pile === 'tableau' && m.to.pile === 'tableau')).toBe(false);
+    });
+
+    it('does not offer a draw when there is nothing to draw or recycle', () => {
+        expect(legalMoves(emptyState()).some((m) => m.kind === 'draw')).toBe(false);
+    });
+});
+
+describe('hints', () => {
+    it('prefers a foundation move, then turning over a hidden card, then playing the waste', () => {
+        const state = emptyState();
+        state.tableau[0] = [card(9, 'S', false), card(5, 'H')];
+        state.tableau[1] = [card(6, 'S')];
+        state.tableau[2] = [card(1, 'C')];
+        state.waste = [card(4, 'C')];
+        let hint = findHint(state);
+        expect(hint.move).toMatchObject({ from: { pile: 'tableau', index: 2 }, to: { pile: 'foundation', index: 3 } });
+
+        state.tableau[2] = [];
+        hint = findHint(state);
+        expect(hint.move).toMatchObject({ from: { pile: 'tableau', index: 0, cardIndex: 1 }, to: { pile: 'tableau', index: 1 } });
+
+        state.tableau[0] = [card(5, 'H')];
+        hint = findHint(state);
+        expect(hint.move).toMatchObject({ from: { pile: 'waste' }, to: { pile: 'tableau', index: 0 } });
+    });
+
+    it('points at the stock when drawing is what leads somewhere', () => {
+        const state = emptyState();
+        state.tableau[0] = [card(5, 'H')];
+        state.stock = [card(4, 'S', false)];
+        expect(findHint(state)).toEqual({ found: true, move: { kind: 'draw' } });
+    });
+
+    it('finds a lateral move that frees something useful', () => {
+        const state = emptyState();
+        state.tableau[0] = [card(5, 'H'), card(4, 'S')];
+        state.tableau[1] = [card(6, 'C')];
+        state.tableau[2] = [card(1, 'H', false), card(5, 'D')];
+        const hint = findHint(state);
+        expect(hint.found).toBe(true);     // 5♦ onto 6♣ turns the hidden Ace
+    });
+
+    it('says nothing is left, and is sure, when the position is dead', () => {
+        const state = emptyState();
+        state.tableau[0] = [card(7, 'S')];
+        state.tableau[1] = [card(9, 'H')];
+        expect(findHint(state)).toEqual({ found: false, stuck: true });
+        expect(isStuck(state)).toBe(true);
+    });
+
+    it('a won game is neither hinted nor stuck', () => {
+        const state = emptyState();
+        state.foundations = [0, 1, 2, 3].map(() => Array.from({ length: 13 }, (_, i) => card(i + 1, 'S')));
+        expect(findHint(state)).toEqual({ found: false, stuck: false });
+        expect(isStuck(state)).toBe(false);
+    });
+});
+
+describe('knowing when there are no more moves', () => {
+    it('a stock that still holds a playable card is not stuck, even if the board looks blocked', () => {
+        const state = emptyState();
+        state.tableau[0] = [card(7, 'S')];
+        state.tableau[1] = [card(9, 'H')];
+        state.stock = [card(8, 'C', false), card(2, 'C', false)]; // draw the 2♣, then the 8♣, which fits on the 9♥
+        expect(isStuck(state)).toBe(false);
+    });
+
+    it('cycling the whole stock without anything playable is stuck', () => {
+        const state = emptyState();
+        state.tableau[0] = [card(7, 'S')];
+        state.tableau[1] = [card(9, 'H')];
+        state.stock = [card(3, 'C', false), card(11, 'D', false)];
+        expect(isStuck(state)).toBe(true);
+    });
+
+    it('a lateral shuffle that eventually frees a card is not stuck', () => {
+        const state = emptyState();
+        state.tableau[0] = [card(5, 'H'), card(4, 'S')];
+        state.tableau[1] = [card(6, 'C')];
+        state.tableau[2] = [card(10, 'D', false), card(5, 'D')];
+        expect(isStuck(state)).toBe(false);
+    });
+
+    it('gives up quietly (not stuck) when the search would be too big', () => {
+        const state = emptyState();
+        state.tableau[0] = [card(7, 'S')];
+        state.tableau[1] = [card(9, 'H')];
+        state.stock = Array.from({ length: 4 }, (_, i) => card(3 + i * 0, 'C', false)).map((c, i) => ({ ...c, id: `x${i}` }));
+        expect(searchProgress(state, 1)).toEqual({ found: false, exhausted: false });
+    });
+
+    it('fresh random deals are essentially never stuck, and the check is fast', () => {
+        const started = performance.now();
+        let stuck = 0;
+        for (let seed = 1; seed <= 40; seed++) {
+            if (isStuck(deal(seeded(seed)))) stuck++;
+        }
+        expect(stuck).toBe(0);
+        expect((performance.now() - started) / 40).toBeLessThan(50);
+    });
+
+    it('plays out a whole game by following hints without ever getting stuck early or looping forever', () => {
+        // Following the hint repeatedly must always make progress eventually, never cycle: count moves.
+        let state = deal(seeded(5));
+        let moves = 0;
+        while (moves < 400) {
+            const hint = findHint(state);
+            if (!hint.found) break;
+            const next = applyMove(state, hint.move);
+            expect(next).not.toBeNull();
+            state = next;
+            moves++;
+            if (isWon(state)) break;
+        }
+        expect(moves).toBeGreaterThan(10);
+        expect(moves).toBeLessThan(400);
+    });
+});
